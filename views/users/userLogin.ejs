@@ -1,0 +1,303 @@
+<%- include('../userLayouts/toolbar.ejs') %> 
+<style>
+/* Unified body styles */
+body {
+    background-color: white; /* Match account overview background */
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* Account Overview Styles */
+.account-container {
+    width: 80%;
+    margin: 0 auto;
+}
+
+.account-breadcrumbs {
+    margin: 20px 0;
+    font-size: 14px;
+}
+
+.account-breadcrumbs a {
+    color: #4F2F2D;
+    text-decoration: none;
+}
+
+.account-breadcrumbs span {
+    margin: 0 5px;
+    color: #999;
+}
+
+.account-overview-container {
+    display: flex;
+    margin-top: 20px;
+}
+
+.account-sidebar {
+    width: 25%;
+    border-right: 1px solid #ddd;
+    padding-right: 20px;
+}
+
+.account-sidebar a {
+    display: block;
+    padding: 10px 20px;
+    color: #333;
+    text-decoration: none;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.account-sidebar a:hover {
+    background-color: #f0f0f0;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.account-sidebar a.account-selected {
+    background-color: #e0e0e0;
+    font-weight: bold;
+}
+
+.account-main-content {
+    width: 75%;
+    padding-left: 20px;
+}
+
+.account-button {
+    display: inline-block;
+    padding: 10px 20px;
+    color: white;
+    background-color: #4F2F2D;
+    text-decoration: none;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+/* Registration Section */
+.registration-section {
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+}
+
+.registration-section h2 {
+    margin-bottom: 15px;
+    font-size: 24px;
+}
+
+.registration-section p {
+    margin-bottom: 20px;
+    font-size: 16px;
+}
+
+.registration-section .btn-register {
+    display: inline-block;
+    background-color: #4F2F2D;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    margin-right: 10px;
+}
+
+.registration-section .btn-register:hover {
+    background-color: #3c3b36;
+}
+
+.registration-section .btn-link {
+    color: #357AE8;
+    text-decoration: none;
+}
+
+.registration-section .btn-link:hover {
+    text-decoration: underline;
+}
+
+/* Form Control */
+.form-control {
+    border-radius: 5px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #333;
+}
+
+.btn-primary {
+    background-color: #4F2F2D;
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: #3c3b36;
+}
+
+.btn-link {
+    color: #357AE8;
+    text-decoration: none;
+}
+.btn-link:hover {
+    text-decoration: underline;
+}
+
+/* Login Page Styles */
+.login-container {
+    background-color: #f9f9f9; /* Adjusted to match registration section */
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 400px;
+    margin: 20px auto;
+}
+
+.login-container h1 {
+    margin-bottom: 20px;
+    font-size: 24px;
+    text-align: center;
+}
+
+.login-container .form-outline {
+    margin-bottom: 15px;
+}
+
+.login-container .form-outline input {
+    border-radius: 5px;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+}
+
+.login-container .form-outline label {
+    font-size: 14px;
+    color: #333;
+}
+
+.login-container .btn-primary {
+    background-color: #4F2F2D;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px;
+    width: 100%;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.login-container .btn-primary:hover {
+    background-color: #3c3b36;
+}
+
+.login-container .divider {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.login-container .divider p {
+    margin: 0;
+    font-weight: bold;
+}
+
+.login-container .btn-google {
+    background-color: #4285F4;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px;
+    width: 100%;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.login-container .btn-google:hover {
+    background-color: #357AE8;
+}
+
+.login-container .btn-google i {
+    margin-right: 8px;
+}
+
+.login-container .text-center {
+    text-align: center;
+}
+
+.login-container .text-center a {
+    color: #357AE8;
+    text-decoration: none;
+}
+
+.login-container .text-center a:hover {
+    text-decoration: underline;
+}
+</style>
+<div class="account-container">
+    <!-- Breadcrumbs -->
+    <div class="account-breadcrumbs">
+        <a href="/">Home</a> <span>&gt;</span><a href="/myAccount">Account overview</a><span>&gt;</span><span>Login</span>
+    </div>
+
+    <div class="account-overview-container">
+        <!-- Sidebar -->
+        <div class="account-sidebar">
+            <a href="/account" class="account-selected">Account Overview</a>
+            <a href="/change-password">Change Password</a>
+            <a href="/order-history">Order History</a>
+            <a href="/address-book">Address Book</a>
+        </div>
+
+       <!-- Main Content -->
+<div class="account-main-content">
+    <div class="login-container">
+        <h1>Login</h1>
+        <div class="text-center mb-4">
+            <button type="button" class="btn-google btn-lg mt-3" onclick="window.location.href='/auth/google';">
+                <i class="fab fa-google"></i> Sign in with Google
+            </button>
+        </div>
+
+        <div class="divider d-flex align-items-center my-4">
+            <p class="text-center fw-bold mx-3 mb-0">Or</p>
+        </div>
+        <% if (typeof message !== 'undefined') { %>
+            <p style="color: red;"><%= message %></p>
+        <% } %>
+        <form action="/login" method="post">
+            <!-- Email input -->
+            <div class="form-outline mb-4">
+                <label class="form-label" for="loginEmail">Email address</label>
+                <input type="email" id="email" name="email" class="form-control" placeholder="Enter a valid email address" required />
+                <p class="validation-message" id="emailValidationMessage"></p>
+            </div>
+
+            <!-- Password input -->
+            <div class="form-outline mb-3">
+                <label class="form-label" for="loginPassword">Password</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="Enter password" required />
+                <p class="validation-message" id="passwordValidationMessage"></p>
+            </div>
+
+            <div class="text-center text-lg-start">
+                <button type="submit" class="btn-primary btn-lg">Login</button>
+
+                <!-- Forgot Password link -->
+             <div class="text-center mb-4">
+                <a href="/forgot-password" class="text-center btn-link">Forgot Password?</a>
+            </div>
+
+                <p class="small fw-bold mt-2 mb-0">Don't have an account? <a href="/register" class="link-danger">Register</a></p>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+</div>
+</body>
+</html>
+

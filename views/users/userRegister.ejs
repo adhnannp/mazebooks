@@ -1,0 +1,287 @@
+<%- include('../userLayouts/toolbar.ejs') %>
+<style>
+/* Unified body styles */
+body {
+    background-color: white; /* Match account overview background */
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* Account Overview Styles */
+.account-container {
+    width: 80%;
+    margin: 0 auto;
+}
+
+.account-breadcrumbs {
+    margin: 20px 0;
+    font-size: 14px;
+}
+
+.account-breadcrumbs a {
+    color: #4F2F2D;
+    text-decoration: none;
+}
+
+.account-breadcrumbs span {
+    margin: 0 5px;
+    color: #999;
+}
+
+.account-overview-container {
+    display: flex;
+    margin-top: 20px;
+}
+
+.account-sidebar {
+    width: 25%;
+    border-right: 1px solid #ddd;
+    padding-right: 20px;
+}
+
+.account-sidebar a {
+    display: block;
+    padding: 10px 20px;
+    color: #333;
+    text-decoration: none;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.account-sidebar a:hover {
+    background-color: #f0f0f0;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.account-sidebar a.account-selected {
+    background-color: #e0e0e0;
+    font-weight: bold;
+}
+
+.account-main-content {
+    width: 75%;
+    padding-left: 20px;
+}
+
+.account-button {
+    display: inline-block;
+    padding: 10px 20px;
+    color: white;
+    background-color: #4F2F2D;
+    text-decoration: none;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+/* Registration Section */
+.registration-section {
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+}
+
+.registration-section h2 {
+    margin-bottom: 15px;
+    font-size: 24px;
+}
+
+.registration-section p {
+    margin-bottom: 20px;
+    font-size: 16px;
+}
+
+.registration-section .btn-register {
+    display: inline-block;
+    background-color: #4F2F2D;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    margin-right: 10px;
+}
+
+.registration-section .btn-register:hover {
+    background-color: #3c3b36;
+}
+
+.registration-section .btn-link {
+    color: #357AE8;
+    text-decoration: none;
+}
+
+.registration-section .btn-link:hover {
+    text-decoration: underline;
+}
+
+/* Form Control */
+.form-control {
+    border-radius: 5px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #333;
+}
+
+.btn-primary {
+    background-color: #4F2F2D;
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: #3c3b36;
+}
+
+/* Registration Page Styles */
+.registration-container {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 400px;
+    margin: 20px auto;
+}
+
+.registration-container h1 {
+    margin-bottom: 20px;
+    font-size: 24px;
+    text-align: center;
+}
+
+.registration-container .form-outline {
+    margin-bottom: 15px;
+}
+
+.registration-container .form-outline input {
+    border-radius: 5px;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+}
+
+.registration-container .form-outline label {
+    font-size: 14px;
+    color: #333;
+}
+
+.registration-container .btn-primary {
+    background-color: #4F2F2D;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px;
+    width: 100%;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.registration-container .btn-primary:hover {
+    background-color: #3c3b36;
+}
+
+.registration-container .divider {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.registration-container .divider p {
+    margin: 0;
+    font-weight: bold;
+}
+
+.registration-container .text-center {
+    text-align: center;
+}
+
+.registration-container .text-center a {
+    color: #357AE8;
+    text-decoration: none;
+}
+
+.registration-container .text-center a:hover {
+    text-decoration: underline;
+}
+</style>
+<div class="account-container">
+    <!-- Breadcrumbs -->
+    <div class="account-breadcrumbs">
+        <a href="/">Home</a> <span>&gt;</span><a href="/myAccount">Account overview</a><span>&gt;</span><span>Register</span>
+    </div>
+
+    <div class="account-overview-container">
+        <!-- Sidebar -->
+        <div class="account-sidebar">
+            <a href="/account">Account Overview</a>
+            <a href="/change-password">Change Password</a>
+            <a href="/order-history">Order History</a>
+            <a href="/address-book">Address Book</a>
+        </div>
+
+        <!-- Main Content -->
+        <div class="account-main-content">
+            <div class="registration-container">
+                <h1>Register</h1>
+                <% if (typeof message !== 'undefined') { %>
+                    <p style="color: red;"><%= message %></p>
+                <% } %>
+                <form action="/register" method="post">
+                    <!-- First Name input -->
+                    <div class="form-outline mb-4">
+                        <label class="form-label" for="firstName">First Name</label>
+                        <input type="text" id="fname" name="fname" class="form-control" placeholder="Enter your first name" required />
+                        <p class="validation-message" id="firstNameValidationMessage"></p>
+                    </div>
+
+                    <!-- Last Name input -->
+                    <div class="form-outline mb-4">
+                        <label class="form-label" for="lastName">Last Name</label>
+                        <input type="text" id="lname" name="lname" class="form-control" placeholder="Enter your last name" required />
+                        <p class="validation-message" id="lastNameValidationMessage"></p>
+                    </div>
+
+                    <!-- Email input -->
+                    <div class="form-outline mb-4">
+                        <label class="form-label" for="email">Email address</label>
+                        <input type="email" id="email" name="email" class="form-control" placeholder="Enter a valid email address" required />
+                        <p class="validation-message" id="emailValidationMessage"></p>
+                    </div>
+
+                    <!-- Mobile Number input -->
+                    <div class="form-outline mb-4">
+                        <label class="form-label" for="mobileNumber">Mobile Number</label>
+                        <input type="text" id="mno" name="mno" class="form-control" placeholder="Enter your mobile number"/>
+                        <p class="validation-message" id="mobileNumberValidationMessage"></p>
+                    </div>
+
+                    <!-- Password input -->
+                    <div class="form-outline mb-3">
+                        <label class="form-label" for="password">Password</label>
+                        <input type="password" id="password" name="password" class="form-control" placeholder="Enter password" required />
+                        <p class="validation-message" id="passwordValidationMessage"></p>
+                    </div>
+
+                    <!-- Confirm Password input -->
+                    <div class="form-outline mb-3">
+                        <label class="form-label" for="confirmPassword">Confirm Password</label>
+                        <input type="password" id="confirmPassword" class="form-control" placeholder="Confirm your password" required />
+                        <p class="validation-message" id="confirmPasswordValidationMessage"></p>
+                    </div>
+
+                    <div class="text-center text-lg-start">
+                        <button type="submit" class="btn-primary btn-lg">Register</button>
+                        <p class="small fw-bold mt-2 mb-0">Already have an account? <a href="/login" class="link-danger">Login</a></p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
