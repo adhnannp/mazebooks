@@ -125,7 +125,7 @@
             <% if (user.Is_verified) { %>
                 <h1>Account Overview</h1>
                 <div class="account-user-details">
-                    <p><strong>Name:</strong> <%= user.FirstName +''+user.LastName %></p>
+                    <p><strong>Name:</strong> <%= user.FirstName +' '+user.LastName %></p>
                     <p><strong>Email:</strong> <%= user.Email %></p>
                     <p><strong>Phone:</strong> <%= user.MobileNo %></p>
                     <p><strong>Joined at:</strong> <%= new Date(user.CreatedAt).toLocaleDateString('en-GB')%></p>

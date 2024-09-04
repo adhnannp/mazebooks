@@ -23,11 +23,11 @@ const userController = require('../controllers/userController');
 
 user_route.get(['/','/home'], auth.isAdminLogin ,userController.loadHome);
 
-user_route.get('/myaccount',userController.loadAccountOverview);
+user_route.get('/myaccount',auth.isblock,userController.loadAccountOverview);
 
 user_route.get('/login', auth.isAdminLogin, auth.isLogout, userController.loginLoad);
 
-user_route.post('/login',auth.isLogout,userController.varifyLogin);
+user_route.post('/login',userController.varifyLogin);
 
 user_route.get('/register',auth.isAdminLogin, auth.isLogout, userController.loadRegister);
 
@@ -57,5 +57,7 @@ user_route.get('/auth/google/callback',
     });
 
 user_route.post('/logout', auth.isLogin, userController.userLogout);
+
+
 
 module.exports = user_route;

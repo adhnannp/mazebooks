@@ -18,11 +18,11 @@ app.use((req, res, next) => {
   res.setHeader('Surrogate-Control', 'no-store');
   next();
 });
-//Serving static files.
+// Serving static files.
 app.use("/static", express.static(path.join(__dirname, "public")));
 
 
-// middlewares
+// session middlewares
 app.use(session({
   secret: config.sessionSecret,
   resave: false,
@@ -34,8 +34,8 @@ const userRoute = require('./routes/userRoute')
 app.use('/',userRoute);
 
 // for Admin route
-// const adminRoute = require('./routes/adminRoute')
-// app.use('/admin',adminRoute);
+const adminRoute = require('./routes/adminRoute')
+app.use('/admin',adminRoute);
 
 //error handling function
 app.use((err, req, res, next) => {

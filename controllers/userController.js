@@ -30,10 +30,14 @@ const loadHome = async(req,res)=>{
 //load accountOverview
 const loadAccountOverview = async(req,res)=>{
     try {
-        if (req.session.user_id && req.session.is_verified ) {
+        if (req.session.user_id && req.session.is_block){
+            req.session.destroy();
+            res.render('myAccount',{user:""});
+        }
+        if (req.session.user_id && req.session.is_verified && !req.session.is_block) {
             const user = await User.findOne({_id:req.session.user_id})
             res.render('myAccount',{user:user});
-        } else if (req.session.user_id && !req.session.is_verified){
+        }else if (req.session.user_id && !req.session.is_verified && !req.session.is_block){
             res.redirect('/verify-otp');
         }else {
             res.render('myAccount',{user:""});
@@ -105,6 +109,7 @@ const insertUser = async (req, res) => {
 
         await transporter.sendMail(mailOptions);
 
+        req.session.is_block = user.Is_block;
         req.session.user_id = user._id;
         req.session.is_verified = user.Is_verified;
         req.session.is_admin = userData.Is_admin;
@@ -136,7 +141,7 @@ const varifyLogin = async(req,res)=>{
         if (userData) {
             const passwordMatch = await bcrypt.compare(password,userData.Password);
             if (passwordMatch) {
-                if (userData.Is_admin) {
+                if (userData.Is_admin || userData.Is_block) {
                     res.render('userLogin',{message:"Enternig restricted"});
                 }else if(!userData.Is_verified){
                     // Generate a new OTP
@@ -157,13 +162,15 @@ const varifyLogin = async(req,res)=>{
                     req.session.user_id = userData._id;
                     req.session.is_admin = userData.Is_admin;
                     req.session.is_verified = userData.Is_verified
+                    req.session.is_block = userData.Is_block;
 
                     res.redirect('/verify-otp')
 
                 }else {
                     req.session.user_id = userData._id;
                     req.session.is_admin = userData.Is_admin;
-                    req.session.is_verified = userData.Is_verified
+                    req.session.is_verified = userData.Is_verified;
+                    req.session.is_block = userData.Is_block;
 
                     res.redirect('/myAccount');
                 }

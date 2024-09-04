@@ -1,6 +1,6 @@
 const isLogin = async (req, res, next) => {
     try {
-        if (req.session.user_id && !req.session.is_admin) {
+        if (req.session.user_id && !req.session.is_admin && !req.session.is_block) {
             return next();
         } else {
             return res.redirect('/');
@@ -13,7 +13,7 @@ const isLogin = async (req, res, next) => {
 
 const isLogout = async (req, res, next) => {
     try {
-        if (req.session.user_id && !req.session.is_admin) {
+        if (req.session.user_id && !req.session.is_admin && !req.session.is_block) {
             res.redirect('/home');
         } else {
             next();
@@ -26,10 +26,24 @@ const isLogout = async (req, res, next) => {
 
 const isVerified =  async (req, res, next) => {
     try {
-        if (req.session.user_id && !req.session.is_verified && !req.session.is_admin) {
+        if (req.session.user_id && !req.session.is_verified && !req.session.is_admin && !req.session.is_block) {
             next();
         } else {
             res.redirect('/home');
+        }
+    } catch (error) {
+        console.log(error.message);
+        return res.status(500).send('Internal Server Error');
+    }
+};
+
+const isblock =  async (req, res, next) => {
+    try {
+        if (req.session.user_id && req.session.is_block) {
+            req.session.destroy()
+            res.redirect('/home');
+        } else {
+            next()
         }
     } catch (error) {
         console.log(error.message);
@@ -56,4 +70,5 @@ module.exports = {
     isLogout,
     isAdminLogin,
     isVerified,
+    isblock,
 };

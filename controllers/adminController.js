@@ -1,5 +1,7 @@
 const User = require("../models/userModel");
 const bcrypt = require("bcrypt");
+const Product = require("../models/productModel");
+const Category = require("../models/categoryModel");
 
 //hashingpassword
 const securePassword = async (password)=>{
@@ -7,7 +9,7 @@ const securePassword = async (password)=>{
         const passwordHash = await bcrypt.hash(password,10)  
         return passwordHash; 
     } catch (error) {
-        console.log(error.massage);
+        console.log(error.message);
     }
 }
 
@@ -17,7 +19,7 @@ const loadLogin = async(req,res)=>{
     try {
         res.render('login')
     } catch (error) {
-        console.log(error.massage);
+        console.log(error.message);
     }
 }
 
@@ -26,22 +28,22 @@ const varifyLogin = async(req,res)=>{
         const email = req.body.email;
         const password = req.body.password;
 
-        const adminData = await User.findOne({email:email})
+        const adminData = await User.findOne({Email:email})
         if(adminData){
-           const passwordMatch = await bcrypt.compare(password,adminData.password)
+           const passwordMatch = await bcrypt.compare(password,adminData.Password)
            if(passwordMatch){
-            if(!adminData.is_admin){
-                res.render('login',{massage:"No Admin found"});
+            if(!adminData.Is_admin){
+                res.render('login',{message:"No Admin found"});
             }else{
-                req.session.is_admin = adminData.is_admin
+                req.session.is_admin = adminData.Is_admin
                 req.session.user_id = adminData._id;
                 res.redirect('/admin/home');
             }
            }else{
-            res.render('login',{massage:"incorrect email or password"});
+            res.render('login',{message:"incorrect email or password"});
            }
         }else{
-            res.render('login',{massage:"No Admin found"})
+            res.render('login',{message:"No Admin found"})
         }
 
     } catch (error) {
@@ -49,12 +51,12 @@ const varifyLogin = async(req,res)=>{
     }
 }
 
-const loadDAshboard = async(req,res)=>{
+const loadAdminHome = async(req,res)=>{
     try {
         const userData = await User.findById({_id:req.session.user_id});
-        res.render('home',{admin:userData})
+        res.render('index',{admin:userData})
     } catch (error) {
-        console.log(error.massage);
+        console.log(error.message);
     }
 }
 
@@ -63,27 +65,216 @@ const logout = async(req,res)=>{
         req.session.destroy();
         res.redirect('/admin');
     } catch (error) {
-        console.log(error.massage)
+        console.log(error.message)
         res.redirect('/home');
     }
 }
 
-const adminDashboard =  async(req,res)=>{
+//show users
+const adminUsers = async (req, res) => {
     try {
-        const usersData = await User.find({is_admin:false})
-        res.render('dashboard',{ users: usersData})
+        // Find the currently logged-in admin
+        const admin = await User.findById(req.session.user_id);
+
+        const currentPage = parseInt(req.query.page) || 1; // Get current page, default to 1
+        const itemsPerPage = 5; // Adjust as needed
+        const totalUsers = await User.countDocuments({ Is_admin: false });
+        const totalPages = Math.ceil(totalUsers / itemsPerPage);
+        const usersData = await User.find({ Is_admin: false })
+            .skip((currentPage - 1) * itemsPerPage)
+            .limit(itemsPerPage);
+
+        res.render('users.ejs', {
+            admin,
+            user: usersData,
+            currentPage,
+            totalPages,
+        });
     } catch (error) {
-        console.log(error.massage);
+        console.log(error.message);
         res.redirect('/home');
     }
 }
+
+// Unblock User
+const unblockUser = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        // Find the user by ID and update the `Is_block` field to `false`
+        await User.findByIdAndUpdate(userId, { Is_block: false });
+        res.redirect('/admin/users');
+    } catch (error) {
+        console.log('Error unblocking user:', error.message);
+        res.redirect('/admin/users');
+    }
+};
+
+// Block User
+const blockUser = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        // Find the user by ID and update the `Is_block` field to `true`
+        await User.findByIdAndUpdate(userId, { Is_block: true });
+        res.redirect('/admin/users');
+    } catch (error) {
+        console.log('Error blocking user:', error.message);
+        res.redirect('/admin/users');
+    }
+};
+
+//display products
+const productsLoad = async (req, res) => {
+    try {
+        const admin = await User.findById(req.session.user_id);
+
+        // Get current page, default to 1
+        const currentPage = parseInt(req.query.page) || 1;
+        const itemsPerPage = 5; // Number of items per page
+
+        // Calculate total products and pages
+        const totalProducts = await Product.countDocuments();
+        const totalPages = Math.ceil(totalProducts / itemsPerPage);
+
+        // Fetch products with pagination and populate category
+        const products = await Product.find()
+            .populate('CategoryId', 'CategoryName') // Populate CategoryName field
+            .skip((currentPage - 1) * itemsPerPage)
+            .limit(itemsPerPage)
+            .exec();
+
+        // Render the products or send them as a response
+        res.render("products", {
+            products,
+            admin,
+            currentPage,
+            totalPages,
+        });
+    } catch (error) {
+        console.error("Error loading products:", error);
+        res.status(500).send("Server Error");
+    }
+};
+
+//display categories
+const categoriesLoad = async (req, res) => {
+    try {
+        const admin = await User.findById(req.session.user_id); // Fetch admin details if needed
+
+        // Pagination variables
+        const currentPage = parseInt(req.query.page) || 1; // Get current page, default to 1
+        const itemsPerPage = 5; // Number of items per page
+
+        // Calculate total categories and pages
+        const totalCategories = await Category.countDocuments();
+        const totalPages = Math.ceil(totalCategories / itemsPerPage);
+
+        // Fetch categories with pagination
+        const categories = await Category.find()
+            .skip((currentPage - 1) * itemsPerPage)
+            .limit(itemsPerPage)
+            .exec();
+        // Render the categories or send them as a response
+        res.render("category", {
+            categories,
+            admin,
+            currentPage,
+            totalPages,
+            productCount:"",
+        });
+    } catch (error) {
+        console.error("Error loading categories:", error);
+        res.status(500).send("Server Error");
+    }
+};
+
+//add New category
+const addCategory = async (req, res) => {
+    try {
+        const newCategory = req.body.CategoryName.trim(); // Get and trim the category name
+        const item = await Category.findOne({ CategoryName: newCategory }); // Check if the category already exists
+
+        if (item) {
+            // If the category already exists, show an error message
+            req.flash('error', 'Category already exists!');
+            return res.redirect('/admin/categories');
+        }
+
+        // If the category doesn't exist, create a new one
+        const category = new Category({
+            CategoryName: newCategory,
+            CreatedAt: new Date(),
+            UpdatedAt: new Date(),
+        });
+
+        await category.save(); // Save the new category to the database
+
+        // Redirect to the categories page after adding the category
+        req.flash('success', 'Category added successfully!');
+        res.redirect('/admin/categories');
+    } catch (error) {
+        console.log('Error adding category:', error.message);
+        res.redirect('/admin/categories');
+    }
+};
+
+
+// unlist category
+const unlistCategory = async (req, res) => {
+    try {
+        const categoryId = req.params.id;
+        
+        // Check if there are any products in this category
+        const productCount = await Product.countDocuments({ CategoryId: categoryId });
+        
+        if (productCount > 0) {
+            // Redirect back with a message
+            res.render('admin/categories', {
+                categories: await Category.find(), 
+                productCount
+            });
+        }
+        
+        // If no products, unlist the category
+        await Category.findByIdAndUpdate(categoryId, { Is_list: false });
+        res.redirect('/admin/categories');
+    } catch (error) {
+        console.log('Error unlisting category:', error.message);
+        res.redirect('/admin/categories');
+    }
+};
+
+// list category
+const listCategory = async (req, res) => {
+    try {
+        const categoryId = req.params.id;
+        // Find the category by ID and update the `Is_list` field to `true`
+        await Category.findByIdAndUpdate(categoryId, { Is_list: true });
+        res.redirect('/admin/categories');
+    } catch (error) {
+        console.log('Error listing category:', error.message);
+        res.redirect('/admin/categories');
+    }
+};
+
+// Edit category
+const editCategory = async (req, res) => {
+    try {
+        const categoryId = req.params.id;
+        const newName = req.body.CategoryName;
+        await Category.findByIdAndUpdate(categoryId,{CategoryName:newName,UpdatedAt:Date.now()});
+        res.redirect('/admin/categories');
+    } catch (error) {
+        console.log('Error listing category:', error.message);
+        res.redirect('/admin/categories');
+    }
+};
 
 //add new user page loading
 const addUserLoad = async(req,res)=>{
     try {
         res.render('new-user');
     } catch (error) {
-        console.log(error.massage);
+        console.log(error.message);
         res.redirect('/dashboard');
     }
 }
@@ -96,7 +287,7 @@ const addNewUser = async (req, res) => {
         const existedNumber = await User.findOne({ mobile: req.body.mno });
 
         if (existedEmail || existedNumber) {
-            res.render('new-user', { massage: "Already registered. Try using another number and email." });
+            res.render('new-user', { message: "Already registered. Try using another number and email." });
         } else {
             const user = new User({
                 name: req.body.name,
@@ -110,12 +301,12 @@ const addNewUser = async (req, res) => {
             if (userData) {
                 res.redirect('/admin/dashboard');
             } else {
-                res.render('new-user', { massage: "Your registration has failed." });
+                res.render('new-user', { message: "Your registration has failed." });
             }
         }
     } catch (error) {
         console.log(error.message);
-        res.render('new-user', { massage: "An error occurred during registration." });
+        res.render('new-user', { message: "An error occurred during registration." });
     }
 };
 
@@ -193,9 +384,17 @@ const deleteUser = async(req,res)=>{
 module.exports = {
     loadLogin,
     varifyLogin,
-    loadDAshboard,
+    loadAdminHome,
     logout,
-    adminDashboard,
+    adminUsers,
+    unblockUser,
+    blockUser,
+    productsLoad,
+    categoriesLoad,
+    listCategory,
+    unlistCategory,
+    addCategory,
+    editCategory,
     addUserLoad,
     addNewUser,
     editUserLoad,
