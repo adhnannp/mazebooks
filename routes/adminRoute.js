@@ -1,7 +1,7 @@
 const express = require('express');
 const admin_route = express();
 const bodyParser = require("body-parser");
-// const multer = require('multer');
+const upload = require('../config/multerConfig');
 const path = require('path');
 const auth = require("../middleware/adminAuth");
 
@@ -10,19 +10,6 @@ admin_route.use(bodyParser.urlencoded({ extended: true }));
 
 admin_route.set('view engine', 'ejs');
 admin_route.set('views', path.join(__dirname, '../views/admin')); 
-
-// // multer setup
-// const storage = multer.diskStorage({
-//     destination: function (req, file, cb) {
-//         cb(null, path.join(__dirname, '../public/userImages'));
-//     },
-//     filename: function (req, file, cb) {
-//         const name = Date.now() + '-' + file.originalname;
-//         cb(null, name);
-//     }
-// });
-
-// const upload = multer({ storage: storage });
 
 // controller
 const adminController = require('../controllers/adminController');
@@ -42,9 +29,11 @@ admin_route.post('/users/block/:id', adminController.blockUser);
 
 admin_route.get('/products', auth.isLogin, adminController.productsLoad);
 
-// admin_route.get('/add-user', auth.isLogin, adminController.addUserLoad);
+admin_route.post('/products/add', upload.array('img', 3), adminController.addProduct);
 
-// admin_route.post('/add-user', upload.single('image'), adminController.addNewUser);
+admin_route.post('/products/unlistproduct/:id',adminController.unlistProduct)
+
+admin_route.post('/products/listproduct/:id',adminController.listProduct)
 
 admin_route.get('/categories', auth.isLogin, adminController.categoriesLoad);
 
@@ -55,12 +44,6 @@ admin_route.post('/categories/list/:id',adminController.listCategory)
 admin_route.post('/categories/edit/:id',adminController.editCategory)
 
 admin_route.post('/categories/addcategories',adminController.addCategory)
-
-// admin_route.get('/edit-user', auth.isLogin, adminController.editUserLoad);
-
-// admin_route.post('/edit-user', adminController.updateUser);
-
-// admin_route.get('/delete-user',adminController.deleteUser);
 
 admin_route.post('/logout', auth.isLogin, adminController.logout);
 

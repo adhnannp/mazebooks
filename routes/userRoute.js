@@ -58,6 +58,7 @@ user_route.get('/auth/google/callback',
 
 user_route.post('/logout', auth.isLogin, userController.userLogout);
 
+user_route.get('/home/product/:id', auth.isAdminLogin, userController.listProduct);
 
 
 module.exports = user_route;

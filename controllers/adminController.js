@@ -3,16 +3,6 @@ const bcrypt = require("bcrypt");
 const Product = require("../models/productModel");
 const Category = require("../models/categoryModel");
 
-//hashingpassword
-const securePassword = async (password)=>{
-    try {
-        const passwordHash = await bcrypt.hash(password,10)  
-        return passwordHash; 
-    } catch (error) {
-        console.log(error.message);
-    }
-}
-
 
 //login setup
 const loadLogin = async(req,res)=>{
@@ -47,7 +37,7 @@ const varifyLogin = async(req,res)=>{
         }
 
     } catch (error) {
-        console.log(error.massage);
+        console.log(error.message);
     }
 }
 
@@ -126,7 +116,7 @@ const blockUser = async (req, res) => {
 const productsLoad = async (req, res) => {
     try {
         const admin = await User.findById(req.session.user_id);
-
+        const categories = await Category.find({Is_list:true});
         // Get current page, default to 1
         const currentPage = parseInt(req.query.page) || 1;
         const itemsPerPage = 5; // Number of items per page
@@ -137,10 +127,9 @@ const productsLoad = async (req, res) => {
 
         // Fetch products with pagination and populate category
         const products = await Product.find()
-            .populate('CategoryId', 'CategoryName') // Populate CategoryName field
+            .populate('CategoryId')
             .skip((currentPage - 1) * itemsPerPage)
             .limit(itemsPerPage)
-            .exec();
 
         // Render the products or send them as a response
         res.render("products", {
@@ -148,12 +137,65 @@ const productsLoad = async (req, res) => {
             admin,
             currentPage,
             totalPages,
+            categories,
         });
     } catch (error) {
         console.error("Error loading products:", error);
         res.status(500).send("Server Error");
     }
 };
+
+const addProduct = async (req, res) => {
+    try {
+        // Extract file paths
+        const imageUrls = req.files.map(file => `${file.filename}`); // Adjust path to reflect the public folder
+
+        // Create new product with images
+        const newProduct = new Product({
+            Name: req.body.name,
+            Description: req.body.description,
+            CategoryId: req.body.categoryId,
+            Author: req.body.author,
+            Images: imageUrls,
+            Quantity: req.body.quantity,
+            Price: req.body.price,
+            CreatedAt: new Date(),
+            UpdatedAt: new Date(),
+            Is_list: true
+        });
+
+        await newProduct.save();
+        res.redirect('/admin/products');
+    } catch (error) {
+        console.error('Error adding product:', error);
+        res.status(500).send('Server Error');
+    }
+};
+
+// unlist product
+const unlistProduct = async (req, res) => {
+    try {
+        const productId = req.params.id;
+        await Product.findByIdAndUpdate(productId, { Is_list: false });
+        res.redirect('/admin/products');
+    } catch (error) {
+        console.log('Error unlisting product:', error.message);
+        res.redirect('/admin/products');
+    }
+};
+
+// list product
+const listProduct = async (req, res) => {
+    try {
+        const productId = req.params.id;
+        await Product.findByIdAndUpdate(productId, { Is_list: true });
+        res.redirect('/admin/products');
+    } catch (error) {
+        console.log('Error listing product:', error.message);
+        res.redirect('/admin/products');
+    }
+};
+
 
 //display categories
 const categoriesLoad = async (req, res) => {
@@ -179,7 +221,6 @@ const categoriesLoad = async (req, res) => {
             admin,
             currentPage,
             totalPages,
-            productCount:"",
         });
     } catch (error) {
         console.error("Error loading categories:", error);
@@ -195,7 +236,6 @@ const addCategory = async (req, res) => {
 
         if (item) {
             // If the category already exists, show an error message
-            req.flash('error', 'Category already exists!');
             return res.redirect('/admin/categories');
         }
 
@@ -209,7 +249,6 @@ const addCategory = async (req, res) => {
         await category.save(); // Save the new category to the database
 
         // Redirect to the categories page after adding the category
-        req.flash('success', 'Category added successfully!');
         res.redirect('/admin/categories');
     } catch (error) {
         console.log('Error adding category:', error.message);
@@ -222,19 +261,7 @@ const addCategory = async (req, res) => {
 const unlistCategory = async (req, res) => {
     try {
         const categoryId = req.params.id;
-        
-        // Check if there are any products in this category
-        const productCount = await Product.countDocuments({ CategoryId: categoryId });
-        
-        if (productCount > 0) {
-            // Redirect back with a message
-            res.render('admin/categories', {
-                categories: await Category.find(), 
-                productCount
-            });
-        }
-        
-        // If no products, unlist the category
+        // unlist the category
         await Category.findByIdAndUpdate(categoryId, { Is_list: false });
         res.redirect('/admin/categories');
     } catch (error) {
@@ -269,117 +296,6 @@ const editCategory = async (req, res) => {
     }
 };
 
-//add new user page loading
-const addUserLoad = async(req,res)=>{
-    try {
-        res.render('new-user');
-    } catch (error) {
-        console.log(error.message);
-        res.redirect('/dashboard');
-    }
-}
-//now add user
-
-const addNewUser = async (req, res) => {
-    try {
-        const spassword = await securePassword(req.body.password);
-        const existedEmail = await User.findOne({ email: req.body.email });
-        const existedNumber = await User.findOne({ mobile: req.body.mno });
-
-        if (existedEmail || existedNumber) {
-            res.render('new-user', { message: "Already registered. Try using another number and email." });
-        } else {
-            const user = new User({
-                name: req.body.name,
-                email: req.body.email,
-                mobile: req.body.mno,
-                image: req.file.filename,
-                password: spassword,
-                is_admin: false,
-            });
-            const userData = await user.save();
-            if (userData) {
-                res.redirect('/admin/dashboard');
-            } else {
-                res.render('new-user', { message: "Your registration has failed." });
-            }
-        }
-    } catch (error) {
-        console.log(error.message);
-        res.render('new-user', { message: "An error occurred during registration." });
-    }
-};
-
-
-//edit user functionality started
-//edit user page load
-
-const editUserLoad = async (req, res) => {
-    try {
-        const id = req.query.id;
-        const editUserData = await User.findById({ _id: id });
-        if (editUserData) {
-            res.render('edit-user', { user: editUserData });
-        } else {
-            res.redirect('/admin/dashboard');
-        }
-    } catch (error) {
-        console.log(error.message);
-        res.redirect('/admin/dashboard');
-    }
-};
-
-//post the edited request
-
-
-const updateUser = async (req, res) => {
-    try {
-        const { id, name, email, mno } = req.body;
-
-        // Check if the new name, email, or phone number already exist
-        const userExists = await User.findOne({
-            $or: [
-                { name: name, _id: { $ne: id } },
-                { email: email, _id: { $ne: id } },
-                { mobile: mno, _id: { $ne: id } }
-            ]
-        });
-
-        if (userExists) {
-            // Render the form again with an error message
-            res.render('edit-user', {
-                user: { _id: id, name, email, mobile: mno },
-                massage: 'Name, email, or phone number already exists!'
-            });
-        } else {
-            // Update the user
-            await User.findByIdAndUpdate(
-                { _id: id },
-                { $set: { name, email, mobile: mno } }
-            );
-            res.redirect('/admin/dashboard');
-        }
-    } catch (error) {
-        console.error(error.message);
-        res.status(500).render('edit-user', {
-            user: { _id: req.body.id, name: req.body.name, email: req.body.email, mobile: req.body.mno },
-            massage: 'Something went wrong! Please try again.'
-        });
-    }
-};
-
-//delete user
-
-const deleteUser = async(req,res)=>{
-    try {
-        const id = req.query.id;
-        await User.deleteOne({_id:id});
-        res.redirect('/admin/dashboard')
-    } catch (error) {
-        console.log(error.massage);
-    }
-}
-
 
 module.exports = {
     loadLogin,
@@ -390,14 +306,12 @@ module.exports = {
     unblockUser,
     blockUser,
     productsLoad,
+    addProduct,
+    unlistProduct,
+    listProduct,
     categoriesLoad,
     listCategory,
     unlistCategory,
     addCategory,
     editCategory,
-    addUserLoad,
-    addNewUser,
-    editUserLoad,
-    updateUser,
-    deleteUser
 }

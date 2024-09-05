@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 mongoose.connect(process.env.DB_URI)
 const express= require('express');
 const session = require('express-session');
+const morgan = require('morgan');
 const config = require("./config/config");
 
 //set port
@@ -28,6 +29,10 @@ app.use(session({
   resave: false,
   saveUninitialized: false
 }));
+
+// Use Morgan middleware
+app.use(morgan('common')); // You can replace 'combined' with other formats like 'dev', 'common', etc.
+
 
 //for user route
 const userRoute = require('./routes/userRoute')

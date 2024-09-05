@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt');
 require('dotenv').config();
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const Product = require("../models/productModel");
+const Category = require("../models/categoryModel");
 
 
 //registration
@@ -21,7 +23,28 @@ const transporter = nodemailer.createTransport({
 //load home
 const loadHome = async(req,res)=>{
     try {
-        res.render('home');
+        const categories = await Category.find({Is_list:true});
+        // Get current page, default to 1
+        const currentPage = parseInt(req.query.page) || 1;
+        const itemsPerPage = 4; // Number of items per page
+
+        // Calculate total products and pages
+        const totalProducts = await Product.countDocuments();
+        const totalPages = Math.ceil(totalProducts / itemsPerPage);
+
+        // Fetch products with pagination and populate category
+        const products = await Product.find()
+            .populate('CategoryId')
+            .skip((currentPage - 1) * itemsPerPage)
+            .limit(itemsPerPage)
+
+        // Render the products or send them as a response
+        res.render("home", {
+            products,
+            currentPage,
+            totalPages,
+            categories,
+        });
     } catch (error) {
         console.log(error.message);
     }
@@ -278,6 +301,18 @@ const userLogout = async(req,res)=>{
     }
 }
 
+const listProduct = async(req,res)=>{
+    try {
+        const productId = req.params.id;
+        const book = await Product.findById(productId).populate('CategoryId'); // Populate the Category details
+
+        res.render('productOverView', {book});
+    } catch (error) {
+        console.log(error.massage)
+        res.redirect('/home');
+    }
+}
+
 module.exports = {
     loadHome,
     loadAccountOverview,
@@ -289,5 +324,6 @@ module.exports = {
     verifyOtp,
     resendOtp,
     deleteUser,
-    userLogout
+    userLogout,
+    listProduct,
 }

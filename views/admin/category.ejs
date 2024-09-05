@@ -233,8 +233,7 @@
                             <th>Action</th>
                           </tr>
                         </thead>
-                        <tbody>
-                          <% let count = productCount; %>  
+                        <tbody> 
                           <% let categoryNumber = 1; %>
                           <% categories.forEach(category => { %>
                             <tr>
@@ -289,18 +288,12 @@
                                     </button>
                                   </div>
                                   <div class="modal-body">
-                                    <% if (count==0) { %>
-                                      This category cannot be unlisted because it has associated products.
-                                    <% } else { %>
                                       Are you sure you want to unlist this category?
-                                    <% } %>
                                   </div>
                                   <div class="modal-footer">
                                     <form action="/admin/categories/unlist/<%= category._id %>" method="post">
                                       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                                      <% if (count>0) { %>
                                         <button type="submit" class="btn btn-danger">Unlist</button>
-                                      <% } %>
                                     </form>
                                   </div>
                                 </div>

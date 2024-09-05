@@ -5,7 +5,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Corona Admin</title>
+    <!-- Cropper.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
     <!-- plugins:css -->
+    <link rel="stylesheet" href="https://unpkg.com/cropperjs/dist/cropper.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/admin/vendors/mdi/css/materialdesignicons.min.css">
@@ -194,9 +197,87 @@
                             <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" name="query">
                             <button class="btn btn-primary" type="submit">Search</button>
                           </form>
-                          <a href="/add-product" class="btn btn-success">
-                            <i class="fas fa-plus"></i> New Product
-                          </a>
+                          <a href="#" class="btn btn-success" data-toggle="modal" data-target="#addProductModal"><i class="fas fa-plus"></i> New Product</a>
+
+                          <!--add product modal -->
+                          <div class="modal fade" id="addProductModal" tabindex="-1" role="dialog" aria-labelledby="addProductModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-lg" role="document">
+                                <div class="modal-content" style="background-color: #191C24; color: white;">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="addProductModalLabel">Add Product</h5>
+                                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                      <form id="addProductForm" action="/admin/products/add" method="POST" enctype="multipart/form-data" class="forms-sample">
+                                            <!-- Product Information -->
+                                            <div class="form-group">
+                                                <label for="productName">Name</label>
+                                                <input type="text" class="form-control" id="productName" name="name" style="background-color: #333; color: white;" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="productAuthor">Author</label>
+                                                <input type="text" class="form-control" id="productAuthor" name="author" style="background-color: #333; color: white;" required>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="productDescription">Description</label>
+                                                <textarea class="form-control" id="productDescription" name="description" rows="4" style="background-color: #333; color: white;" required></textarea>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="productCategory">Category</label>
+                                                <select class="form-control" id="productCategory" name="categoryId" style="background-color: #333; color: white;" required>
+                                                    <% categories.forEach(function(category) { %>
+                                                    <option value="<%= category._id %>"><%= category.CategoryName %></option>
+                                                    <% }) %>
+                                                </select>
+                                            </div>
+                                            <div class="form-group">
+                                              <label for="productQuantity">Quantity</label>
+                                              <input type="number" class="form-control" id="productQuantity" name="quantity" style="background-color: #333; color: white;" required>
+                                            </div>
+                                            <div class="form-group">
+                                              <label for="productPrice">Price</label>
+                                              <input type="number" class="form-control" id="productPrice" name="price" style="background-color: #333; color: white;" required>
+                                            </div>
+                                            <!-- Image Upload and Cropping -->
+                                            <div class="form-group">
+                                              <label for="productImages">Images (exactly 3 images required)</label>
+                                              <input type="file" name="img" class="file-upload-default" id="productImages" multiple accept="image/*" style="display: none;">
+                                              <div class="input-group col-xs-12">
+                                                  <input type="text" class="form-control file-upload-info" disabled placeholder="Upload Images" style="background-color: #333; color: white;">
+                                                  <span class="input-group-append">
+                                                      <button class="file-upload-browse btn btn-primary" type="button" id="triggerUpload">Upload</button>
+                                                  </span>
+                                              </div>
+                                              <small id="imageError" class="form-text text-danger" style="display: none;">Please select exactly 3 images.</small>
+                                            </div>
+                                            
+                                            <div id="imagePreviewContainer" class="form-group">
+                                              <p>Select Image For Cropping</p>
+                                                <!-- Previews for each image -->
+                                            </div>
+                                            
+                                            <div id="cropperContainer" style="display: none; width: 400px; height: 400px; margin: 0 auto;">
+                                              <img id="cropperImage" src="" alt="Image for cropping" style="max-width: 100%; max-height: 100%;"/>
+                                              
+                                              <!-- Crop and Cancel buttons -->
+                                              <div style="margin-top: 10px;">
+                                                  <button type="button" id="cropButton" class="btn btn-primary">Crop Image</button>
+                                                  <button type="button" id="cancelCropButton" class="btn btn-secondary">Cancel</button>
+                                              </div>
+                                            </div>
+                                            
+                                            <div class="modal-footer">
+                                                <button type="submit" class="btn btn-primary mr-2">ADD Product</button>
+                                                <button type="button" class="btn btn-dark" data-dismiss="modal">Cancel</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         </div>
                     </div>                      
                   <div class="table-responsive">
@@ -204,9 +285,11 @@
                       <thead>
                         <tr>
                           <th>No.</th>
-                          <th>Name</th>
+                          <th>Product Name</th>
+                          <th>Author</th>
                           <th>Category</th>
                           <th>Quantity</th>
+                          <th>Price</th>
                           <th>Last Updated</th>
                           <th>Action</th>
                         </tr>
@@ -217,8 +300,14 @@
                           <tr>
                             <td><%= productNumber++ %></td>
                             <td><%= products.Name %></td>
-                            <td><%= products.CategoryId.CategoryName %></td>
+                            <td><%= products.Author%></td>
+                            <% if (products.CategoryId.Is_list) { %>
+                              <td><%= products.CategoryId.CategoryName %></td>
+                            <% } else { %>
+                              <td><%= products.CategoryId.CategoryName%>(Not listed)</td>
+                            <% } %>
                             <td><%= products.Quantity %></td>
+                            <td><%= products.Price %></td>
                             <td><%= new Date(products.UpdatedAt).toLocaleDateString('en-GB') %></td>
                             <td>
                               <% if (products.Is_list) { %>
@@ -226,9 +315,227 @@
                               <% } else { %>
                                 <a href="#" class="btn btn-success" data-toggle="modal" data-target="#unblockModal<%= products.id %>">list</a>
                               <% } %>
-                              <a href="/admin/products/edit/<%= products.id %>" class="btn btn-primary">EDIT</a>
+                              <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#addProductModal<%= products.id %>">EDIT</a>
                             </td>
                           </tr>
+
+                            <!--edit product modal -->
+                          <div class="modal fade" id="addProductModal<%= products.id %>" tabindex="-1" role="dialog" aria-labelledby="addProductModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-lg" role="document">
+                                <div class="modal-content" style="background-color: #191C24; color: white;">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="addProductModalLabel">Add Product</h5>
+                                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                      <form id="addProductForm" action="/admin/products/edit" method="post" enctype="multipart/form-data" class="forms-sample">
+                                            <!-- Product Information -->
+                                            <div class="form-group">
+                                                <label for="productName">Name</label>
+                                                <input type="text" class="form-control" id="productName" name="name" style="background-color: #333; color: white;" required value="<%= products.Name %>">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="productAuthor">Author</label>
+                                                <input type="text" class="form-control" id="productAuthor" name="author" style="background-color: #333; color: white;" required value="<%= products.Author %>">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="productDescription">Description</label>
+                                                <textarea class="form-control" id="productDescription" name="description" rows="4" style="background-color: #333; color: white;" required><%= products.Description %></textarea>
+                                            </div>
+                                            <div class="form-group">
+                                              <label for="productCategory">Category</label>
+                                              <select class="form-control" id="productCategory" name="categoryId" style="background-color: #333; color: white;" required>
+                                                <% categories.forEach(function(category) { %>
+                                                  <option value="<%= category._id %>" <%= category._id.toString() === products.CategoryId._id.toString() ? 'selected' : '' %>><%= category.CategoryName %></option>
+                                                <% }) %>
+                                              </select>
+                                            </div>
+                                            <div class="form-group">
+                                              <label for="productQuantity">Quantity</label>
+                                              <input type="number" class="form-control" id="productQuantity" name="quantity" style="background-color: #333; color: white;" required value="<%= products.Quantity %>">
+                                            </div>
+                                            <!-- Image Upload and Cropping -->
+                                            <div class="form-group">
+                                              <label for="productImages">Images (exactly 3 images required)</label>
+                                              <input type="file" name="img" class="file-upload-default" id="productImages" multiple accept="image/*" style="display: none;">
+                                              <div class="input-group col-xs-12">
+                                                  <input type="text" class="form-control file-upload-info" disabled placeholder="Upload Images" style="background-color: #333; color: white;">
+                                                  <span class="input-group-append">
+                                                      <button class="file-upload-browse btn btn-primary" type="button" id="triggerUpload">Upload</button>
+                                                  </span>
+                                              </div>
+                                              <small id="imageError" class="form-text text-danger" style="display: none;">Please select exactly 3 images.</small>
+                                            </div>
+                                            
+                                            <div id="editImagePreviewContainer" class="form-group">
+                                              <p>Select Image For Cropping</p>
+                                              <% products.Images.forEach(function(image) { %>
+                                                  <img src="/static/uploads/<%= image %>" alt="Product Image" style="max-width: 100px; max-height: 100px;">
+                                              <% }) %>
+                                              <!-- Previews for each image -->
+                                            </div>
+                                            
+                                            <div id="cropperContainer" style="display: none; width: 400px; height: 400px; margin: 0 auto;">
+                                              <img id="cropperImage" src="" alt="Image for cropping" style="max-width: 100%; max-height: 100%;"/>
+                                              
+                                              <!-- Crop and Cancel buttons -->
+                                              <div style="margin-top: 10px;">
+                                                  <button type="button" id="cropButton" class="btn btn-primary">Crop Image</button>
+                                                  <button type="button" id="cancelCropButton" class="btn btn-secondary">Cancel</button>
+                                              </div>
+                                            </div>
+                                            
+                                            <div class="modal-footer">
+                                                <button type="submit" class="btn btn-primary mr-2" data-dismiss="modal">Save Chandes</button>
+                                                <button type="button" class="btn btn-dark" data-dismiss="modal">Cancel</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <script>
+                            let cropper;
+                            let croppedImages = []; // Array to hold cropped images
+                            let currentImageIndex; // Track which image is currently being cropped
+
+                            // Function to handle image cropping and preview
+                            function handleCropper(imageIndex, file) {
+                                const reader = new FileReader();
+                                reader.onload = function(e) {
+                                    const image = document.getElementById('cropperImage');
+                                    image.src = e.target.result;
+                                    
+                                    // Initialize cropper
+                                    if (cropper) cropper.destroy(); // Destroy the previous cropper if it exists
+                                    cropper = new Cropper(image, {
+                                        aspectRatio: 1,
+                                        viewMode: 1,
+                                        autoCropArea: 1
+                                    });
+
+                                    // Store the current image index being cropped
+                                    currentImageIndex = imageIndex;
+                                    document.getElementById('cropperContainer').style.display = 'block';
+                                };
+                                reader.readAsDataURL(file);
+                            }
+
+                            // Event handler for cropping button
+                            document.getElementById('cropButton').addEventListener('click', function() {
+                                if (cropper) {
+                                    const croppedCanvas = cropper.getCroppedCanvas();
+                                    const croppedImageURL = croppedCanvas.toDataURL('image/jpeg');
+                                    
+                                    // Update the cropped image preview
+                                    document.getElementById(`imagePreview${currentImageIndex}`).src = croppedImageURL;
+                                    
+                                    // Save the cropped image in the array
+                                    croppedImages[currentImageIndex] = croppedImageURL;
+
+                                    // Hide the cropping container
+                                    document.getElementById('cropperContainer').style.display = 'none';
+                                }
+                            });
+
+
+                            // When 'Upload' button is clicked, trigger the file input click
+                            document.getElementById('triggerUpload').addEventListener('click', function() {
+                                document.getElementById('productImages').click();
+                            });
+
+                            // Event handler for image selection
+                            document.getElementById('productImages').addEventListener('change', function(event) {
+                                const files = event.target.files;
+                                if ( !files || files.length !== 3) {
+                                    document.getElementById('imageError').style.display = 'block';
+                                    return;
+                                }
+
+                                document.getElementById('imageError').style.display = 'none';
+
+                                for (let i = 0; i < 3; i++) {
+                                    const file = files[i];
+                                    const previewContainer = document.getElementById('imagePreviewContainer');
+                                    
+                                    // Create or update the preview image element
+                                    let imgPreview = document.getElementById(`imagePreview${i}`);
+                                    if (!imgPreview) {
+                                        imgPreview = document.createElement('img');
+                                        imgPreview.id = `imagePreview${i}`;
+                                        imgPreview.style.maxWidth = '100px';
+                                        imgPreview.style.maxHeight = '100px';
+                                        imgPreview.style.marginRight = '10px';
+                                        previewContainer.appendChild(imgPreview);
+                                    }
+
+                                    // Apply hover effect and cursor change in JS
+                                    imgPreview.addEventListener('mouseover', function() {
+                                        imgPreview.style.transform = 'scale(1.1)';
+                                        imgPreview.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+                                        imgPreview.style.cursor = 'pointer';
+                                    });
+
+                                    imgPreview.addEventListener('mouseout', function() {
+                                        imgPreview.style.transform = 'scale(1)';
+                                        imgPreview.style.boxShadow = 'none';
+                                    });
+
+                                    // Start cropping when clicking the image
+                                    imgPreview.addEventListener('click', () => handleCropper(i, file));
+                                    
+                                    // Show the original image preview before cropping
+                                    const reader = new FileReader();
+                                    reader.onload = function(e) {
+                                        imgPreview.src = e.target.result;
+                                    };
+                                    reader.readAsDataURL(file);
+                                }
+                            });
+
+                            // Event handler for cancel cropping button
+                            document.getElementById('addProductForm').addEventListener('submit', function(event) {
+                                event.preventDefault(); // Prevent default form submission
+
+                                const formData = new FormData(this);
+
+                                // Append cropped images if available
+                                croppedImages.forEach((croppedImage, index) => {
+                                    if (croppedImage) {
+                                        const blob = dataURLtoBlob(croppedImage); // Convert base64 to Blob
+                                        formData.append(`croppedImage${index}`, blob, `croppedImage${index}.jpg`);
+                                    }
+                                });
+
+                                fetch('/admin/products/add', {
+                                    method: 'POST',
+                                    body: formData
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    console.log('Form submitted successfully:', data);
+                                    $('#addProductModal').modal('hide'); // Hide the modal after submission
+                                    location.reload();
+                                })
+                                .catch(error => {
+                                    console.error('Error submitting form:', error);
+                                });
+                            });
+
+                            function dataURLtoBlob(dataURL) {
+                                const byteString = atob(dataURL.split(',')[1]);
+                                const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
+                                const ab = new ArrayBuffer(byteString.length);
+                                const ia = new Uint8Array(ab);
+                                for (let i = 0; i < byteString.length; i++) {
+                                    ia[i] = byteString.charCodeAt(i);
+                                }
+                                return new Blob([ab], { type: mimeString });
+                            }
+                        </script>
+
                               <!-- Unblock Modal -->
                               <div class="modal fade" id="unblockModal<%= products.id %>" tabindex="-1" role="dialog" aria-labelledby="unblockModalLabel" aria-hidden="true">
                                 <div class="modal-dialog" role="document">
@@ -243,7 +550,7 @@
                                       Are you sure you want to List this product?
                                     </div>
                                     <div class="modal-footer">
-                                      <form action="/admin/products/unlistproduct/<%= products.id %>" method="post">
+                                      <form action="/admin/products/listproduct/<%= products.id %>" method="post">
                                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                                         <button type="submit" class="btn btn-primary">List</button>
                                       </form>
@@ -266,7 +573,7 @@
                                       Are you sure you want to Unlist this Product?
                                     </div>
                                     <div class="modal-footer">
-                                      <form action="/admin/products/listproduct/<%= products.id %>" method="post">
+                                      <form action="/admin/products/unlistproduct/<%= products.id %>" method="post">
                                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                                         <button type="submit" class="btn btn-danger">Unlist</button>
                                       </form>
@@ -344,6 +651,7 @@
     <script src="/static/admin/vendors/jvectormap/jquery-jvectormap.min.js"></script>
     <script src="/static/admin/vendors/jvectormap/jquery-jvectormap-world-mill-en.js"></script>
     <script src="/static/admin/vendors/owl-carousel-2/owl.carousel.min.js"></script>
+    <script src="/static/admin/js/imageCrop.js"></script>
     <!-- End plugin js for this page -->
     <!-- inject:js -->
     <script src="/static/admin/js/off-canvas.js"></script>
@@ -354,9 +662,13 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/cropperjs/dist/cropper.min.js"></script>
+    <!-- Cropper.js JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
     <!-- endinject -->
     <!-- Custom js for this page -->
     <script src="/static/admin/js/dashboard.js"></script>
     <!-- End custom js for this page -->
+
   </body>
 </html>
