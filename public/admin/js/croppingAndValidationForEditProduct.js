@@ -1,6 +1,6 @@
 let cropper;
-let croppedImages = []; // Initialize the croppedImages array globally
-let currentImageIndex; // To track which image is being cropped
+let croppedImages = []; // To hold the cropped images
+let currentImageIndex; // To keep track of which image is being cropped
 
 function handleCropper(imageIndex, file) {
     const reader = new FileReader();
@@ -23,23 +23,6 @@ function handleCropper(imageIndex, file) {
     reader.readAsDataURL(file);
 }
 
-// Preview and image selection handling
-document.getElementById('preview1').addEventListener('click', () => {
-    if (!document.getElementById('changeImage1').style.display) {
-        document.getElementById('productImages1').click();
-    }
-});
-document.getElementById('preview2').addEventListener('click', () => {
-    if (!document.getElementById('changeImage2').style.display) {
-        document.getElementById('productImages2').click();
-    }
-});
-document.getElementById('preview3').addEventListener('click', () => {
-    if (!document.getElementById('changeImage3').style.display) {
-        document.getElementById('productImages3').click();
-    }
-});
-
 function previewImage(input, previewId, imageIndex, changeButtonId) {
     const file = input.files[0];
     if (file) {
@@ -49,38 +32,32 @@ function previewImage(input, previewId, imageIndex, changeButtonId) {
         };
         reader.readAsDataURL(file);
         
-        // Show "Change Image" button and disable image click
+        // Show the "Change Image" button
         document.getElementById(changeButtonId).style.display = 'block';
-        document.getElementById(previewId).removeEventListener('click', () => document.getElementById(`productImages${imageIndex}`).click());
 
         // Enable cropping by clicking on the preview image
         document.getElementById(previewId).addEventListener('click', () => handleCropper(imageIndex, file));
     }
 }
 
+// Add event listeners for the file inputs and preview images
 document.getElementById('productImages1').addEventListener('change', function() {
     previewImage(this, 'preview1', 0, 'changeImage1');
-});
-
-document.getElementById('productImages2').addEventListener('change', function() {
-    previewImage(this, 'preview2', 1, 'changeImage2');
-});
-
-document.getElementById('productImages3').addEventListener('change', function() {
-    previewImage(this, 'preview3', 2, 'changeImage3');
 });
 
 // Handle "Change Image" button click
 document.getElementById('changeImage1').addEventListener('click', () => {
     document.getElementById('productImages1').click();
 });
-document.getElementById('changeImage2').addEventListener('click', () => {
-    document.getElementById('productImages2').click();
-});
-document.getElementById('changeImage3').addEventListener('click', () => {
-    document.getElementById('productImages3').click();
+
+// Handle existing image click (Treat it as new for cropping)
+document.getElementById('preview1').addEventListener('click', function() {
+    // When clicking on an already existing image, allow cropping as if it's a new image
+    const imgSrc = document.getElementById('preview1').src;
+    handleCropper(0, imgSrc);  // Image index is 0 for the first image
 });
 
+// Handle crop button click
 document.getElementById('cropButton').addEventListener('click', function() {
     if (cropper) {
         const croppedCanvas = cropper.getCroppedCanvas();
@@ -97,6 +74,7 @@ document.getElementById('cropButton').addEventListener('click', function() {
     }
 });
 
+// Cancel cropping
 document.getElementById('cancelCropButton').addEventListener('click', function() {
     if (cropper) {
         cropper.destroy();
@@ -105,6 +83,19 @@ document.getElementById('cancelCropButton').addEventListener('click', function()
     document.getElementById('cropperContainer').style.display = 'none';
 });
 
+// Convert dataURL to Blob for uploading
+function dataURLtoBlob(dataURL) {
+    const byteString = atob(dataURL.split(',')[1]);
+    const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mimeString });
+}
+
+// Form submission handling
 document.getElementById('addProductForm').addEventListener('submit', function(event) {
     event.preventDefault(); // Prevent the form from submitting normally
 
@@ -117,8 +108,8 @@ document.getElementById('addProductForm').addEventListener('submit', function(ev
             formData.append(`croppedImage${index}`, blob, `croppedImage${index}.jpg`);
         }
     });
-    console.log(formData);
-    fetch('/admin/products/add', {
+
+    fetch('/admin/products/edit/<%= product._id %>', {
         method: 'POST',
         body: formData
     })
@@ -128,24 +119,12 @@ document.getElementById('addProductForm').addEventListener('submit', function(ev
             window.location.href = '/admin/products'; // Redirect on success
         } else {
             const errorElement = document.getElementById('existingError');
-            errorElement.innerHTML = 'Product Allready Exists or Something wrong. Please try again.'; // Set the error message
-            errorElement.style.display = 'block'; // Show the error element
+            errorElement.innerHTML = 'Product already exists or something went wrong. Please try again.';
+            errorElement.style.display = 'block';
         }
     })
     .catch(error => console.error('Error:', error));
 });
-
-function dataURLtoBlob(dataURL) {
-    const byteString = atob(dataURL.split(',')[1]);
-    const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0];
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
-    }
-    return new Blob([ab], { type: mimeString });
-}
-
 
 //validation
 document.addEventListener('DOMContentLoaded', () => {
@@ -222,19 +201,6 @@ document.addEventListener('DOMContentLoaded', () => {
             valid = false;
         } else {
             priceError.style.display = 'none';
-        }
-
-        // Validate Images
-        const img1 = document.getElementById('productImages1').files.length;
-        const img2 = document.getElementById('productImages2').files.length;
-        const img3 = document.getElementById('productImages3').files.length;
-        const imageError = document.getElementById('image-error');
-        if (img1 === 0 || img2 === 0 || img3 === 0) {
-            imageError.textContent = 'Three images must be uploaded.';
-            imageError.style.display = 'block';
-            valid = false;
-        } else {
-            imageError.style.display = 'none';
         }
 
         // Enable or disable submit button

@@ -29,7 +29,13 @@ admin_route.post('/users/block/:id', adminController.blockUser);
 
 admin_route.get('/products', auth.isLogin, adminController.productsLoad);
 
-admin_route.post('/products/add', upload.array('img', 3), adminController.addProduct);
+admin_route.get('/products/add',auth.isLogin, adminController.addProductLoadPage);
+
+admin_route.post('/products/add',  upload.fields([{ name: 'img1' }, { name: 'img2' }, { name: 'img3' }]), adminController.addProduct);
+
+admin_route.get('/products/edit/:id',auth.isLogin, adminController.editProductLoadPage);
+
+admin_route.post('/products/edit/:id',upload.single('croppedImage'), adminController.editProduct);
 
 admin_route.post('/products/unlistproduct/:id',adminController.unlistProduct)
 

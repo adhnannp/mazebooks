@@ -191,160 +191,81 @@
               <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="card-title">Products</h4>
-                        <div class="d-flex justify-content-center align-items-center">
-                          <form action="/search" method="GET" class="form-inline mx-3">
-                            <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" name="query">
-                            <button class="btn btn-primary" type="submit">Search</button>
-                          </form>
-                          <a href="/admin/products/add" class="btn btn-success"><i class="fas fa-plus"></i> New Product</a>
-                        </div>
-                    </div>                      
-                  <div class="table-responsive">
-                    <table class="table table-bordered">
-                      <thead>
-                        <tr>
-                          <th>No.</th>
-                          <th>Product Name</th>
-                          <th>Author</th>
-                          <th>Category</th>
-                          <th>Quantity</th>
-                          <th>Price</th>
-                          <th>Last Updated</th>
-                          <th>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <% let productNumber = 1; %>
-                        <% products.forEach(products => { %>
-                          <tr>
-                            <td><%= productNumber++ %></td>
-                            <td><%= products.Name %></td>
-                            <td><%= products.Author%></td>
-                            <% if (products.CategoryId.Is_list) { %>
-                              <td><%= products.CategoryId.CategoryName %></td>
-                            <% } else { %>
-                              <td><%= products.CategoryId.CategoryName%>(Not listed)</td>
-                            <% } %>
-                            <td><%= products.Quantity %></td>
-                            <td><%= products.Price %></td>
-                            <td><%= new Date(products.UpdatedAt).toLocaleDateString('en-GB') %></td>
-                            <td>
-                              <% if (products.Is_list) { %>
-                                <a href="#" class="btn btn-danger" data-toggle="modal" data-target="#blockModal<%= products.id %>">Unlsit</a>
-                              <% } else { %>
-                                <a href="#" class="btn btn-success" data-toggle="modal" data-target="#unblockModal<%= products.id %>">list</a>
-                              <% } %>
-                              <a href="/admin/products/edit/<%= products._id %>" class="btn btn-primary">EDIT</a>
-                            </td>
-                          </tr>
-
-                              <!-- Unblock Modal -->
-                              <div class="modal fade" id="unblockModal<%= products.id %>" tabindex="-1" role="dialog" aria-labelledby="unblockModalLabel" aria-hidden="true">
-                                <div class="modal-dialog" role="document">
-                                  <div class="modal-content">
-                                    <div class="modal-header">
-                                      <h5 class="modal-title" id="unblockModalLabel">List Product</h5>
-                                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                      </button>
-                                    </div>
-                                    <div class="modal-body">
-                                      Are you sure you want to List this product?
-                                    </div>
-                                    <div class="modal-footer">
-                                      <form action="/admin/products/listproduct/<%= products.id %>" method="post">
-                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                                        <button type="submit" class="btn btn-primary">List</button>
-                                      </form>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <!-- Block Modal (optional, if you need it) -->
-                              <div class="modal fade" id="blockModal<%= products.id %>" tabindex="-1" role="dialog" aria-labelledby="blockModalLabel" aria-hidden="true">
-                                <div class="modal-dialog" role="document">
-                                  <div class="modal-content">
-                                    <div class="modal-header">
-                                      <h5 class="modal-title" id="blockModalLabel">Unlist Product</h5>
-                                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                      </button>
-                                    </div>
-                                    <div class="modal-body">
-                                      Are you sure you want to Unlist this Product?
-                                    </div>
-                                    <div class="modal-footer">
-                                      <form action="/admin/products/unlistproduct/<%= products.id %>" method="post">
-                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                                        <button type="submit" class="btn btn-danger">Unlist</button>
-                                      </form>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                        <% }) %>
-                      </tbody>
-                    </table>                    
-                  </div>
-                  <div class="pagination">
-                    <% if (totalPages > 1) { %>
-                      <nav aria-label="Page navigation example">
-                        <ul class="pagination justify-content-center">
-                          <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
-                            <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
-                              <span aria-hidden="true">&laquo;</span>
-                            </a>
-                          </li>
-                          <% for (let i = 1; i <= totalPages; i++) { %>
-                            <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-                              <a class="page-link" href="?page=<%= i %>"><%= i %></a>
-                            </li>
-                          <% } %>
-                          <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
-                            <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
-                              <span aria-hidden="true">&raquo;</span>
-                            </a>
-                          </li>
-                        </ul>
-                      </nav>
-                    <% } %>
-                  </div>
-                  <style>
-                    .pagination {
-                      text-align: center;
-                      display: flex;
-                      justify-content: center;
-                      margin-top: 20px; /* Adjust as needed */
-                    }
-                  
-                    .pagination .page-item .page-link {
-                      color: #fff;
-                      background-color: #191C24;
-                      border-color: #191C24;
-                    }
-                  
-                    .pagination .page-item.active .page-link {
-                      background-color: #007bff;
-                      border-color: #007bff;
-                    }
-                  
-                    .pagination .page-item.disabled .page-link {
-                      color: #6c757d;
-                    }
-                  </style>                                   
+                        <h4 class="card-title"><a href="/admin/products" style="text-decoration: none;">Products</a>>add</h4>
+                    </div>
                 </div>
+                <div class="col-12 grid-margin stretch-card">
+                  <div class="card">
+                      <div class="card-body">
+                          <h4 class="card-title">Edit Product</h4>
+                          <form id="addProductForm" action="/admin/products/edit/<%= product._id %>" method="post" enctype="multipart/form-data" class="forms-sample">
+                            <!-- Product Information -->
+                            <div class="form-group">
+                                <label for="productName">Name</label>
+                                <input type="text" class="form-control" id="productName" name="name" value="<%= product.Name %>" style="background-color: #333; color: white;">
+                                <p id="name-error" style="color: red; display: none;"></p>
+                            </div>
+                            <div class="form-group">
+                                <label for="productAuthor">Author</label>
+                                <input type="text" class="form-control" id="productAuthor" name="author" value="<%= product.Author %>" style="background-color: #333; color: white;">
+                                <p id="author-error" style="color: red; display: none;"></p>
+                            </div>
+                            <div class="form-group">
+                                <label for="productDescription">Description (25-150 characters)</label>
+                                <textarea class="form-control" id="productDescription" name="description" rows="4" style="background-color: #333; color: white;"><%= product.Description %></textarea>
+                                <p id="description-error" style="color: red; display: none;"></p>
+                            </div>
+                            <div class="form-group">
+                                <label for="productCategory">Category</label>
+                                <select class="form-control" id="productCategory" name="categoryId" style="background-color: #333; color: white;">
+                                    <% categories.forEach(function(category) { %>
+                                    <option value="<%= category._id %>" <%= category._id.equals(product.CategoryId) ? 'selected' : '' %>><%= category.CategoryName %></option>
+                                    <% }) %>
+                                </select>
+                                <p id="category-error" style="color: red; display: none;"></p>
+                            </div>
+                            <div class="form-group">
+                                <label for="productQuantity">Quantity</label>
+                                <input type="number" class="form-control" id="productQuantity" value="<%= product.Quantity %>" name="quantity" style="background-color: #333; color: white;">
+                                <p id="quantity-error" style="color: red; display: none;"></p>
+                            </div>
+                            <div class="form-group">
+                                <label for="productPrice">Price</label>
+                                <input type="number" class="form-control" id="productPrice" value="<%= product.Price %>" name="price" style="background-color: #333; color: white;">
+                                <p id="price-error" style="color: red; display: none;"></p>
+                            </div>
+
+                              <!-- Image Upload and Cropping Section -->
+                              <div class="form-group">
+                                <label for="productImages1" class="image-label">Upload Image 1</label>
+                                <input type="file" name="img1" class="file-upload-default" id="productImages1" accept="image/*" style="display: none;">
+                                <img id="preview1" style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;" src="/static/uploads/<%= product.Images[0] %>" alt="Upload Image 1" />
+                                <button type="button" id="changeImage1" class="change-image-button" style="display: none;">Change Image</button>
+                              </div>
+
+                              <!-- Cropping Section -->
+                              <div id="cropperContainer" style="display: none; width: 400px; height: 400px; margin: 0 auto;">
+                                <img id="cropperImage" src="" alt="Image for cropping" style="max-width: 100%; max-height: 100%;" />
+                                <div style="margin-top: 10px;">
+                                    <button type="button" id="cropButton" class="btn btn-primary">Crop Image</button>
+                                    <button type="button" id="cancelCropButton" class="btn btn-secondary">Cancel</button>
+                                </div>
+                              </div>
+                            <p id="image-error" style="color: red; display: none;"></p>
+                            <button type="submit" class="btn btn-success mr-2" id="submitButton" disabled>Edit Product</button>
+                            <a href="/admin/products" type="button" class="btn btn-dark">Cancel</a>
+                            <p id="existingError" style="text-align:center;color:red;display:none"></p>
+                        </form>
+                      </div>
+                  </div>
+              </div>
               </div>
             </div>
-          </div>
-        </div>
         <!-- main-panel ends -->
       </div>
       <!-- page-body-wrapper ends -->
     </div>
     <!-- container-scroller -->
-
     <!-- plugins:js -->
     <script src="/static/admin/vendors/js/vendor.bundle.base.js"></script>
     <!-- endinject -->
@@ -370,6 +291,7 @@
     <!-- endinject -->
     <!-- Custom js for this page -->
     <script src="/static/admin/js/dashboard.js"></script>
+    <script src="/static/admin/js/croppingAndValidationForEditProduct.js"></script>
     <!-- End custom js for this page -->
 
   </body>

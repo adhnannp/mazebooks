@@ -24,7 +24,6 @@ passport.use(new GoogleStrategy({
 async (accessToken, refreshToken, profile, done) => {
     try {
         // Check if the user already exists in the database
-        console.log(profile);
         let existingUser = await User.findOne({ Email: profile.emails[0].value });
         
         if (existingUser) {

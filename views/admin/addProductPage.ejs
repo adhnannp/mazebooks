@@ -155,6 +155,33 @@
           </li>
         </ul>
       </nav>
+      <style>
+        .image-label {
+          display: inline-block; 
+          padding: 5px 10px; 
+          font-size: 14px; 
+          font-weight: bold; 
+          color: #fff; 
+          background-color: #007bff; 
+          border: 1px solid #007bff; 
+          border-radius: 3px; 
+          cursor: pointer;
+          text-align: center;
+          margin-right: 10px;
+      }
+      .change-image-button {
+        display: none; 
+        background-color: #bcd8d2; /* Unique green color */
+        color: rgb(0, 0, 0); 
+        border: none; 
+        padding: 4px 8px; /* Reduced padding */
+        font-size: 12px; /* Smaller font size */
+        border-radius: 3px; /* Smaller border radius */
+        cursor: pointer; 
+        margin-top: 3px; /* Reduced margin */
+        text-align: center;
+      }
+      </style>
       <!-- partial -->
       <div class="container-fluid page-body-wrapper">
         <!-- partial:partials/_navbar.html -->
@@ -191,154 +218,92 @@
               <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="card-title">Products</h4>
-                        <div class="d-flex justify-content-center align-items-center">
-                          <form action="/search" method="GET" class="form-inline mx-3">
-                            <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" name="query">
-                            <button class="btn btn-primary" type="submit">Search</button>
-                          </form>
-                          <a href="/admin/products/add" class="btn btn-success"><i class="fas fa-plus"></i> New Product</a>
-                        </div>
-                    </div>                      
-                  <div class="table-responsive">
-                    <table class="table table-bordered">
-                      <thead>
-                        <tr>
-                          <th>No.</th>
-                          <th>Product Name</th>
-                          <th>Author</th>
-                          <th>Category</th>
-                          <th>Quantity</th>
-                          <th>Price</th>
-                          <th>Last Updated</th>
-                          <th>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <% let productNumber = 1; %>
-                        <% products.forEach(products => { %>
-                          <tr>
-                            <td><%= productNumber++ %></td>
-                            <td><%= products.Name %></td>
-                            <td><%= products.Author%></td>
-                            <% if (products.CategoryId.Is_list) { %>
-                              <td><%= products.CategoryId.CategoryName %></td>
-                            <% } else { %>
-                              <td><%= products.CategoryId.CategoryName%>(Not listed)</td>
-                            <% } %>
-                            <td><%= products.Quantity %></td>
-                            <td><%= products.Price %></td>
-                            <td><%= new Date(products.UpdatedAt).toLocaleDateString('en-GB') %></td>
-                            <td>
-                              <% if (products.Is_list) { %>
-                                <a href="#" class="btn btn-danger" data-toggle="modal" data-target="#blockModal<%= products.id %>">Unlsit</a>
-                              <% } else { %>
-                                <a href="#" class="btn btn-success" data-toggle="modal" data-target="#unblockModal<%= products.id %>">list</a>
-                              <% } %>
-                              <a href="/admin/products/edit/<%= products._id %>" class="btn btn-primary">EDIT</a>
-                            </td>
-                          </tr>
+                        <h4 class="card-title"><a href="/admin/products" style="text-decoration: none;">Products</a>>add</h4>
+                    </div>
+                </div>
+                <div class="col-12 grid-margin stretch-card">
+                    <div class="card">
+                      <div class="card-body">
+                        <h4 class="card-title">Add Product</h4>
+                        <form id="addProductForm" action="/admin/products/add" method="post" enctype="multipart/form-data" class="forms-sample">
+                          <!-- Product Information -->
+                          <div class="form-group">
+                              <label for="productName">Name</label>
+                              <input type="text" class="form-control" id="productName" name="name" style="background-color: #333; color: white;" >
+                              <p id="name-error" style="color: red; display: none;"></p>
+                          </div>
+                          <div class="form-group">
+                              <label for="productAuthor">Author</label>
+                              <input type="text" class="form-control" id="productAuthor" name="author" style="background-color: #333; color: white;" >
+                              <p id="author-error" style="color: red; display: none;"></p>
+                          </div>
+                          <div class="form-group">
+                              <label for="productDescription">Description(25-150 charecters)</label>
+                              <textarea class="form-control" id="productDescription" name="description" rows="4" style="background-color: #333; color: white;" ></textarea>
+                              <p id="description-error" style="color: red; display: none;"></p>
+                          </div>
+                          <div class="form-group">
+                              <label for="productCategory">Category</label>
+                              <select class="form-control" id="productCategory" name="categoryId" style="background-color: #333; color: white;" >
+                                  <% categories.forEach(function(category) { %>
+                                  <option value="<%= category._id %>"><%= category.CategoryName %></option>
+                                  <% }) %>
+                              </select>
+                              <p id="category-error" style="color: red; display: none;"></p>
+                          </div>
+                          <div class="form-group">
+                              <label for="productQuantity">Quantity</label>
+                              <input type="number" class="form-control" id="productQuantity" name="quantity" style="background-color: #333; color: white;" >
+                              <p id="quantity-error" style="color: red; display: none;"></p>
+                          </div>
+                          <div class="form-group">
+                              <label for="productPrice">Price</label>
+                              <input type="number" class="form-control" id="productPrice" name="price" style="background-color: #333; color: white;" >
+                              <p id="price-error" style="color: red; display: none;"></p>
+                          </div>
+                      
+                           <!-- Image Upload and Cropping Section -->
+                            <div class="form-group">
+                              <label for="productImages1" class="image-label">Upload Image 1</label>
+                              <input type="file" name="img1" class="file-upload-default" id="productImages1" accept="image/*" style="display: none;">
+                              <img id="preview1" style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;" src="#" alt="Upload Image 1" />
+                              <button type="button" id="changeImage1" class="change-image-button" style="display: none;">Change Image</button>
+                          </div>
 
-                              <!-- Unblock Modal -->
-                              <div class="modal fade" id="unblockModal<%= products.id %>" tabindex="-1" role="dialog" aria-labelledby="unblockModalLabel" aria-hidden="true">
-                                <div class="modal-dialog" role="document">
-                                  <div class="modal-content">
-                                    <div class="modal-header">
-                                      <h5 class="modal-title" id="unblockModalLabel">List Product</h5>
-                                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                      </button>
-                                    </div>
-                                    <div class="modal-body">
-                                      Are you sure you want to List this product?
-                                    </div>
-                                    <div class="modal-footer">
-                                      <form action="/admin/products/listproduct/<%= products.id %>" method="post">
-                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                                        <button type="submit" class="btn btn-primary">List</button>
-                                      </form>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
+                          <div class="form-group">
+                              <label for="productImages2" class="image-label">Image 2</label>
+                              <input type="file" name="img2" class="file-upload-default" id="productImages2" accept="image/*" style="display: none;">
+                              <img id="preview2" style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;" src="#" alt="Upload Image 2" />
+                              <button type="button" id="changeImage2" class="change-image-button" style="display: none;">Change Image</button>
+                          </div>
 
-                              <!-- Block Modal (optional, if you need it) -->
-                              <div class="modal fade" id="blockModal<%= products.id %>" tabindex="-1" role="dialog" aria-labelledby="blockModalLabel" aria-hidden="true">
-                                <div class="modal-dialog" role="document">
-                                  <div class="modal-content">
-                                    <div class="modal-header">
-                                      <h5 class="modal-title" id="blockModalLabel">Unlist Product</h5>
-                                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                      </button>
-                                    </div>
-                                    <div class="modal-body">
-                                      Are you sure you want to Unlist this Product?
-                                    </div>
-                                    <div class="modal-footer">
-                                      <form action="/admin/products/unlistproduct/<%= products.id %>" method="post">
-                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                                        <button type="submit" class="btn btn-danger">Unlist</button>
-                                      </form>
-                                    </div>
-                                  </div>
-                                </div>
+                          <div class="form-group">
+                              <label for="productImages3" class="image-label">Image 3</label>
+                              <input type="file" name="img3" class="file-upload-default" id="productImages3" accept="image/*" style="display: none;">
+                              <img id="preview3" style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;" src="#" alt="Upload Image 3" />
+                              <button type="button" id="changeImage3" class="change-image-button" style="display: none;">Change Image</button>
+                          </div>
+
+                          <!-- Cropping Section -->
+                          <div id="cropperContainer" style="display: none; width: 400px; height: 400px; margin: 0 auto;">
+                              <img id="cropperImage" src="" alt="Image for cropping" style="max-width: 100%; max-height: 100%;" />
+                              <div style="margin-top: 10px;">
+                                  <button type="button" id="cropButton" class="btn btn-primary">Crop Image</button>
+                                  <button type="button" id="cancelCropButton" class="btn btn-secondary">Cancel</button>
                               </div>
-                        <% }) %>
-                      </tbody>
-                    </table>                    
+                          </div>
+                          <p id="image-error" style="color: red; display: none;"></p>
+                          <button type="submit" class="btn btn-success mr-2" id="submitButton" disabled>ADD Product</button>
+                          <a href="/admin/products" type="button" class="btn btn-dark">Cancel</a>
+
+                          <p id="existingError" style="text-align:center;color:red;display:none"></p>
+                      </form>
+                      </div>
+                    </div>
                   </div>
-                  <div class="pagination">
-                    <% if (totalPages > 1) { %>
-                      <nav aria-label="Page navigation example">
-                        <ul class="pagination justify-content-center">
-                          <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
-                            <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
-                              <span aria-hidden="true">&laquo;</span>
-                            </a>
-                          </li>
-                          <% for (let i = 1; i <= totalPages; i++) { %>
-                            <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-                              <a class="page-link" href="?page=<%= i %>"><%= i %></a>
-                            </li>
-                          <% } %>
-                          <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
-                            <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
-                              <span aria-hidden="true">&raquo;</span>
-                            </a>
-                          </li>
-                        </ul>
-                      </nav>
-                    <% } %>
-                  </div>
-                  <style>
-                    .pagination {
-                      text-align: center;
-                      display: flex;
-                      justify-content: center;
-                      margin-top: 20px; /* Adjust as needed */
-                    }
-                  
-                    .pagination .page-item .page-link {
-                      color: #fff;
-                      background-color: #191C24;
-                      border-color: #191C24;
-                    }
-                  
-                    .pagination .page-item.active .page-link {
-                      background-color: #007bff;
-                      border-color: #007bff;
-                    }
-                  
-                    .pagination .page-item.disabled .page-link {
-                      color: #6c757d;
-                    }
-                  </style>                                   
                 </div>
               </div>
             </div>
-          </div>
-        </div>
         <!-- main-panel ends -->
       </div>
       <!-- page-body-wrapper ends -->
@@ -370,6 +335,7 @@
     <!-- endinject -->
     <!-- Custom js for this page -->
     <script src="/static/admin/js/dashboard.js"></script>
+    <script src="/static/admin/js/imageCrop.js"></script>
     <!-- End custom js for this page -->
 
   </body>

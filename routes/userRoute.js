@@ -41,18 +41,22 @@ user_route.delete('/deleteUser/:id', userController.deleteUser);
 
 user_route.post('/resendOtp/:id', userController.resendOtp);
 
-user_route.get('/auth/google',
+user_route.get('/auth/google',auth.isAnyOne, (req, res, next) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    next();},
     passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-user_route.get('/auth/google/callback', 
+user_route.get('/auth/google/callback',auth.isAnyOne,
     passport.authenticate('google', { failureRedirect: '/' }),
     function(req, res) {
         // Successful authentication
         req.session.user_id = req.user._id;
         req.session.is_verified = req.user.Is_verified;
         req.session.is_admin = req.user.Is_admin;
-
         // redirect home.
+        if(req.session.is_admin){
+            return res.redirect('/admin/home');
+        }
         res.redirect('/myaccount');
     });
 

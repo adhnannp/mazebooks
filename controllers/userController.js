@@ -23,27 +23,38 @@ const transporter = nodemailer.createTransport({
 //load home
 const loadHome = async(req,res)=>{
     try {
-        const categories = await Category.find({Is_list:true});
+        // Fetch categories that are listed
+        const listedCategories = await Category.find({ Is_list: true }).select('_id'); // Only selecting the _id field
+
+        // Extract the category IDs into an array
+        const listedCategoryIds = listedCategories.map(category => category._id);
+
         // Get current page, default to 1
         const currentPage = parseInt(req.query.page) || 1;
         const itemsPerPage = 4; // Number of items per page
 
         // Calculate total products and pages
-        const totalProducts = await Product.countDocuments();
+        const totalProducts = await Product.countDocuments({
+            Is_list: true, // Only listed products
+            CategoryId: { $in: listedCategoryIds } // Categories that are listed
+        });
+
         const totalPages = Math.ceil(totalProducts / itemsPerPage);
 
         // Fetch products with pagination and populate category
-        const products = await Product.find()
+        const products = await Product.find({
+            Is_list: true, // Only listed products
+            CategoryId: { $in: listedCategoryIds } // Categories that are listed
+        })
             .populate('CategoryId')
             .skip((currentPage - 1) * itemsPerPage)
-            .limit(itemsPerPage)
+            .limit(itemsPerPage);
 
         // Render the products or send them as a response
         res.render("home", {
             products,
             currentPage,
             totalPages,
-            categories,
         });
     } catch (error) {
         console.log(error.message);
