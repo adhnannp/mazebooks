@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COZA STORE - Book Store</title>
+    <!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+<!-- Font Awesome CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+
+    <style>
+        /* Custom Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar {
+            font-size: 14px;
+            padding: 0px 0px;
+        }
+
+        .navbar-brand {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .navbar-nav .nav-item .nav-link {
+            font-size: 1em;
+            margin-right: 15px;
+        }
+
+        .nav-link:hover {
+            color: blue;
+        }
+
+        .search-bar {
+            width: 250px;
+            margin: 0 auto;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 5px 10px;
+            border-radius: 20px;
+            border: 1px solid #ddd;
+        }
+
+        .icon-link {
+            font-size: 1em;
+            color: #333;
+            margin-left: 15px;
+        }
+
+        .icon-link:hover {
+            color: blue;
+        }
+        .container {
+            padding: 20px 0;
+        }
+</style>
+</head>
+
+<body>
+    <!-- Header -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">MAZE BOOKS</a>
+
+            <!-- Centered Search Bar -->
+            <form class="search-bar">
+                <input type="text" placeholder="Search for books...">
+            </form>
+
+            <!-- Navbar Toggle -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive"
+                aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Navbar Links and Icons -->
+            <div class="collapse navbar-collapse" id="navbarResponsive">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Shop</a>
+                    </li>
+                    <li class="nav-item"></li>
+                        <a class="nav-link" href="#">Best Seller</a>
+                    </li>
+                    <li class="nav-item"></li>
+                        <a class="nav-link" href="#">Today's Deal</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Contact</a>
+                    </li>
+
+                    <!-- Icons at the End -->
+                    <li class="nav-item d-flex align-items-center">
+                        <a href="#" class="icon-link"><i class="fas fa-shopping-cart"></i></a>
+                        <a href="#" class="icon-link"><i class="fas fa-heart"></i></a>
+                        <a href="/myaccount" class="icon-link"><i class="fas fa-user"></i></a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <br><br>
+    <!-- Main Content -->
+<div class="container mt-5">
+    <div class="row">
+        <!-- Products Header -->
+        <div class="col-md-12">
+            <h2 style="font-weight: bold;">All Products</h2><br>
+        </div>
+    </div>
+    <div class="row">
+        <!-- Filters Sidebar for larger screens -->
+        <div class="col-md-3 ">
+            <div class="filters" id="filter-sidebar">
+                <h5>Refine Your Search</h5>
+            <!-- Sort By -->
+            <div class="filter-section mb-4">
+                <h4>Sort By</h4>
+                <select class="form-control" name="sort">
+                    <option value="popularity">Popularity</option>
+                    <option value="low-to-high">Price: Low to High</option>
+                    <option value="high-to-low">Price: High to Low</option>
+                    <option value="average-rating">Average Ratings</option>
+                    <option value="featured">Featured</option>
+                    <option value="new-arrivals">New Arrivals</option>
+                    <option value="a-to-z">A-Z</option>
+                    <option value="z-to-a">Z-A</option>
+                </select>
+            </div>
+
+            <!-- Price Range -->
+            <div class="filter-section mb-4">
+                <h4>Price Range</h4>
+                <div class="row">
+                    <div class="col-6">
+                        <label><input type="radio" name="price" value="0-20"> $0 - $20</label>
+                        <label><input type="radio" name="price" value="50-100"> $50 - $100</label>
+                    </div>
+                    <div class="col-6">
+                        <label><input type="radio" name="price" value="20-50"> $20 - $50</label>
+                        <label><input type="radio" name="price" value="100"> $100+</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Discount Range -->
+            <div class="filter-section mb-4">
+                <h4>Discount Range</h4>
+                <div class="row">
+                    <div class="col-6">
+                        <label><input type="radio" name="discount" value="0-10"> 0% - 10%</label>
+                        <label><input type="radio" name="discount" value="25-50"> 25% - 50%</label>
+                    </div>
+                    <div class="col-6">
+                        <label><input type="radio" name="discount" value="10-25"> 10% - 25%</label>
+                        <label><input type="radio" name="discount" value="50"> 50%+</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Genre for Books -->
+            <div class="filter-section mb-4">
+                <h4>Genre</h4>
+                <div class="row">
+                    <div class="col-6">
+                        <label><input type="radio" name="genre" value="fiction"> Fiction</label>
+                        <label><input type="radio" name="genre" value="fantasy"> Fantasy</label>
+                        <label><input type="radio" name="genre" value="mystery"> Mystery</label>
+                    </div>
+                    <div class="col-6">
+                        <label><input type="radio" name="genre" value="non-fiction"> Non-fiction</label>
+                        <label><input type="radio" name="genre" value="sci-fi"> Sci-Fi</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Language Dropdown -->
+            <div class="filter-section">
+                <h4>Language</h4>
+                <select class="form-control">
+                    <option value="english">English</option>
+                    <option value="spanish">Spanish</option>
+                    <option value="french">French</option>
+                    <option value="german">German</option>
+                    <option value="japanese">Japanese</option>
+                </select>
+            </div>
+            </div>
+            <br><br>
+        </div>
+        <!-- Product Listing -->
+        <div class="col-md-9">
+            <div class="row">
+                <% products.forEach(function(book) { %>
+                    <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 mb-4">
+                        <div class="product">
+                            <a href="/home/product/<%= book._id %>" class="product-link">
+                                <img src="/static/uploads/<%= book.Images[0] %>" alt="<%= book.Name %>" class="product-img img-fluid">
+                            </a>
+                            <div class="quick-view">
+                                <a href="/home/product/<%= book._id %>" class="btn btn-primary quick-view-btn">Quick View</a>
+                            </div>
+                            <h2 class="product-title"><%= book.Name %></h2>
+                            <p class="product-price">$<%= book.Price %></p>
+                            <div class="product-actions">
+                                <button class="btn"><i class="fas fa-heart"></i></button>
+                                <button class="btn btn-primary">Buy Now</button>
+                            </div>
+                        </div>
+                    </div>
+                <% }) %>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                <% if (totalPages > 1) { %>
+                <nav aria-label="Page navigation example">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+                            <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        <% for (let i = 1; i <= totalPages; i++) { %>
+                        <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                            <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                        </li>
+                        <% } %>
+                        <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+                            <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Style Section -->
+<style>
+    h1 {
+        font-size: 2.5rem;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    /* Style for All Products heading */
+
+/* Filter Section Styles */
+.filters {
+    flex: 1 1 200px; /* Allows sections to grow and shrink with a minimum width of 200px */
+    background-color: #f8f9fa;
+    border: 1px solid #fff;
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure responsive form controls */
+.form-control {
+    font-size: 0.875rem; /* Smaller text for select dropdowns */
+}
+
+/* Adjust spacing within filter sections */
+.filter-section h4 {
+    font-weight: bold;
+    font-size: 1rem; /* Adjust as needed */
+    margin-bottom: 10px;
+}
+
+.filter-section label {
+    font-size: 0.875rem; /* Smaller text for labels */
+    margin-bottom: 8px;
+    display: block; /* Display each label on a new line */
+}
+
+/* Adjust size for radio buttons if needed */
+.filter-section input[type="radio"] {
+    margin-right: 5px;
+}
+    
+    .product {
+        background-color: #f9f9f9;
+        padding: 10px;
+        text-align: center;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        max-width: 100%; /* Make the product card responsive */
+        margin: 0 auto;
+    }
+    /* Container to position the Quick View button */
+    .product {
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* Hide the Quick View button initially */
+    .quick-view {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+        transition: all 0.3s ease-in-out;
+    }
+
+    /* Show the Quick View button on hover */
+    .product:hover .quick-view {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+
+    /* Quick View button styling */
+    .quick-view-btn {
+        padding: 10px 10px;
+        border-radius: 4px;
+        background-color: #007bff; /* Adjust color as needed */
+        color: white;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 12px;
+    }
+
+    /* Animation for the image when hovering */
+    .product:hover .product-img {
+        transform: scale(1.1);
+        transition: transform 0.3s ease-in-out;
+    }
+
+
+    .product-img {
+        width: 80%; /* Make the image smaller */
+        height: auto; /* Automatically adjust height based on aspect ratio */
+        aspect-ratio: 9 / 16; /* Use the aspect-ratio property for 9:16 */
+        object-fit: cover; /* Ensure the image covers the container */
+        border-radius: 6px;
+        margin: 0 auto; /* Center the image within its container */
+    }
+
+    .product-title {
+        font-size: 1rem;
+        margin-top: 10px;
+        margin-bottom: 8px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .product-price {
+        font-size: 1rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    .product-actions {
+        display: flex;
+        justify-content: center;
+        margin-top: 10px;
+    }
+
+    .product-actions .btn {
+        margin: 0 4px;
+        border-radius: 5%;
+    }
+
+    .pagination {
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+    }
+
+    .pagination .page-item .page-link {
+        color: #fff;
+        background-color: #191C24;
+        border-color: #191C24;
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        color: #6c757d;
+    }
+</style>
+<!-- Popper.js (required for Bootstrap's JavaScript components) -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
+
+<!-- Bootstrap Bundle JS (includes Bootstrap's JavaScript and Popper.js) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+</body>
+
+</html>

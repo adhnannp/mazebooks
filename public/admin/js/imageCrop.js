@@ -128,11 +128,16 @@ document.getElementById('addProductForm').addEventListener('submit', function(ev
             window.location.href = '/admin/products'; // Redirect on success
         } else {
             const errorElement = document.getElementById('existingError');
-            errorElement.innerHTML = 'Product Allready Exists or Something wrong. Please try again.'; // Set the error message
+            errorElement.innerHTML = data.message; // Set the error message
             errorElement.style.display = 'block'; // Show the error element
         }
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => {
+        console.error('Error:', error);
+        const errorElement = document.getElementById('existingError');
+        errorElement.innerHTML = 'Something went wrong. Please try again.';
+        errorElement.style.display = 'block';
+    });
 });
 
 function dataURLtoBlob(dataURL) {
@@ -182,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Validate Description
         const description = document.getElementById('productDescription').value.trim();
         const descriptionError = document.getElementById('description-error');
-        const descriptionRegex =  /^(?!.*[!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]{2})(?!.*\s{2,})[^\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]*(?:[\w\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~][^\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]*){25,150}$/;
+        const descriptionRegex =  /^(?!.*[!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]{2})(?!.*\s{2,})[^\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]*(?:[\w\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~][^\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]*){25,250}$/;
         if (!descriptionRegex.test(description)) {
             descriptionError.textContent = 'Invalid Description';
             descriptionError.style.display = 'block';

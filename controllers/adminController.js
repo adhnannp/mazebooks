@@ -1,3 +1,6 @@
+const mongoose = require('mongoose');
+const fs = require('fs');
+const path = require('path');
 const User = require("../models/userModel");
 const bcrypt = require("bcrypt");
 const Product = require("../models/productModel");
@@ -193,7 +196,7 @@ const addProduct = async (req, res) => {
         res.json({ success: true }); // Send success response
     } catch (error) {
         console.error('Error adding product:', error);
-        res.status(500).json({ success: false, message: 'Server Error' });
+        res.status(500).json({ success: false, message: 'Server Error,Please try again' });
     }
 };
 
@@ -219,7 +222,18 @@ const editProductLoadPage = async (req, res) => {
 //edit product
 const editProduct = async (req, res) => {
     try {
-        const existingProduct = await Product.findOne({ Name: new RegExp(`^${req.body.name}$`, 'i') });
+
+        // Extract and validate productId
+        const Id = req.params.id;
+        if (!mongoose.isValidObjectId(Id)) {
+            console.error(`Invalid product ID: ${Id}`);
+            return res.status(400).json({ success: false, message: 'Invalid product ID' });
+        }
+
+        const existingProduct = await Product.findOne({ 
+            Name: new RegExp(`^${req.body.name}$`, 'i'), 
+            _id: { $ne: req.params.id }  // Exclude the product with the current ID
+        });
         if (existingProduct) {
             return res.json({ success: false, message: "Product already exists" });
         }
@@ -237,29 +251,27 @@ const editProduct = async (req, res) => {
         product.CategoryId = categoryId;
         product.Quantity = quantity;
         product.Price = price;
+        product.UpdatedAt= new Date();
 
-        // Handle image replacement
-        if (imageToReplace) {
-            // Delete the existing image if it exists
-            if (product.Images[0]) {
-                fs.unlinkSync(path.join(__dirname, '../public/uploads', product.Images[0])); // Adjust the path as needed
-            }
+       // Handle image replacement
+       if (req.file) {
+        // Delete the existing image if it exists
+        if (product.Images[0]) {
+            fs.unlinkSync(path.join(__dirname, '../public/uploads', product.Images[0])); // Adjust the path as needed
+        }
 
-            // Add the new image
-            if (req.file) {
-                const fileName = `image_${Date.now()}.jpg`;
-                fs.writeFileSync(path.join(__dirname, '../public/uploads', fileName), req.file.buffer); // Save the file
-                product.ImageUrl = fileName; // Update the image URL
-            }
+        // Add the new image
+        const fileName = req.file.filename; // Get the filename from Multer
+        product.Images[0] = fileName; // Update the image URL in the product array
         }
 
         // Save updated product
         await product.save();
-        res.redirect('/admin/products');
+        res.json({ success: true, message: "Product Added Successfully" });
 
     } catch (error) {
         console.error('Error updating product:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
+        res.status(500).json({ success: false, message: 'Server error,Please try again' });
     }
 };
 

@@ -95,6 +95,12 @@
                         <li class="nav-item">
                             <a class="nav-link" href="#">Shop</a>
                         </li>
+                        <li class="nav-item"></li>
+                            <a class="nav-link" href="#">Best Seller</a>
+                        </li>
+                        <li class="nav-item"></li>
+                            <a class="nav-link" href="#">Today's Deal</a>
+                        </li>
                         <li class="nav-item">
                             <a class="nav-link" href="#">About</a>
                         </li>
@@ -134,10 +140,12 @@
                 <p class="product-price">$<%= book.Price %></p>
                 <p class="product-description"><%= book.Description %></p>
                 <p><%= book.CategoryId.CategoryName %></p>
-                <% if (book.Quantity === 0) { %>
-                    <p class="product-status sold-out">Sold Out</p>
+                <% if(!book.Is_list ) { %>
+                        <p class="product-status unavailable">Unavailable</p>
                 <% } else if(book.Quantity>0 && 10>book.Quantity ) { %>
                     <p class="product-status unavailable">Only <%= book.Quantity %> In Stock</p>
+                <% }else if(book.Quantity === 0) { %>
+                    <p class="product-status sold-out">Sold Out</p>
                 <% } else { %>
                     <p class="product-status" style="color: green;font-weight: bold;">In Stock</p>
                     <div class="product-actions">

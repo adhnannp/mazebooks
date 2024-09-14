@@ -185,6 +185,33 @@
           </div>
         </nav>
         <!-- partial -->
+        <style>
+          .image-label {
+            display: inline-block; 
+            padding: 5px 10px; 
+            font-size: 14px; 
+            font-weight: bold; 
+            color: #fff; 
+            background-color: #007bff; 
+            border: 1px solid #007bff; 
+            border-radius: 3px; 
+            cursor: pointer;
+            text-align: center;
+            margin-right: 10px;
+        }
+        .change-image-button {
+          display: none; 
+          background-color: #bcd8d2; /* Unique green color */
+          color: rgb(0, 0, 0); 
+          border: none; 
+          padding: 4px 8px; /* Reduced padding */
+          font-size: 12px; /* Smaller font size */
+          border-radius: 3px; /* Smaller border radius */
+          cursor: pointer; 
+          margin-top: 3px; /* Reduced margin */
+          text-align: center;
+        }
+        </style>
         <div class="main-panel">
           <div class="row">
             <div class="col-lg-12 grid-margin stretch-card">
@@ -211,7 +238,7 @@
                                 <p id="author-error" style="color: red; display: none;"></p>
                             </div>
                             <div class="form-group">
-                                <label for="productDescription">Description (25-150 characters)</label>
+                                <label for="productDescription">Description (25-250 characters)</label>
                                 <textarea class="form-control" id="productDescription" name="description" rows="4" style="background-color: #333; color: white;"><%= product.Description %></textarea>
                                 <p id="description-error" style="color: red; display: none;"></p>
                             </div>
@@ -238,7 +265,7 @@
                               <!-- Image Upload and Cropping Section -->
                               <div class="form-group">
                                 <label for="productImages1" class="image-label">Upload Image 1</label>
-                                <input type="file" name="img1" class="file-upload-default" id="productImages1" accept="image/*" style="display: none;">
+                                <input type="file" name="croppedImage" class="file-upload-default" id="productImages1" accept="image/*" style="display: none;">
                                 <img id="preview1" style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;" src="/static/uploads/<%= product.Images[0] %>" alt="Upload Image 1" />
                                 <button type="button" id="changeImage1" class="change-image-button" style="display: none;">Change Image</button>
                               </div>
@@ -255,6 +282,7 @@
                             <button type="submit" class="btn btn-success mr-2" id="submitButton" disabled>Edit Product</button>
                             <a href="/admin/products" type="button" class="btn btn-dark">Cancel</a>
                             <p id="existingError" style="text-align:center;color:red;display:none"></p>
+                            <input type="hidden" id="productId" value="<%= product._id %>">
                         </form>
                       </div>
                   </div>

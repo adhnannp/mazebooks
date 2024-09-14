@@ -3,24 +3,44 @@ let croppedImages = []; // To hold the cropped images
 let currentImageIndex; // To keep track of which image is being cropped
 
 function handleCropper(imageIndex, file) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const image = document.getElementById('cropperImage');
-        image.src = e.target.result;
+    if (typeof file === 'string') {  // Check if it's a URL
+        // Fetch the image from the URL and convert it to a Blob
+        fetch(file)
+            .then(response => response.blob())
+            .then(blob => {
+                const image = document.getElementById('cropperImage');
+                const url = URL.createObjectURL(blob);
+                image.src = url;
 
-        // Initialize Cropper
-        if (cropper) cropper.destroy();
-        cropper = new Cropper(image, {
-            aspectRatio: 1,
-            viewMode: 1,
-            autoCropArea: 1
-        });
+                if (cropper) cropper.destroy();
+                cropper = new Cropper(image, {
+                    aspectRatio: 1,
+                    viewMode: 1,
+                    autoCropArea: 1
+                });
 
-        // Set the current image index
-        currentImageIndex = imageIndex;
-        document.getElementById('cropperContainer').style.display = 'block';
-    };
-    reader.readAsDataURL(file);
+                currentImageIndex = imageIndex;
+                document.getElementById('cropperContainer').style.display = 'block';
+            });
+    } else {
+        // If it's a new file, proceed as normal
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const image = document.getElementById('cropperImage');
+            image.src = e.target.result;
+
+            if (cropper) cropper.destroy();
+            cropper = new Cropper(image, {
+                aspectRatio: 1,
+                viewMode: 1,
+                autoCropArea: 1
+            });
+
+            currentImageIndex = imageIndex;
+            document.getElementById('cropperContainer').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
 }
 
 function previewImage(input, previewId, imageIndex, changeButtonId) {
@@ -101,15 +121,17 @@ document.getElementById('addProductForm').addEventListener('submit', function(ev
 
     const formData = new FormData(this);
 
-    // Add cropped images to FormData
-    croppedImages.forEach((croppedImage, index) => {
-        if (croppedImage) {
-            const blob = dataURLtoBlob(croppedImage);
-            formData.append(`croppedImage${index}`, blob, `croppedImage${index}.jpg`);
-        }
-    });
+    // Add cropped image to FormData if it exists
+    if (croppedImages.length > 0 && croppedImages[0]) { // Check if there are cropped images
+        const blob = dataURLtoBlob(croppedImages[0]);
+        formData.append('croppedImage', blob, 'croppedImage.jpg');
+    }
 
-    fetch('/admin/products/edit/<%= product._id %>', {
+    const productId = document.getElementById('productId').value;
+    console.log('Product ID:', productId);
+    console.log(`/admin/products/edit/${productId}`);
+
+    fetch(`/admin/products/edit/${productId}`, {
         method: 'POST',
         body: formData
     })
@@ -119,12 +141,18 @@ document.getElementById('addProductForm').addEventListener('submit', function(ev
             window.location.href = '/admin/products'; // Redirect on success
         } else {
             const errorElement = document.getElementById('existingError');
-            errorElement.innerHTML = 'Product already exists or something went wrong. Please try again.';
+            errorElement.innerHTML = data.message;
             errorElement.style.display = 'block';
         }
     })
-    .catch(error => console.error('Error:', error));
+    .catch(error => {
+        console.error('Error:', error);
+        const errorElement = document.getElementById('existingError');
+        errorElement.innerHTML = 'Something went wrong. Please try again.';
+        errorElement.style.display = 'block';
+    });
 });
+
 
 //validation
 document.addEventListener('DOMContentLoaded', () => {
@@ -161,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Validate Description
         const description = document.getElementById('productDescription').value.trim();
         const descriptionError = document.getElementById('description-error');
-        const descriptionRegex =  /^(?!.*[!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]{2})(?!.*\s{2,})[^\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]*(?:[\w\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~][^\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]*){25,150}$/;
+        const descriptionRegex =  /^(?!.*[!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]{2})(?!.*\s{2,})[^\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]*(?:[\w\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~][^\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]*){25,250}$/;
         if (!descriptionRegex.test(description)) {
             descriptionError.textContent = 'Invalid Description';
             descriptionError.style.display = 'block';

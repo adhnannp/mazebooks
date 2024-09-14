@@ -29,13 +29,42 @@ const loadHome = async(req,res)=>{
         // Extract the category IDs into an array
         const listedCategoryIds = listedCategories.map(category => category._id);
 
+        // Calculate total products and pages
+        const totalProducts = await Product.countDocuments({
+            CategoryId: { $in: listedCategoryIds } // Categories that are listed
+        });
+
+        // Fetch products with pagination and populate category
+        const products = await Product.find({
+            CategoryId: { $in: listedCategoryIds } // Categories that are listed
+        })
+            .populate('CategoryId')
+            .limit(12);
+
+        // Render the products or send them as a response
+        res.render("home", {
+            products,
+        });
+    } catch (error) {
+        console.log(error.message);
+    }
+} 
+
+//load Shop Page
+const loadShop = async(req,res)=>{
+    try {
+        // Fetch categories that are listed
+        const listedCategories = await Category.find({ Is_list: true }).select('_id'); // Only selecting the _id field
+
+        // Extract the category IDs into an array
+        const listedCategoryIds = listedCategories.map(category => category._id);
+
         // Get current page, default to 1
         const currentPage = parseInt(req.query.page) || 1;
-        const itemsPerPage = 4; // Number of items per page
+        const itemsPerPage = 12; // Number of items per page
 
         // Calculate total products and pages
         const totalProducts = await Product.countDocuments({
-            Is_list: true, // Only listed products
             CategoryId: { $in: listedCategoryIds } // Categories that are listed
         });
 
@@ -43,7 +72,6 @@ const loadHome = async(req,res)=>{
 
         // Fetch products with pagination and populate category
         const products = await Product.find({
-            Is_list: true, // Only listed products
             CategoryId: { $in: listedCategoryIds } // Categories that are listed
         })
             .populate('CategoryId')
@@ -51,7 +79,7 @@ const loadHome = async(req,res)=>{
             .limit(itemsPerPage);
 
         // Render the products or send them as a response
-        res.render("home", {
+        res.render("shopPage", {
             products,
             currentPage,
             totalPages,
@@ -326,6 +354,7 @@ const listProduct = async(req,res)=>{
 
 module.exports = {
     loadHome,
+    loadShop,
     loadAccountOverview,
     loadRegister,
     insertUser,

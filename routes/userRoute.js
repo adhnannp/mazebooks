@@ -23,6 +23,8 @@ const userController = require('../controllers/userController');
 
 user_route.get(['/','/home'], auth.isAdminLogin ,userController.loadHome);
 
+user_route.get('/shop', auth.isAdminLogin ,userController.loadShop);
+
 user_route.get('/myaccount',auth.isblock,userController.loadAccountOverview);
 
 user_route.get('/login', auth.isAdminLogin, auth.isLogout, userController.loginLoad);
