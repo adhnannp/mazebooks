@@ -319,9 +319,18 @@ const categoriesLoad = async (req, res) => {
             .skip((currentPage - 1) * itemsPerPage)
             .limit(itemsPerPage)
             .exec();
-        // Render the categories or send them as a response
+
+        // Count products for each category
+        const categoryProductCounts = await Promise.all(
+            categories.map(async (category) => {
+                const productCount = await Product.countDocuments({ CategoryId: category._id });
+                return { ...category.toObject(), productCount }; // Add product count to each category object
+            })
+        );
+
+        // Render the categories with the product counts
         res.render("category", {
-            categories,
+            categories: categoryProductCounts,
             admin,
             currentPage,
             totalPages,

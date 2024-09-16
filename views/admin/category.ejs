@@ -237,6 +237,7 @@
                           <tr>
                             <th>No.</th>
                             <th>Category Name</th>
+                            <th>Product Count</th>
                             <th>Updated At</th>
                             <th>Action</th>
                           </tr>
@@ -247,6 +248,7 @@
                             <tr>
                               <td><%= categoryNumber++ %></td>
                               <td><%= category.CategoryName %></td>
+                              <td><%= category.productCount %></td>
                               <td><%= new Date(category.UpdatedAt).toLocaleDateString('en-GB') %></td>
                               <td>
                                 <% if (category.Is_list) { %>

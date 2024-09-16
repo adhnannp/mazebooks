@@ -51,43 +51,81 @@ const loadHome = async(req,res)=>{
 } 
 
 //load Shop Page
-const loadShop = async(req,res)=>{
+const loadShop = async (req, res) => {
     try {
         // Fetch categories that are listed
-        const listedCategories = await Category.find({ Is_list: true }).select('_id'); // Only selecting the _id field
+        const listedCategories = await Category.find({ Is_list: true }).select('_id CategoryName'); // Select _id and CategoryName
 
-        // Extract the category IDs into an array
+        // Extract the category IDs into an array and prepare genres
         const listedCategoryIds = listedCategories.map(category => category._id);
+        const genres = [...new Set(listedCategories.map(category => category.CategoryName))]; // Get unique genres
 
         // Get current page, default to 1
         const currentPage = parseInt(req.query.page) || 1;
         const itemsPerPage = 12; // Number of items per page
 
-        // Calculate total products and pages
-        const totalProducts = await Product.countDocuments({
-            CategoryId: { $in: listedCategoryIds } // Categories that are listed
-        });
+        // Get the selected genre and sort option from query parameters
+        const selectedGenre = req.query.genre || '';
+        const selectedSort = req.query.sort || 'featured'; // Default to 'featured'
 
+        // Prepare filter for products
+        const productFilter = {
+            CategoryId: { $in: listedCategoryIds }, // Categories that are listed
+        };
+
+        if (selectedGenre) {
+            // Find category ID for the selected genre
+            const category = await Category.findOne({ CategoryName: selectedGenre });
+            if (category) {
+                productFilter.CategoryId = category._id;
+            }
+        }
+
+        // Prepare sort option
+        let sortOption = {};
+        switch (selectedSort) {
+            case 'low-to-high':
+                sortOption = { Price: 1 };
+                break;
+            case 'high-to-low':
+                sortOption = { Price: -1 };
+                break;
+            case 'a-to-z':
+                sortOption = { Name: 1 };
+                break;
+            case 'z-to-a':
+                sortOption = { Name: -1 };
+                break;
+            case 'featured':
+            default:
+                // No sorting, default case
+                sortOption = {}; 
+        }
+
+        // Calculate total products and pages
+        const totalProducts = await Product.countDocuments(productFilter);
         const totalPages = Math.ceil(totalProducts / itemsPerPage);
 
-        // Fetch products with pagination and populate category
-        const products = await Product.find({
-            CategoryId: { $in: listedCategoryIds } // Categories that are listed
-        })
+        // Fetch products with pagination, sorting, and populate category
+        const products = await Product.find(productFilter)
             .populate('CategoryId')
+            .sort(sortOption) // Apply sorting
             .skip((currentPage - 1) * itemsPerPage)
             .limit(itemsPerPage);
 
         // Render the products or send them as a response
         res.render("shopPage", {
             products,
+            genres,
+            selectedGenre, // Pass selected genre to the view
+            selectedSort,  // Pass selected sort to the view
             currentPage,
             totalPages,
         });
     } catch (error) {
         console.log(error.message);
     }
-} 
+};
 
 //load accountOverview
 const loadAccountOverview = async(req,res)=>{
