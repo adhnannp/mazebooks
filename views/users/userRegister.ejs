@@ -79,7 +79,7 @@
                     <a class="nav-link" href="/">Home</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Shop</a>
+                    <a class="nav-link" href="/shop">Shop</a>
                 </li>
                 <li class="nav-item"></li>
                     <a class="nav-link" href="#">Best Seller</a>
@@ -325,9 +325,6 @@ body {
         <!-- Sidebar -->
         <div class="account-sidebar">
             <a href="/myaccount" class="account-selected">Account Overview</a>
-            <a href="/change-password">Change Password</a>
-            <a href="/order-history">Order History</a>
-            <a href="/address-book">Address Book</a>
         </div>
 
         <!-- Main Content -->
@@ -455,7 +452,7 @@ body {
 
     function validateMobileNumber() {
         const mobileNumber = mobileNumberInput.value.trim();
-        const mobileNumberRegex = /^[0-9]{10}$/;
+        const mobileNumberRegex = /^(?!([0-9])\1{9})[6-9][0-9]{9}$/;
 
         if (!mobileNumber.match(mobileNumberRegex)) {
             mobileNumberValidationMessage.textContent = 'Mobile number must be exactly 10 digits';

@@ -12,7 +12,9 @@ const userSchema = new mongoose.Schema({
     Is_admin: { type: Boolean, required: true, default: false},
     Is_block: { type: Boolean, required: true, default: false },
     Is_verified: { type: Boolean, required: true ,default: false},
-    OTP: { type: String }
+    OTP: { type: String },
+    resetPasswordToken: { type: String },// Token for resetting the password
+    resetPasswordExpires: { type: Date }// Expiration time for the token
 })
 
 module.exports = mongoose.model("User", userSchema)

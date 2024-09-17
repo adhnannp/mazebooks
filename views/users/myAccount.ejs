@@ -79,7 +79,7 @@
                     <a class="nav-link" href="/">Home</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Shop</a>
+                    <a class="nav-link" href="/shop">Shop</a>
                 </li>
                 <li class="nav-item"></li>
                     <a class="nav-link" href="#">Best Seller</a>
@@ -173,43 +173,70 @@
         box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
         margin-top: 20px;
     }
+
     .registration-section h2 {
         margin-bottom: 15px;
         font-size: 24px;
     }
+
     .registration-section p {
         margin-bottom: 20px;
         font-size: 16px;
     }
-    .registration-section .btn-register {
-        display: inline-block;
-        background-color: #4F2F2D;
-        color: white;
-        padding: 10px 20px;
-        border-radius: 5px;
-        text-decoration: none;
-        margin-right: 10px;
+
+    .action-buttons {
+        margin-top: 1.5rem;
+        display: flex;
+        align-items: center;
     }
-    .registration-section .btn-register:hover {
-        background-color: #3c3b36;
-    }
-    .registration-section .btn-link {
-        color: #357AE8;
-        text-decoration: none;
-    }
-    .registration-section .btn-link:hover {
-        text-decoration: underline;
-    }
-    .form-control {
-        border-radius: 5px;
-    }
-    .btn-primary {
-        background-color: #4F2F2D;
+
+    .btn-logout, .btn-edit {
+        padding: 0.5rem 1rem; /* Smaller padding for a smaller button */
         border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.875rem; /* Smaller font size */
+        margin-right: 2px; /* 2px gap between buttons */
     }
-    .btn-primary:hover {
-        background-color: #3c3b36;
+
+    .btn-logout {
+        background-color: #4F2F2D; /* Color for Logout button */
+        color: white;
     }
+
+    .btn-edit {
+        background-color: #357AE8; /* Color for Edit button */
+        color: white;
+    }
+    /* Custom styles for the address cards */
+.card {
+    border-radius: 10px;
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.card-body {
+    padding: 20px;
+}
+
+.card-title {
+    font-weight: bold;
+    color: #4F2F2D;
+}
+
+.card-text {
+    font-size: 14px;
+    color: #333;
+}
+
+.btn-outline-secondary {
+    border-color: #4F2F2D;
+    color: #4F2F2D;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #4F2F2D;
+    color: white;
+}
 </style>
 <div class="account-container">
     <!-- Breadcrumbs -->
@@ -220,10 +247,14 @@
     <div class="account-overview-container">
         <!-- Sidebar -->
         <div class="account-sidebar">
+            <% if (user.Is_verified) { %>
             <a href="/account" class="account-selected">Account Overview</a>
             <a href="/change-password">Change Password</a>
             <a href="/order-history">Order History</a>
-            <a href="/address-book">Address Book</a>
+            <a href="/myaccount/address-book">Address Book</a>
+            <% } else { %>
+                <a href="/account" class="account-selected">Account Overview</a>
+            <% } %>
         </div>
 
         <!-- Main Content -->
@@ -235,27 +266,172 @@
                     <p><strong>Email:</strong> <%= user.Email %></p>
                     <p><strong>Phone:</strong> <%= user.MobileNo %></p>
                     <p><strong>Joined at:</strong> <%= new Date(user.CreatedAt).toLocaleDateString('en-GB')%></p>
-                    <div class="registration-section">
-                    <form action="logout" method="post">
-                        <button  class="btn-register" style="border: none;">Logout</button>
-                    </form>
-                    <br>
-                    <a href="#" class="btn-register" style="background-color:#357AE8">Edit</a>
+                    <div class="action-buttons">
+                        <form action="logout" method="post">
+                            <button type="submit" class="btn-logout">Logout</button>
+                        </form>
+                        <a href="#" class="btn-edit" data-toggle="modal" data-target="#editUserModal">Edit</a>
                     </div>
                 </div>
             <% } else { %>
                 <div class="registration-section">
                     <h2>You are not logged in</h2>
-                    <p>Please <a href="/login" class="btn-register">Login</a> to access your account details.</p>
-                    <p>Don't have an account? <a href="/register" class="btn-link">Register</a> now to get started.</p>
+                    <p>Please <a href="/login" class="btn-link">Login</a> to access your account details.</p>
+                    <p>Don't have an account? <a href="/register" class="btn-link ">Register</a> now to get started.</p>
                 </div>
             <% } %>
         </div>
     </div>
 </div>
+
+<!-- //edit modal -->
+<div id="editUserModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem;">
+                <h5 class="modal-title">Edit User Details</h5>
+                <button type="button" style="background: none; border: none; font-size: 1.5rem; color: #000; cursor: pointer;" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm" action="/myaccount/edit-user/<%- user._id %>" method="post">
+                    <div class="form-group">
+                        <input type="text" style="display: none;" value="<%= user._id %>" id="userId" name="userId" hidden>
+                        <label for="firstName">First Name:</label>
+                        <input type="text" class="form-control" id="firstName" name="firstName" value="<%= user.FirstName %>">
+                        <p id="firstNameValidationMessage" class="text-danger" style="display: none;"></p>
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Last Name:</label>
+                        <input type="text" class="form-control" id="lastName" name="lastName" value="<%= user.LastName %>">
+                        <p id="lastNameValidationMessage" class="text-danger" style="display: none;"></p>
+                    </div>
+                    <div class="form-group">
+                        <label for="mobileNumber">Mobile Number:</label>
+                        <input type="tel" class="form-control" id="mobileNumber" name="mobileNumber" value="<%= user.MobileNo %>">
+                        <p id="mobileNumberValidationMessage" class="text-danger" style="display: none;"></p>
+                    </div>
+                    <div class="form-group text-center">
+                        <button type="submit" class="btn btn-primary" style="background-color: #4F2F2D;">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Bootstrap JS and Popper.js -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous">
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz4fnFO9Dcsf54Xr1JPrT9bqU4ZJhPt6yU4EMCqiljW00P17JdG3BOWtFz" crossorigin="anonymous"></script>
+
+
+<script>
+const firstNameInput = document.getElementById('firstName');
+const lastNameInput = document.getElementById('lastName');
+const mobileNumberInput = document.getElementById('mobileNumber');
+
+const firstNameValidationMessage = document.getElementById('firstNameValidationMessage');
+const lastNameValidationMessage = document.getElementById('lastNameValidationMessage');
+const mobileNumberValidationMessage = document.getElementById('mobileNumberValidationMessage');
+function validateFirstName() {
+    const firstName = firstNameInput.value.trim();
+    const nameRegex = /^[A-Za-z]{1,}[A-Za-z\s]{0,}$/;
+
+    if (!firstName.match(nameRegex)) {
+        firstNameValidationMessage.textContent = 'First Name must contain only letters and spaces (if any)';
+        firstNameValidationMessage.style.display = 'block';
+        return false;
+    }
+    firstNameValidationMessage.style.display = 'none';
+    return true;
+}
+
+function validateLastName() {
+    const lastName = lastNameInput.value.trim();
+    const nameRegex = /^[A-Za-z]{1,}[A-Za-z\s]{0,}$/;
+
+    if (!lastName.match(nameRegex)) {
+        lastNameValidationMessage.textContent = 'Last Name must contain only letters and spaces (if any)';
+        lastNameValidationMessage.style.display = 'block';
+        return false;
+    }
+    lastNameValidationMessage.style.display = 'none';
+    return true;
+}
+
+function validateMobileNumber() {
+    const mobileNumber = mobileNumberInput.value.trim();
+    const mobileNumberRegex = /^(?!([0-9])\1{9})[6-9][0-9]{9}$/;
+
+    if (!mobileNumber.match(mobileNumberRegex)) {
+        mobileNumberValidationMessage.textContent = 'Invalid Mobile number';
+        mobileNumberValidationMessage.style.display = 'block';
+        return false;
+    }
+    mobileNumberValidationMessage.style.display = 'none';
+    return true;
+}
+
+function validateForm() {
+    const isFirstNameValid = validateFirstName();
+    const isLastNameValid = validateLastName();
+    const isMobileNumberValid = validateMobileNumber();
+
+    // Return false if any validation fails
+    return isFirstNameValid && isLastNameValid && isMobileNumberValid;
+}
+
+// Updated form submission event
+editUserForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    // Check if form validation passes
+    if (!validateForm()) {
+        // If validation fails, do not proceed
+        return;
+    }
+
+    // If validation passes, proceed with form submission
+    const formData = new FormData(editUserForm);
+    const userId = formData.get('userId');
+
+    const data = {
+        firstName: formData.get('firstName'),
+        lastName: formData.get('lastName'),
+        mobileNumber: formData.get('mobileNumber'),
+    };
+
+    try {
+        const response = await fetch(`/myaccount/edit-user/${userId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        const result = await response.json();
+
+        if (response.status === 400) {
+            mobileNumberValidationMessage.textContent = 'Mobile number already exists';
+            mobileNumberValidationMessage.style.display = 'block';
+        } else if (response.status === 200 && result.success) {
+            window.location.href = result.redirectUrl;
+        } else {
+            console.error('Error updating user:', result.message);
+        }
+    } catch (error) {
+        console.error('Server error:', error);
+    }
+});
+</script>
 </body>
 </html>

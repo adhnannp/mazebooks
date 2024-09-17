@@ -79,7 +79,7 @@
                     <a class="nav-link" href="/">Home</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Shop</a>
+                    <a class="nav-link" href="/shop">Shop</a>
                 </li>
                 <li class="nav-item"></li>
                     <a class="nav-link" href="#">Best Seller</a>
@@ -353,9 +353,6 @@ body {
         <!-- Sidebar -->
         <div class="account-sidebar">
             <a href="/account" class="account-selected">Account Overview</a>
-            <a href="/change-password">Change Password</a>
-            <a href="/order-history">Order History</a>
-            <a href="/address-book">Address Book</a>
         </div>
 
        <!-- Main Content -->
@@ -374,7 +371,7 @@ body {
         <% if (typeof message !== 'undefined') { %>
             <p style="color: red;"><%= message %></p>
         <% } %>
-        <form action="/login" method="post" onsubmit="return validateForm()">
+        <form action="/login" id="loginForm" method="post" onsubmit="return validateForm()">
             <!-- Email input -->
             <div class="form-outline mb-4">
                 <label class="form-label" for="email">Email address</label>
@@ -397,9 +394,9 @@ body {
         
                 <!-- Forgot Password link -->
                 <div class="text-center mb-4">
-                    <a href="/forgot-password" class="text-center btn-link">Forgot Password?</a>
+                    <a href="#" class="text-center btn-link" data-toggle="modal" data-target="#forgotPasswordModal">Forgot Password?</a>
                 </div>
-        
+                <p class="validation-message" id="submitError"></p>
                 <p class="small fw-bold mt-2 mb-0">Don't have an account? <a href="/register" class="link-danger">Register</a></p>
             </div>
         </form>
@@ -407,6 +404,83 @@ body {
 </div>
 </div>
 </div>
+<!-- Forgot Password Modal -->
+<div id="forgotPasswordModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem;">
+                <h5 class="modal-title">Reset Password</h5>
+                <button type="button" style="background: none; border: none; font-size: 1.5rem; color: #000; cursor: pointer;" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="forgotPasswordForm">
+                    <div class="form-group">
+                        <label for="forgotEmail">Enter your email address:</label>
+                        <input type="email" class="form-control" id="forgotEmail" name="forgotEmail" required>
+                        <p id="forgotEmailError" class="text-danger" style="display: none;">Please enter a valid email.</p>
+                    </div>
+                    <div class="form-group text-center">
+                        <button type="submit" class="btn btn-primary" style="background-color: #4F2F2D;">Send Confirmation</button>
+                    </div>
+                </form>
+                <p id="forgotEmailSentMessage" class="text-success text-center" style="display: none;">
+                    An email has been sent to your account!
+                    <button id="okButton" class="btn btn-success" style="margin-left: 1rem;">OK</button>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Bootstrap JS and Popper.js -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Forgot Password Form Submission
+        $('#forgotPasswordForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            const email = $('#forgotEmail').val();
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+            // Validate email
+            if (!emailRegex.test(email)) {
+                $('#forgotEmailError').show();
+            } else {
+                $('#forgotEmailError').hide();
+
+                // Simulate sending the request to the server
+                $.ajax({
+                    url: '/forgot-password', // Backend route to handle password reset
+                    method: 'POST',
+                    data: { email: email },
+                    success: function(response) {
+                        if (response.success) {
+                            $('#forgotEmailSentMessage').show();
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('An error occurred while sending the reset email.');
+                    }
+                });
+            }
+        });
+
+        // Handle "OK" button click
+        $('#okButton').on('click', function() {
+            $('#forgotPasswordModal').modal('hide'); // Close the modal
+            location.reload(); // Refresh the page
+        });
+    });
+</script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
     // Error message elements
@@ -481,12 +555,7 @@ body {
         }
     });
 });
-    </script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz4fnFO9Dcsf54Xr1JPrT9bqU4ZJhPt6yU4EMCqiljW00P17JdG3BOWtFz" crossorigin="anonymous"></script>
-
+</script>
 </body>
 </html>
 

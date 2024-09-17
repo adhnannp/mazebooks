@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const Product = require("../models/productModel");
 const Category = require("../models/categoryModel");
-
+const Address = require("../models/addressModel");
 
 //registration
 
@@ -390,6 +390,264 @@ const listProduct = async(req,res)=>{
     }
 }
 
+//when clicking the forgot password link modal show and generate token for the perticular email
+const forgotPassword = async (req, res) => {
+    const { email } = req.body;
+  
+    try {
+      // Check if the email exists in the database
+      const user = await User.findOne({ Email:email});
+      if (!user) {
+        return res.status(200).json({ success: false, message: 'No account with that email exists.' });
+      }
+      //if user is admin then 
+      if (user && user.Is_admin || user.Is_block) {
+        return res.status(200).json({ success: false, message: 'restricted account'});
+      }
+  
+      // Generate a secure token using crypto
+      const resetToken = crypto.randomBytes(20).toString('hex');
+  
+      // Set token expiration time (10 minutes from now)
+      const resetTokenExpiration = Date.now() + 10 * 60 * 1000; // 10 minutes in milliseconds
+  
+      // Save token and expiration to the user record
+      user.resetPasswordToken = resetToken;
+      user.resetPasswordExpires = resetTokenExpiration;
+      await user.save();
+  
+      // Send the reset email
+      const mailOptions = {
+        from: 'adhnanusman1234@gmail.com',
+        to: email,
+        subject: 'Password Reset',
+        text: `You are receiving this email because you (or someone else) have requested a password reset for your account.\n\n
+               Please click on the following link, or paste this into your browser to complete the process:\n\n
+               http://${req.headers.host}/reset-password/${resetToken}\n\n
+               This link is valid for 10 minutes.\n\n
+               If you did not request this, please ignore this email and your password will remain unchanged.\n`
+      };
+  
+      await transporter.sendMail(mailOptions);
+  
+      return res.json({ success: true, message: 'Reset link has been sent to your email.' });
+    } catch (error) {
+      console.error('Error in forgot password route:', error);
+      res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
+    }
+};
+
+
+//afetr selecting the link form your mail the page for resetting the password will show
+const resetPasswordLoad = async (req, res) => {
+    const { token } = req.params;
+  
+    try {
+      // Find the user by the token and check if the token has expired
+      const user = await User.findOne({
+        resetPasswordToken: token,
+        resetPasswordExpires: { $gt: Date.now() } // Ensure the token hasn't expired
+      });
+  
+      if (!user) {
+        return res.status(400).json({ success: false, message: 'Token expired.go back and Try again' });
+      }
+  
+      // If token is valid, render a password reset page (You can implement this page)
+      res.render('reset-password',{message:'',token});
+    } catch (error) {
+      console.error('Error in reset password validation route:', error);
+      res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
+    }
+};
+  
+  // Reset Password (POST) - Handle the password reset
+  
+const resetPassword = async (req, res) => {
+    const { token } = req.params;
+    const password = req.body.newPassword;
+  
+    try {
+      // Find the user by token and ensure it's not expired
+      const user = await User.findOne({
+        resetPasswordToken: token,
+        resetPasswordExpires: { $gt: Date.now() }
+      });
+  
+      if (!user) {
+        return res.render('reset-password',{message:'Token expired.go back and Try again',token});
+      }
+      
+       // Check if new password is the same as the old password
+       const isMatch = await bcrypt.compare(password, user.Password);
+       if (isMatch) {
+           return res.render('reset-password',{message:'New password cannot be the same as the old password.',token});
+       }
+       const newPassword = await securePassword(password);
+      // Update the password and clear the reset token and expiration
+        user.Password = newPassword; 
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+        await user.save();
+       
+        res.redirect('/myAccount');
+    } catch (error) {
+      console.error('Error in password reset:', error);
+      res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
+    }
+}
+
+const editUser = async(req,res)=>{
+    try {
+        const { firstName, lastName, mobileNumber } = req.body;
+        const id = req.params.id; // Get userId from the query parameters
+
+        // Find the current user
+        const currentUser = await User.findById(id);
+
+        if (!currentUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Check if the mobile number has changed
+        if (currentUser.MobileNo !== mobileNumber) {
+            // Check if another user already has the same mobile number
+            const existingUser = await User.findOne({ MobileNo: mobileNumber });
+
+            // If the mobile number exists, return an error
+            if (existingUser) {
+                return res.status(400).json({ message: 'Mobile number already exists' });
+            }
+        }
+
+        // Update the user's first name, last name, and mobile number if valid
+        currentUser.FirstName = firstName;
+        currentUser.LastName = lastName;
+        currentUser.MobileNo = mobileNumber;
+
+        const updatedUser = await currentUser.save();
+
+        // If the user is updated successfully, redirect to my account
+        return res.status(200).json({ success: true, redirectUrl: '/myaccount' });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Server error' });
+    }
+}
+
+const addressLoad = async(req,res)=>{ 
+    try {
+        
+        const userId = req.session.user_id;
+
+        // Find all addresses for the current user
+        const addresses = await Address.find({ UserId: userId });
+
+        // Render the addressBook.ejs template with the addresses
+        res.render('addressBook', { addresses,userId});
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Server error');
+    }
+};
+
+//add address
+
+const addAddress = async (req, res) => {
+    try {
+        const { UserId, FullName, MobileNo, Address: addressLine, Landmark, Pincode, FlatNo, AddressType, District, State, Country, City } = req.body;
+
+        if (!UserId || !FullName || !MobileNo || !addressLine || !Pincode || !District || !State || !Country || !City) {
+            return res.status(400).json({ message: 'Please fill in all required fields.' });
+        }
+        // Validate User
+        const user = await User.findById(UserId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        // Create new address
+        const newAddress = new Address({
+            UserId,
+            FullName,
+            MobileNo,
+            Address: addressLine,
+            Landmark,
+            Pincode,
+            FlatNo,
+            AddressType,
+            District,
+            State,
+            Country,
+            City
+        });
+
+        // Save the address to the database
+        await newAddress.save();
+
+        // Respond with success message
+        res.status(201).json({ message: 'Address added successfully.' });
+    } catch (error) {
+        console.error('Error adding address:', error);
+        res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+};
+
+//delete address
+const deleteAddress = async (req, res) => {
+    try {
+        const addressId = req.params.id;
+
+        // Find and delete the address
+        const result = await Address.findByIdAndDelete(addressId);
+
+        if (!result) {
+            return res.status(404).json({ message: 'Address not found.' });
+        }
+
+        // Respond with success message
+        res.status(200).json({ message: 'Address deleted successfully.' });
+    } catch (error) {
+        console.error('Error deleting address:', error);
+        res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+};
+
+const editAddress = async (req, res) => {
+    try {
+        const { AddressId, FullName, MobileNo, Address:addressLine, Landmark, Pincode, FlatNo, AddressType, District, State, Country, City } = req.body;
+
+        // Find the address by ID
+        const address = await Address.findById(AddressId);
+
+        if (!address) {
+            return res.status(404).json({ message: 'Address not found' });
+        }
+
+        // Update the address details
+        address.FullName = FullName;
+        address.MobileNo = MobileNo;
+        address.Address = addressLine;
+        address.Landmark = Landmark || '';
+        address.Pincode = Pincode;
+        address.FlatNo = FlatNo || '';
+        address.AddressType = AddressType;
+        address.District = District;
+        address.State = State;
+        address.Country = Country;
+        address.City = City;
+
+        // Save the updated address
+        await address.save();
+
+        // Send a success response
+        res.json({ message: 'Address updated successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 module.exports = {
     loadHome,
     loadShop,
@@ -404,4 +662,12 @@ module.exports = {
     deleteUser,
     userLogout,
     listProduct,
+    forgotPassword,
+    resetPasswordLoad,
+    resetPassword,
+    editUser,
+    addressLoad,
+    addAddress,
+    deleteAddress,
+    editAddress,
 }
