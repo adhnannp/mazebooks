@@ -80,6 +80,12 @@ user_route.post('/myaccount/add-address',auth.isLogin,userController.addAddress)
 
 user_route.delete('/myaccount/delete-address/:id',auth.isLogin,userController.deleteAddress);
 
-user_route.post('/myaccount/edit-address',auth.isLogin,userController.editAddress);
+user_route.post('/myaccount/edit-address/:id',auth.isLogin,userController.editAddress);
+
+user_route.post('/cart/add',auth.isLogin,userController.addToCart);
+
+user_route.get('/myaccount/edit-password',auth.isAdminLogin,auth.isLogin,userController.editPasswordLoad);
+
+user_route.post('/myaccount/edit-password',auth.isLogin,userController.editPassword);
 
 module.exports = user_route;

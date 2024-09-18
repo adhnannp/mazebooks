@@ -81,10 +81,10 @@
                 <li class="nav-item">
                     <a class="nav-link" href="/shop">Shop</a>
                 </li>
-                <li class="nav-item"></li>
+                <li class="nav-item">
                     <a class="nav-link" href="#">Best Seller</a>
                 </li>
-                <li class="nav-item"></li>
+                <li class="nav-item">
                     <a class="nav-link" href="#">Today's Deal</a>
                 </li>
                 <li class="nav-item">
@@ -248,8 +248,8 @@
         <!-- Sidebar -->
         <div class="account-sidebar">
             <% if (user.Is_verified) { %>
-            <a href="/account" class="account-selected">Account Overview</a>
-            <a href="/change-password">Change Password</a>
+            <a href="/myaccount" class="account-selected">Account Overview</a>
+            <a href="/myaccount/edit-password">Change Password</a>
             <a href="/order-history">Order History</a>
             <a href="/myaccount/address-book">Address Book</a>
             <% } else { %>

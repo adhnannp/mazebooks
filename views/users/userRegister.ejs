@@ -318,7 +318,7 @@ body {
 <div class="account-container">
     <!-- Breadcrumbs -->
     <div class="account-breadcrumbs">
-        <a href="/">Home</a> <span>&gt;</span><a href="/myAccount">Account overview</a><span>&gt;</span><span>Register</span>
+        <a href="/">Home</a> <span>&gt;</span><a href="/myAccount">my Account</a><span>&gt;</span><span>Register</span>
     </div>
 
     <div class="account-overview-container">
@@ -455,7 +455,7 @@ body {
         const mobileNumberRegex = /^(?!([0-9])\1{9})[6-9][0-9]{9}$/;
 
         if (!mobileNumber.match(mobileNumberRegex)) {
-            mobileNumberValidationMessage.textContent = 'Mobile number must be exactly 10 digits';
+            mobileNumberValidationMessage.textContent = 'Invalid Mobile number';
             mobileNumberValidationMessage.style.color = 'red';
             return false;
         }
@@ -468,7 +468,7 @@ body {
         const passwordRegex = /^(?!.*\s)(?=.*[A-Za-z])(?=.*\d|.*[\W_]).{8,}$/;
 
         if (!password.match(passwordRegex)) {
-            passwordValidationMessage.textContent = 'Password must be at least 8 characters long, with no spaces, and include at least one letter and one digit or special character';
+            passwordValidationMessage.textContent = 'Password must be at least 8 characters long, with no spaces, at least one letter and one digit or special character';
             passwordValidationMessage.style.color = 'red';
             return false;
         }

@@ -6,6 +6,7 @@ const nodemailer = require('nodemailer');
 const Product = require("../models/productModel");
 const Category = require("../models/categoryModel");
 const Address = require("../models/addressModel");
+const Cart = require("../models/cartModel");
 
 //registration
 
@@ -31,12 +32,12 @@ const loadHome = async(req,res)=>{
 
         // Calculate total products and pages
         const totalProducts = await Product.countDocuments({
-            CategoryId: { $in: listedCategoryIds } // Categories that are listed
+            CategoryId: { $in: listedCategoryIds },Is_list:true // Categories that are listed
         });
 
         // Fetch products with pagination and populate category
         const products = await Product.find({
-            CategoryId: { $in: listedCategoryIds } // Categories that are listed
+            CategoryId: { $in: listedCategoryIds },Is_list:true // Categories that are listed
         })
             .populate('CategoryId')
             .limit(12);
@@ -70,7 +71,7 @@ const loadShop = async (req, res) => {
 
         // Prepare filter for products
         const productFilter = {
-            CategoryId: { $in: listedCategoryIds }, // Categories that are listed
+            CategoryId: { $in: listedCategoryIds },Is_list:true, // Categories that are listed
         };
 
         if (selectedGenre) {
@@ -378,14 +379,15 @@ const userLogout = async(req,res)=>{
     }
 }
 
-const listProduct = async(req,res)=>{
+const listProduct = async (req, res) => {
     try {
         const productId = req.params.id;
         const book = await Product.findById(productId).populate('CategoryId'); // Populate the Category details
+        const isLoggedIn = req.session && req.session.user_id; // Check if user is logged in
 
-        res.render('productOverView', {book});
+        res.render('productOverView', { book, isLoggedIn });
     } catch (error) {
-        console.log(error.massage)
+        console.log(error.message); // Corrected from 'error.massage' to 'error.message'
         res.redirect('/home');
     }
 }
@@ -615,36 +617,144 @@ const deleteAddress = async (req, res) => {
 
 const editAddress = async (req, res) => {
     try {
-        const { AddressId, FullName, MobileNo, Address:addressLine, Landmark, Pincode, FlatNo, AddressType, District, State, Country, City } = req.body;
-
-        // Find the address by ID
-        const address = await Address.findById(AddressId);
-
-        if (!address) {
-            return res.status(404).json({ message: 'Address not found' });
+        const { FullName, MobileNo, Address: addressLine, Landmark, Pincode, FlatNo, AddressType, District, State, Country, City } = req.body;
+        const AddressId = req.params.id;
+        // Validation logic (if not handled client-side or for additional server-side checks)
+        if (!FullName || !MobileNo || !addressLine || !Pincode || !District || !State || !Country || !City) {
+            return res.status(400).json({ message: 'Please fill in all required fields.' });
         }
 
-        // Update the address details
+        // Check if address exists in the database
+        const address = await Address.findById(AddressId);
+        if (!address) {
+            return res.status(404).json({ message: 'Address not found.' });
+        }
+
+        // Update the address fields
         address.FullName = FullName;
         address.MobileNo = MobileNo;
         address.Address = addressLine;
-        address.Landmark = Landmark || '';
+        address.Landmark = Landmark;
         address.Pincode = Pincode;
-        address.FlatNo = FlatNo || '';
+        address.FlatNo = FlatNo;
         address.AddressType = AddressType;
         address.District = District;
         address.State = State;
         address.Country = Country;
         address.City = City;
 
-        // Save the updated address
+        // Save the updated address to the database
         await address.save();
 
-        // Send a success response
-        res.json({ message: 'Address updated successfully' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error' });
+        // Respond with success message
+        res.status(200).json({ message: 'Address updated successfully.' });
+    } catch (error) {
+        console.error('Error updating address:', error);
+        res.status(500).json({ message: 'An error occurred while updating the address.' });
+    }
+};
+
+// Add product to cart
+const addToCart = async(req,res)=>{
+    try {
+        const { productId, quantity } = req.body;
+        const userId = req.session.user_id;
+    
+        // Check if the product exists
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.json({ success: false, message: 'Product not found' });
+        }
+    
+        // Find or create a cart for the user
+        let cart = await Cart.findOne({ UserId: userId });
+        if (!cart) {
+            cart = new Cart({ UserId: userId, Products: [] });
+        }
+    
+        // Check if the product is already in the cart
+        const itemIndex = cart.Products.findIndex(item => item.ProductId.equals(productId));
+    
+        if (itemIndex > -1) {
+            // Existing item in the cart
+            let newQuantity = cart.Products[itemIndex].Quantity + parseInt(quantity);
+    
+            if (newQuantity > 8) {
+                return res.json({ success: false, message: 'You cannot add more than 8 units of this product.' });
+            }
+    
+            // Update quantity and price for the existing product in the cart
+            cart.Products[itemIndex].Quantity = newQuantity;
+            cart.Products[itemIndex].Price = product.Price; // Update price if required
+        } else {
+            // New product in cart, ensure quantity doesn't exceed 8
+            if (quantity > 8) {
+                return res.json({ success: false, message: 'You cannot add more than 8 units of this product.' });
+            }
+    
+            // Add new product to cart
+            cart.Products.push({ ProductId: productId, Quantity: parseInt(quantity), Price: product.Price });
+        }
+    
+        // Save the cart and respond with success
+        await cart.save();
+        res.json({ success: true, message: 'Product added to cart successfully.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+}
+
+//edit password load
+const editPasswordLoad = async(req,res)=>{
+    try {
+        const userData = await User.findById(req.session.user_id)
+        res.render('editPassword',{message:"",user:userData});
+    } catch (error) {
+        console.log(error.message);
+    }
+}
+
+//edit the users's passsowrd if user is loggen in only
+const editPassword = async (req, res) => {
+    try {
+        const userId = req.session.user_id; // Get user ID from session
+        const { oldPassword, newPassword } = req.body;
+
+        // Fetch user from the database using the userId
+        const user = await User.findById(userId); // Assuming you're using Mongoose
+
+        // Check if user exists
+        if (!user) {
+            return res.render('editPassword', { message: "User not found.",user});
+        }
+
+        // Compare old password with the stored hashed password
+        const isMatch = await bcrypt.compare(oldPassword, user.Password);
+        if (!isMatch) {
+            // Old password doesn't match
+            return res.render('editPassword', { message: "Old password is incorrect.",user});
+        }
+        
+        // if user enter the same password as the older password then show error
+        const isSame = await bcrypt.compare(newPassword, user.Password);
+        if (isSame) {
+            return res.render('editPassword', { message: "New password is same as the Old Password",user});
+        }
+
+        // Hash the new password
+        const hashedNewPassword = await securePassword(newPassword);
+
+        // Update the user's password in the database
+        user.Password = hashedNewPassword;
+        user.UpdatedAt = Date.now()
+        await user.save();
+
+        res.render('editPassword', { message: "Password updated successfully",user});
+    } catch (error) {
+        const user = await User.findById(req.session.user_id);
+        console.log(error.message);
+        res.render('editPassword', { message: "An error occurred while updating the password.",user});
     }
 };
 
@@ -670,4 +780,7 @@ module.exports = {
     addAddress,
     deleteAddress,
     editAddress,
+    addToCart,
+    editPasswordLoad,
+    editPassword,
 }

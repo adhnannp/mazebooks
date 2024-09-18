@@ -93,12 +93,12 @@
                             <a class="nav-link" href="/">Home</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">Shop</a>
+                            <a class="nav-link" href="/shop">Shop</a>
                         </li>
-                        <li class="nav-item"></li>
+                        <li class="nav-item">
                             <a class="nav-link" href="#">Best Seller</a>
                         </li>
-                        <li class="nav-item"></li>
+                        <li class="nav-item">
                             <a class="nav-link" href="#">Today's Deal</a>
                         </li>
                         <li class="nav-item">
@@ -120,7 +120,7 @@
         </nav>
         <br><br>
         <div class="account-breadcrumbs">
-            <a href="/">Home</a> <span>&gt;</span><span>Product</span>
+            <a href="/">Home</a> <span>&gt;<a href="/shop">Products</a>&gt;</span><span><%= book.Name %></span>
         </div>
         <div class="product-page">
             <div class="product-main">
@@ -136,174 +136,419 @@
                 </div>
             </div>
             <div class="product-details">
-                <h1 class="product-title"><%= book.Name %></h1>
+                <h1 class="product-title">
+                    <%= book.Name %>
+                    <% if (isLoggedIn) { %>
+                        <button class="btn-heart" onclick="addToWishlist()"><i class="fas fa-heart"></i></button>
+                    <% } else { %>
+                        <button class="btn-heart" onclick="showLoginModal()"><i class="fas fa-heart"></i></button>
+                    <% } %>
+                </h1>
                 <p class="product-price">&#8377;<%= book.Price %></p>
                 <p class="product-description"><%= book.Description %></p>
-                <p><%= book.CategoryId.CategoryName %></p>
-                <% if(!book.Is_list ) { %>
-                        <p class="product-status unavailable">Unavailable</p>
-                <% } else if(book.Quantity>0 && 10>book.Quantity ) { %>
+                <p><strong>Author: </strong><%= book.Author %></p>
+                <p><strong>Genre: </strong><%= book.CategoryId.CategoryName %></p>
+                
+                <% if (!book.Is_list) { %>
+                    <p class="product-status unavailable">Unavailable</p>
+                <% } else if (book.Quantity > 0 && book.Quantity < 10) { %>
                     <p class="product-status unavailable">Only <%= book.Quantity %> In Stock</p>
-                <% }else if(book.Quantity === 0) { %>
+                    <!-- Product count selection -->
+                    <div class="product-count">
+                        <label for="quantity">Quantity:</label>
+                        <select id="quantity" name="quantity">
+                            <% for (let i = 1; i <= Math.min(book.Quantity, 8); i++) { %>
+                                <option value="<%= i %>"><%= i %></option>
+                            <% } %>
+                        </select>
+                    </div>
+                    <br>
+                    <% if (isLoggedIn) { %>
+                        <div class="product-actions">
+                            <button class="btn btn-add-to-cart" onclick="addToCart('<%= book._id %>')">
+                                <i class="fas fa-cart-plus"></i> Add to Cart
+                            </button>
+                            <button class="btn btn-primary" onclick="buyNow('<%= book._id %>')">Buy Now</button>
+                        </div>
+                    <% } else { %>
+                        <div class="product-actions">
+                            <button class="btn btn-add-to-cart" onclick="showLoginModal()">
+                                <i class="fas fa-cart-plus"></i> Add to Cart
+                            </button>
+                            <button class="btn btn-primary" onclick="showLoginModal()">Buy Now</button>
+                        </div>
+                    <% } %>
+                <% } else if (book.Quantity === 0) { %>
                     <p class="product-status sold-out">Sold Out</p>
                 <% } else { %>
-                    <p class="product-status" style="color: green;font-weight: bold;">In Stock</p>
-                    <div class="product-actions">
-                        <button class="btn"><i class="fas fa-shopping-cart"></i></button>
-                        <button class="btn"><i class="fas fa-heart"></i></button>
-                        <button class="btn btn-primary">Buy Now</button> <!-- Added Buy Now button -->
+                    <p class="product-status" style="color: green; font-weight: bold;">In Stock</p>
+                    <!-- Product count selection -->
+                    <div class="product-count">
+                        <label for="quantity">Quantity:</label>
+                        <select id="quantity" name="quantity">
+                            <% for (let i = 1; i <= Math.min(book.Quantity, 8); i++) { %>
+                                <option value="<%= i %>"><%= i %></option>
+                            <% } %>
+                        </select>
                     </div>
+                    <br>
+                    <% if (isLoggedIn) { %>
+                        <div class="product-actions">
+                            <button class="btn btn-add-to-cart" onclick="addToCart('<%= book._id %>')">
+                                <i class="fas fa-cart-plus"></i> Add to Cart
+                            </button>
+                            <button class="btn btn-primary" onclick="buyNow('<%= book._id %>')">Buy Now</button>
+                        </div>
+                    <% } else { %>
+                        <div class="product-actions">
+                            <button class="btn btn-add-to-cart" onclick="showLoginModal()">
+                                <i class="fas fa-cart-plus"></i> Add to Cart
+                            </button>
+                            <button class="btn btn-primary" onclick="showLoginModal()">Buy Now</button>
+                        </div>
+                    <% } %>
                 <% } %>
             </div>
         </div>
-        
-        <style>
-            .product-page {
-                margin-top: 50px;
-                display: flex;
-                flex-direction: row;
-                gap: 20px; /* Space between the main content and details */
-                align-items: flex-start;
-            }
-        
-            .product-main {
-                display: flex;
-                flex-direction: row;
-                gap: 20px; /* Space between selected image and thumbnails */
-                flex: 2;
-            }
-        
-            .selected-image {
-                flex: 5;
-                position: relative; /* Needed for positioning the zoom preview */
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                overflow: hidden; /* Ensures zoomed image stays within bounds */
-                border: 1px solid #ddd;
-                border-radius: 5px;
-            }
 
-            .selected-image img {
-                width: 300px; /* Adjust width as needed */
-                height: auto; /* Maintain aspect ratio */
-                object-fit: contain;
-                transition: transform 0.3s ease-in-out;
-                border: 1px solid #ddd;
-                border-radius: 5px;
-            }
+        <!-- Login Modal -->
+        <div id="loginModal" class="modal fade" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-sm" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Login Required</h5>
+                        <button type="button" style="border: none;" class="close btn-danger" onclick="closeLoginModal()" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>You are not logged in. Please login or register.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="redirectToLogin()">Login</button>
+                        <button type="button" class="btn btn-secondary" onclick="redirectToRegister()">Register</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-            .selected-image img.zoom {
-                position: relative;
-            }
+        <!-- Success Modal -->
+<div id="successModal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Success</h5>
+                <button type="button" style="border: none;" class="close btn-secondary" onclick="closeSuccessModal()" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                <i class="fas fa-check-circle" style="color: green; font-size: 2rem;"></i>
+                <p>Added to Cart Successfully!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeSuccessModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-            .zoom-preview {
-                position: absolute;
-                top: 0;
-                right: 0;
-                width: 200px; /* Preview size */
-                height: 200px;
-                border: 1px solid #ddd;
-                background: rgba(255, 255, 255, 0.8); /* Slightly opaque background */
-                border-radius: 5px;
-                overflow: hidden;
-                display: none; /* Hidden by default */
-            }
+<!-- Error Modal -->
+<div id="errorModal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">Error</h5>
+          <button type="button" class="close btn-secondary" style="border: none;" aria-label="Close" onclick="closeErrorModal()">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p id="errorMessage">Something went wrong. Please try again.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeErrorModal()">Close</button>
+        </div>
+      </div>
+    </div>
+</div>
+        
+<style>
+.modal-sm {
+    max-width: 300px;
+}
+.modal-content {
+    padding: 15px;
+}
+.modal-header {
+    border-bottom: none;
+}
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
 
-            .zoom-preview img {
-                position: absolute;
-                top: -100%; /* Move the image up by 100% to fit in the preview area */
-                left: -100%;
-                width: 200%; /* Zoomed-in image width */
-                height: 200%; /* Zoomed-in image height */
-                object-fit: contain;
-            }
+.product-count label {
+    font-size: 16px;
+    margin-right: 10px;
+}
 
-            .selected-image img.zoom:hover ~ .zoom-preview {
-                display: block; /* Show preview when zoomed image is hovered */
-            }
-        
-            .product-images {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                align-items: flex-start;
-            }
-        
-            .product-images img {
-                width: 100px; /* Thumbnail size */
-                margin-bottom: 10px;
-                cursor: pointer;
-                border: 1px solid #ddd;
-                border-radius: 5px;
-                transition: transform 0.2s;
-            }
-        
-            .product-images img:hover {
-                transform: scale(1.2); /* Zoom effect for thumbnails */
-            }
-        
-            .product-details {
-                flex: 1;
-                padding: 15px;
-            }
-        
-            .product-title {
-                font-size: 24px;
-                margin-bottom: 10px;
-            }
-        
-            .product-price {
-                font-size: 20px;
-                color: #007bff;
-                margin-bottom: 15px;
-            }
-        
-            .product-description {
-                margin-bottom: 20px;
-                font-size: 16px;
-            }
-        
-            .product-actions {
-                display: flex;
-                gap: 10px;
-            }
-        
-            .btn {
-                padding: 10px 15px;
-                border: none;
-                border-radius: 5px;
-                cursor: pointer;
-            }
-        
-            .btn-primary {
-                background-color: #007bff;
-                color: #fff;
-            }
-        
-            .btn-success {
-                background-color: #28a745;
-                color: #fff;
-            }
-        
-            .btn:hover {
-                opacity: 0.9;
-            }
-        
-            .sold-out, .unavailable {
-                color: red;
-                font-weight: bold;
-            }
-        
-            .sold-out {
-                font-size: 18px;
-            }
-        
-            .unavailable {
-                font-size: 18px;
-            }
+.product-count select {
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.product-actions {
+    display: flex;
+    gap: 10px;
+}
+
+
+.product-page {
+    margin-top: 50px;
+    display: flex;
+    flex-direction: row;
+    gap: 20px; /* Space between the main content and details */
+    align-items: flex-start;
+}
+
+.product-main {
+    display: flex;
+    flex-direction: row;
+    gap: 20px; /* Space between selected image and thumbnails */
+    flex: 2;
+}
+
+.selected-image {
+    flex: 5;
+    position: relative; /* Needed for positioning the zoom preview */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* Ensures zoomed image stays within bounds */
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.selected-image img {
+    width: 300px; /* Adjust width as needed */
+    height: auto; /* Maintain aspect ratio */
+    object-fit: contain;
+    transition: transform 0.3s ease-in-out;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.zoom-preview {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 200px; /* Preview size */
+    height: 200px;
+    border: 1px solid #ddd;
+    background: rgba(255, 255, 255, 0.8); /* Slightly opaque background */
+    border-radius: 5px;
+    overflow: hidden;
+    display: none; /* Hidden by default */
+}
+
+.zoom-preview img {
+    position: absolute;
+    top: -100%; /* Move the image up by 100% to fit in the preview area */
+    left: -100%;
+    width: 200%; /* Zoomed-in image width */
+    height: 200%; /* Zoomed-in image height */
+    object-fit: contain;
+}
+
+.selected-image img.zoom:hover ~ .zoom-preview {
+    display: block; /* Show preview when zoomed image is hovered */
+}
+
+.product-images {
+    flex: 1;
+    display: flex;
+    flex-direction: column; /* Default to vertical stacking */
+    align-items: flex-start;
+}
+
+.product-images img {
+    width: 100px; /* Thumbnail size */
+    margin-bottom: 10px;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    transition: transform 0.2s;
+}
+
+.product-images img:hover {
+    transform: scale(1.2); /* Zoom effect for thumbnails */
+}
+
+/* Responsive styling */
+@media (max-width: 768px) {
+    .product-images {
+        flex-direction: row; /* Change to horizontal layout on small screens */
+        overflow-x: auto; /* Allow horizontal scrolling */
+        gap: 10px; /* Space between images */
+    }
+
+    .product-images img {
+        width: 80px; /* Adjust thumbnail size for smaller screens */
+        margin-bottom: 0; /* Remove bottom margin in horizontal layout */
+        margin-right: 10px; /* Add space between images */
+    }
+}
+
+.product-details {
+    flex: 1;
+    padding: 15px;
+}
+
+.product-title {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.product-price {
+    font-size: 20px;
+    color: #007bff;
+    margin-bottom: 15px;
+}
+
+.product-description {
+    margin-bottom: 20px;
+    font-size: 16px;
+}
+
+.product-actions {
+    display: flex;
+    gap: 10px;
+}
+
+
+/* Add to Cart button */
+.btn-add-to-cart {
+    background-color: #E4A11B; /* Yellow background */
+    color: #000; /* Black text color */
+    padding: 10px 15px; /* Adjust padding */
+    border: none;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Space between icon and text */
+    cursor: pointer;
+    font-size: 16px; /* Adjust font size */
+}
+
+.btn-add-to-cart i {
+    font-size: 18px; /* Adjust icon size */
+}
+
+/* Hover effect for Add to Cart button */
+.btn-add-to-cart:hover {
+    opacity: 0.9; /* Slightly fade on hover */
+}
+
+
+/* Button styles */
+.btn {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Buy Now button */
+.btn-primary {
+    background-color: #007bff;
+    color: #fff;
+}
+
+/* Hover effects for buttons */
+.btn:hover {
+    opacity: 0.9;
+}
+
+/* Heart icon glow effect */
+.btn-heart {
+    background: none;
+    border: none;
+    color: #000; /* Default color */
+    font-size: 20px;
+    transition: color 0.3s, text-shadow 0.3s;
+}
+
+.btn-heart:hover {
+    color: hsl(350, 76%, 65%); /* Pink color on hover */
+}
+
+/* Status styles */
+.sold-out, .unavailable {
+    color: red;
+    font-weight: bold;
+}
+
+.sold-out {
+    font-size: 18px;
+}
+
+.unavailable {
+    font-size: 18px;
+}
+
+/* Responsive styling */
+@media (max-width: 768px) {
+    .product-page {
+        flex-direction: column; /* Stack vertically on smaller screens */
+    }
+
+    .product-main {
+        flex-direction: column;
+    }
+
+    .selected-image {
+        width: 100%; /* Make selected image container full width */
+    }
+
+    .selected-image img {
+        width: 100%; /* Make image fit the container */
+    }
+
+    .zoom-preview {
+        width: 150px;
+        height: 150px;
+    }
+
+    .product-images img {
+        width: 80px; /* Reduce thumbnail size on smaller screens */
+    }
+
+    .product-title {
+        font-size: 20px;
+    }
+
+    .product-price {
+        font-size: 18px;
+    }
+
+    .product-description {
+        font-size: 14px;
+    }
+
+    .btn {
+        padding: 8px 12px;
+    }
+}
         </style>        
-
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz4fnFO9Dcsf54Xr1JPrT9bqU4ZJhPt6yU4EMCqiljW00P17JdG3BOWtFz" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     function selectImage(imageSrc) {
     const mainImage = document.getElementById('main-image');
@@ -331,10 +576,68 @@
         zoomPreview.style.display = 'block'; // Show preview when mouse enters the image
     });
 }
+
+
+
+function redirectToLogin() {
+    window.location.href = '/login'; // Adjust the path as needed
+}
+
+function redirectToRegister() {
+    window.location.href = '/register'; // Adjust the path as needed
+}
+
+function showLoginModal() {
+  $('#loginModal').modal('show');
+}
+
+function closeLoginModal() {
+  $('#loginModal').modal('hide');
+}
+
+function showSuccessModal() {
+  $('#successModal').modal('show');
+}
+
+function closeSuccessModal() {
+  $('#successModal').modal('hide');
+}
+
+function showErrorModal(message) {
+  document.getElementById('errorMessage').textContent = message;
+  $('#errorModal').modal('show');
+}
+
+function closeErrorModal() {
+  $('#errorModal').modal('hide');
+}
+
+function addToCart(productId) {
+    const quantity = document.getElementById('quantity').value;
+  fetch('/cart/add', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ productId, quantity })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      showSuccessModal();
+    } else {
+      showErrorModal(data.message || 'Failed to add to cart.');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showErrorModal('An unexpected error occurred.');
+  });
+}
+
+function buyNow(productId) {
+  window.location.href = `/checkout?product=${productId}`;
+}
 </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz4fnFO9Dcsf54Xr1JPrT9bqU4ZJhPt6yU4EMCqiljW00P17JdG3BOWtFz" crossorigin="anonymous"></script>
 </body>
 </html>
