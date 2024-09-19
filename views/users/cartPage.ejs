@@ -1,0 +1,436 @@
+<%- include('../userLayouts/header') %>
+<div class="cart-container">
+    <% if (user && user.Is_verified) { %>
+        <% if (cartItems.length === 0) { %>
+            <!-- Display if cart is empty -->
+            <div class="empty-cart-message">
+                <h2>Your Cart is Empty</h2>
+                <p>Looks like you haven't added anything to your cart yet!</p>
+                <a href="/shop" class="continue-shopping-btn">Continue Shopping</a>
+            </div>
+        <% } else { %>
+            <!-- Display if cart has items -->
+            <div class="cart-items">
+                <% cartItems.forEach(item => { %>
+                    <div class="product-card" id="product-card-<%= item.ProductId._id %>">
+                        <div class="product-checkbox-container">
+                            <input type="checkbox" class="product-checkbox" id="checkbox-<%= item.ProductId._id %>" value="<%= item.ProductId._id %>" onchange="toggleProductSelection('<%= item.ProductId._id %>')">
+                            <label for="checkbox-<%= item.ProductId._id %>" class="checkbox-label"></label>
+                        </div>
+                        <img src="/static/uploads/<%= item.ProductId.Images[0] %>" alt="<%= item.ProductId.Name %>" class="product-image">
+                        <div class="product-details">
+                            <div class="product-name"><%= item.ProductId.Name %></div>
+                            <div class="product-price">₹ <%= item.Price.toFixed(2) %></div>
+                            <div class="product-quantity">
+                                <label for="quantity-<%= item.ProductId._id %>">Quantity:</label>
+                                <select id="quantity-<%= item.ProductId._id %>" name="quantity" onchange="updateCart('<%= item.ProductId._id %>')">
+                                    <% for (let i = 1; i <= Math.min(item.ProductId.Quantity, 8); i++) { %>
+                                        <option value="<%= i %>" <%= i === item.Quantity ? 'selected' : '' %>><%= i %></option>
+                                    <% } %>
+                                </select>
+                                <% if (item.ProductId.Quantity < 8) { %>
+                                    <p style="color: red; margin: 5px 0;"><%= item.ProductId.Quantity %> left</p>
+                                <% } %>
+                            </div>
+                            <div class="product-total" id="total-price-<%= item.ProductId._id %>">
+                                Total: ₹ <%= (item.Quantity * item.ProductId.Price).toFixed(2) %>
+                            </div>
+                            <i class="fas fa-trash delete-icon" onclick="openDeleteModal('<%= item.ProductId._id %>')"></i>
+                        </div>
+                    </div>
+                <% }) %>
+            </div>
+    
+            <div class="cart-totals">
+                <h2>Cart Summary</h2>
+                <p>Subtotal: ₹ <span id="cart-subtotal"><%= cartTotal.toFixed(2) %></span></p>
+                <p id="shipping-message">
+                    <% if (cartTotal > 499) { %>
+                        You are eligible for Cash on Delivery
+                    <% } else { %>
+                        ₹ 50 cash on delivery fee applied
+                    <% } %>
+                </p>
+                <p>Total: ₹ <span id="cart-total"><%= (cartTotal > 499 ? cartTotal : cartTotal + 50).toFixed(2) %></span></p>
+                <form id="checkout-form" action="/product/checkout" method="POST">
+                    <input type="hidden" id="selected-items" name="selectedItems" value="">
+                    <button type="button" class="checkout-btn" onclick="proceedToCheckout()">PROCEED TO CHECKOUT</button>
+                </form>
+                <p id="error-message" style="color: red; display: none;">Please select at least one product to proceed.</p>
+            </div>
+        <% } %>
+    <% } else { %>
+        <div class="registration-section">
+            <h2>You are not logged in</h2>
+            <p>Please <a href="/login" class="btn-link">Login</a> to access your account details.</p>
+            <p>Don't have an account? <a href="/register" class="btn-link">Register</a> now to get started.</p>
+        </div>
+    <% } %>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="deleteConfirmationModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Are you sure you want to delete this item?</h2>
+        <button id="confirmDelete" class="modal-btn confirm-btn">Yes, Delete</button>
+        <button id="cancelDelete" class="modal-btn cancel-btn">Cancel</button>
+    </div>
+</div>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f4f4f4;
+    }
+    .product-checkbox-container {
+        margin-right: 15px;
+        margin-left: 15px;
+        display: flex; /* Use flexbox for alignment */
+        align-items: center; /* Center align items vertically */
+    }
+
+    .product-checkbox {
+        width: 24px; /* Set the size of the checkbox */
+        height: 24px; /* Set the size of the checkbox */
+        cursor: pointer;
+        transition: transform 0.2s; /* Animation for scaling */
+    }
+
+    .product-checkbox:checked {
+        transform: scale(1.1); /* Slightly scale up when checked */
+    }
+
+    .empty-cart-message {
+        padding: 40px;
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        margin-top: 50px;
+    }
+
+    .empty-cart-message h2 {
+        font-size: 28px;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .empty-cart-message p {
+        font-size: 16px;
+        color: #555;
+        margin-bottom: 20px;
+    }
+
+    .continue-shopping-btn {
+        display: inline-block;
+        padding: 10px 20px;
+        background-color: #4F2F2D;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+    }
+
+    .continue-shopping-btn:hover {
+        background-color: #3D2523;
+    }
+    .cart-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+    .cart-items {
+        flex: 1 1 65%;
+        min-width: 300px;
+    }
+    .cart-totals {
+        flex: 0 1 calc(35% - 20px);
+        min-width: 250px;
+        align-self: flex-start;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .product-card {
+        display: flex;
+        background-color: #fff;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .product-image {
+        width: 100px;
+        height: 150px;
+        object-fit: cover;
+    }
+    .product-details {
+        flex: 1;
+        padding: 15px;
+        position: relative;
+    }
+    .product-name {
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    .product-price {
+        color: #888;
+    }
+    .product-quantity {
+        margin-top: 10px;
+    }
+    .product-total {
+        font-weight: bold;
+        margin-top: 10px;
+    }
+    .delete-icon {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        color: #ff4d4d;
+        cursor: pointer;
+    }
+    select {
+        padding: 5px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+    }
+    .checkout-btn {
+        background-color: #4F2F2D;
+        color: white;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        width: 100%;
+        font-size: 16px;
+        margin-top: 20px;
+    }
+    .checkout-btn:hover {
+        background-color: #3D2523;
+    }
+    @media (max-width: 768px) {
+        .cart-container {
+            flex-direction: column;
+        }
+        .cart-items, .cart-totals {
+            flex: 1 1 100%;
+            width: 100%;
+        }
+        .product-card {
+            flex-direction: row; /* Keep horizontal layout for tablets */
+        }
+    }
+    @media (max-width: 480px) {
+        .product-card {
+            flex-direction: column;
+        }
+        .product-image {
+            width: 100%;
+            height: 200px;
+        }
+    }
+    .modal {
+        display: none; 
+        position: fixed; 
+        z-index: 1; 
+        left: 0;
+        top: 0;
+        width: 100%; 
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.4); 
+    }
+
+    .modal-content {
+        background-color: #fff;
+        margin: 15% auto; 
+        padding: 20px;
+        width: 300px; 
+        text-align: center;
+        border-radius: 5px;
+    }
+
+    .modal-btn {
+        padding: 10px 20px;
+        margin: 10px;
+        cursor: pointer;
+    }
+
+    .confirm-btn {
+        background-color: #f44336;
+        color: white;
+        border: none;
+    }
+
+    .cancel-btn {
+        background-color: #ddd;
+        color: black;
+        border: none;
+    }
+
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 24px;
+        cursor: pointer;
+    }
+</style>
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Bootstrap JS and Popper.js -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz4fnFO9Dcsf54Xr1JPrT9bqU4ZJhPt6yU4EMCqiljW00P17JdG3BOWtFz" crossorigin="anonymous"></script>
+<script>
+let productIdToDelete = null;
+
+function openDeleteModal(productId) {
+    productIdToDelete = productId; // Store the product ID to delete
+    const modal = document.getElementById('deleteConfirmationModal');
+    modal.style.display = 'block';
+}
+
+// Close the modal
+const closeModal = document.querySelector('.close');
+closeModal.onclick = function() {
+    document.getElementById('deleteConfirmationModal').style.display = 'none';
+};
+
+// Cancel button event
+document.getElementById('cancelDelete').onclick = function() {
+    document.getElementById('deleteConfirmationModal').style.display = 'none';
+};
+
+// Confirm delete button event
+document.getElementById('confirmDelete').onclick = function() {
+    removeFromCart(productIdToDelete); // Call your removeFromCart function
+    document.getElementById('deleteConfirmationModal').style.display = 'none'; // Close the modal
+};
+
+// Close the modal if user clicks outside of the modal content
+window.onclick = function(event) {
+    const modal = document.getElementById('deleteConfirmationModal');
+    if (event.target == modal) {
+        modal.style.display = 'none';
+    }
+};
+
+//update cart not delete
+function updateCart(productId) {
+    const quantity = document.getElementById(`quantity-${productId}`).value;
+
+    // Make an AJAX request to update the cart
+    fetch('/cart/update-cart', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            productId: productId,
+            quantity: quantity
+        }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Dynamically update the UI without reloading the page
+            const productRow = document.getElementById(`product-row-${productId}`);
+            const totalElement = document.getElementById(`total-price-${productId}`);
+
+            // Update the product's total price (single price * quantity)
+            const updatedTotalPrice = data.updatedProductPrice.toFixed(2);
+            totalElement.textContent = `₹ ${updatedTotalPrice}`;
+
+            // Update the cart's subtotal
+            document.getElementById('cart-subtotal').textContent = `${data.newSubtotal.toFixed(2)}`;
+
+            // Update the total price including shipping
+            if (data.isEligibleForCOD) {
+                document.getElementById('shipping-message').textContent = "You are eligible for Cash on Delivery";
+                document.getElementById('cart-total').textContent = `${data.newTotal.toFixed(2)}`;
+            } else {
+                document.getElementById('shipping-message').textContent = "₹ 50 cash on delivery fee applied";
+                document.getElementById('cart-total').textContent = `${(data.newTotal + 50).toFixed(2)}`;
+            }
+
+        } else {
+            console.error("Failed to update the cart");
+        }
+    })
+    .catch(error => {
+        console.error("Error updating cart:", error);
+    });
+}
+
+function removeFromCart(productId) {
+    // Send AJAX request to the server to remove the item from the cart
+    fetch(`/cart/remove/${productId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove the item from the cart in the frontend
+            document.querySelector(`#product-card-${productId}`).remove();
+            // Update the cart totals
+            updateCartTotals(data.newCartTotal);
+        } else {
+            alert('Error removing item from cart.');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}    
+
+function updateCartTotals(newTotal) {
+    document.getElementById('cart-subtotal').innerText = newTotal.toFixed(2);
+    document.getElementById('cart-total').innerText = (newTotal > 499 ? newTotal : newTotal + 50).toFixed(2);
+}
+
+//select cart products 
+
+let selectedProducts = [];
+
+// Function to toggle product selection
+function toggleProductSelection(productId) {
+    const checkbox = document.getElementById('checkbox-' + productId);
+    if (checkbox.checked) {
+        selectedProducts.push(productId);
+    } else {
+        selectedProducts = selectedProducts.filter(id => id !== productId);
+    }
+}
+
+// Function to proceed to checkout
+function proceedToCheckout() {
+    const selectedItemsInput = document.getElementById('selected-items');
+    const errorMessage = document.getElementById('error-message');
+    
+    if (selectedProducts.length === 0) {
+        // Show error message if no products are selected
+        errorMessage.style.display = 'block';
+    } else {
+        // Hide error message if products are selected
+        errorMessage.style.display = 'none';
+
+        // Pass selected products' IDs to hidden input field
+        selectedItemsInput.value = selectedProducts.join(',');
+
+        // Submit the form
+        document.getElementById('checkout-form').submit();
+    }
+}
+</script>
+</body>
+</html>

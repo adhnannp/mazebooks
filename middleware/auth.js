@@ -1,3 +1,5 @@
+const User = require('../models/userModel');
+
 const isLogin = async (req, res, next) => {
     try {
         if (req.session.user_id && !req.session.is_admin && !req.session.is_block) {
@@ -39,8 +41,9 @@ const isVerified =  async (req, res, next) => {
 
 const isblock =  async (req, res, next) => {
     try {
-        if (req.session.user_id && req.session.is_block) {
-            req.session.destroy()
+        const user = await User.findById(req.session.user_id)
+        if (user && user.Is_block) {
+            req.session.destroy();
             return res.redirect('/home');
         } else {
             next()

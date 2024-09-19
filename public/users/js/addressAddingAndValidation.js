@@ -109,6 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => {
                     window.location.href = '/myaccount/address-book';
                 }, 1000); // Redirect after 2 seconds to allow user to see success message
+                alert('Address added successfully.');
             } else {
                 document.getElementById('backendMessage').textContent = result.message || 'Failed to add address.';
                 document.getElementById('backendMessage').style.color = 'red';

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coza Store Checkout</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+        }
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background-color: #fff;
+            padding: 10px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .logo {
+            max-width: 150px;
+        }
+        h1 {
+            
+            color: #333;
+            margin: 20px 0;
+        }
+        .checkout-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+        .address-box, .payment-box, .cart-totals, .selected-products {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .address-box h3, .payment-box h3, .cart-totals h3, .selected-products h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .edit-link {
+            float: right;
+            font-size: small;
+            color: #3b71ca;
+        }
+        .add-address-btn {
+            display: inline-block;
+            background-color: white;
+            color: #3b71ca;
+            border: 1px solid #3b71ca;
+            padding: 8px 15px;
+            text-decoration: none;
+            border-radius: 3px;
+            margin-top: 10px;
+        }
+        .payment-option {
+            margin-bottom: 15px;
+        }
+        .payment-option input[type="radio"] {
+            margin-right: 10px;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .button {
+            display: block;
+            width: 100%;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        .continue-btn {
+            background-color: #333;
+            color: white;
+        }
+        .continue-btn:hover {
+            background-color: #555;
+        }
+        .secondary-btn {
+            background-color: #ddd;
+            color: #333;
+        }
+        .secondary-btn:hover {
+            background-color: #ccc;
+        }
+        .coupon-section {
+            margin-top: 20px;
+        }
+        .coupon-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            margin-bottom: 10px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 50%;
+            border-radius: 5px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: #000;
+        }
+        .product-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .product-item:last-child {
+            border-bottom: none;
+        }
+        .product-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            margin-right: 15px;
+        }
+        .product-details {
+            flex-grow: 1;
+        }
+        .product-name {
+            font-weight: bold;
+        }
+        .product-price {
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .checkout-grid {
+                grid-template-columns: 1fr;
+            }
+            .modal-content {
+                width: 90%;
+            }
+        }
+        .selected-products-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .selected-products-table th, .selected-products-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .selected-products-table img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+        }
+
+        .selected-products-table th {
+            background-color: #f8f8f8;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <p style="text-align: center;">MAZE BOOKS</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>Checkout</h1>
+        <div class="checkout-grid">
+            <div class="left-column">
+                <div class="address-box">
+                    <h3>Delivery Address <a href="#" class="edit-link" onclick="openAddressModal()">EDIT</a></h3>
+                    <p>
+                        <%= address.fullName %><br>
+                        <%= address.address %>, <%= address.city %>, <%= address.state %>, <%= address.pincode %><br>
+                        <%= address.mobileNo %>
+                    </p>
+                    <a href="#" class="add-address-btn" onclick="openNewAddressModal()">+ ADD NEW ADDRESS</a>
+                    <h3><a href="#" class="edit-link" onclick="openAddressModal()">Select Another Address</a></h3>
+                </div>
+                <div class="payment-box">
+                    <h3>Select Payment Method</h3>
+                    <div class="payment-option">
+                        <input type="radio" id="cod1" name="payment" checked>
+                        <label for="cod1">Cash on Delivery</label>
+                    </div>
+                    <!-- Add other payment options if needed -->
+                </div>
+                <div class="selected-products">
+                    <h3>Selected Products</h3>
+                    <table class="selected-products-table">
+                        <thead>
+                            <tr>
+                                <th>Image</th>
+                                <th>Name</th>
+                                <th>Quantity</th>
+                                <th>Price of 1</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% cartItems.forEach(item => { %>
+                                <tr>
+                                    <td><img src="/static/uploads/<%= item.ProductId.Images[0] %>" alt="<%= item.ProductId.Name %>" class="product-image"></td>
+                                    <td><%= item.ProductId.Name %></td>
+                                    <td><%= item.Quantity %></td>
+                                    <td>₹ <%= item.Price.toFixed(2) %></td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="right-column">
+                <div class="cart-totals">
+                    <h3>CART TOTALS</h3>
+
+                    <!-- subtotal -->
+                    <div class="total-row">
+                        <span>Subtotal</span>
+                        <span>₹ <span id="cart-subtotal"><%= cartSubtotal.toFixed(2) %></span></span>
+                    </div>
+                
+                    <!-- Shipping Information -->
+                    <div class="total-row">
+                        <span>Shipping</span>
+                        <% if (cartTotal > 499) { %>
+                            <span>Free Shipping</span>
+                        <% } else { %>
+                            <span>₹ 50 added to shipping</span>
+                        <% } %>
+                    </div>
+                
+                    <!-- Total (Subtotal + Shipping if applicable) -->
+                    <div class="total-row">
+                        <strong>Total</strong>
+                        <strong>₹ <span id="cart-total"><%= cartTotal.toFixed(2) %></span></strong>
+                    </div>
+                    <div class="coupon-section">
+                        <input type="text" class="coupon-input" placeholder="Enter coupon code">
+                        <button class="button secondary-btn">Apply Coupon</button>
+                    </div>
+                    <button class="button secondary-btn">Update Cart</button>
+                    <button class="button continue-btn">CONTINUE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for selecting existing address -->
+    <div id="addressModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddressModal()">&times;</span>
+            <h2>Select Delivery Address</h2>
+            <!-- Add existing addresses here -->
+        </div>
+    </div>
+
+    <!-- Modal for adding new address -->
+    <div id="newAddressModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeNewAddressModal()">&times;</span>
+            <h2>Add New Address</h2>
+            <!-- Add form for new address here -->
+        </div>
+    </div>
+
+    <script>
+        function openAddressModal() {
+            document.getElementById('addressModal').style.display = 'block';
+        }
+
+        function closeAddressModal() {
+            document.getElementById('addressModal').style.display = 'none';
+        }
+
+        function openNewAddressModal() {
+            document.getElementById('newAddressModal').style.display = 'block';
+        }
+
+        function closeNewAddressModal() {
+            document.getElementById('newAddressModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

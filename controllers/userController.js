@@ -131,17 +131,20 @@ const loadShop = async (req, res) => {
 //load accountOverview
 const loadAccountOverview = async(req,res)=>{
     try {
+        if(req.session.is_admin){
+            return res.redirect('/admin');
+        }
         if (req.session.user_id && req.session.is_block){
             req.session.destroy();
-            res.render('myAccount',{user:""});
+            return res.render('myAccount',{user:""});
         }
         if (req.session.user_id && req.session.is_verified && !req.session.is_block) {
             const user = await User.findOne({_id:req.session.user_id})
-            res.render('myAccount',{user:user});
+            return res.render('myAccount',{user:user});
         }else if (req.session.user_id && !req.session.is_verified && !req.session.is_block){
-            res.redirect('/verify-otp');
+            return res.redirect('/verify-otp');
         }else {
-            res.render('myAccount',{user:""});
+            return res.render('myAccount',{user:""});
         }
     } catch (error) {
         console.log(error.message);
@@ -758,6 +761,164 @@ const editPassword = async (req, res) => {
     }
 };
 
+const loadCart = async (req, res) => {
+    try {
+        // Find the user and cart for the logged-in user
+        const user = await User.findById(req.session.user_id);
+        const cart = await Cart.findOne({ UserId: req.session.user_id }).populate('Products.ProductId');
+
+        // Check if the cart exists and has products
+        if (!cart || !cart.Products || cart.Products.length === 0) {
+            return res.render('cartPage', { cartItems: [], cartTotal: 0, shippingCost: 0, totalPrice: 0, isEligibleForCOD: false, user });
+        }
+
+        // Filter products to include only listed items
+        const filteredProducts = cart.Products.filter(product => product.ProductId && product.ProductId.Is_list);
+        
+        // Handle empty filtered products
+        if (filteredProducts.length === 0) {
+            return res.render('cartPage', { cartItems: [], cartTotal: 0, shippingCost: 0, totalPrice: 0, isEligibleForCOD: false, user });
+        }
+
+        // Calculate the cart total
+        let cartTotal = 0;
+        filteredProducts.forEach(item => {
+            cartTotal += item.Price * item.Quantity;
+        });
+
+        const isEligibleForCOD = cartTotal > 499;
+        const shippingCost = isEligibleForCOD ? 0 : 50;
+        const totalPrice = cartTotal + shippingCost;
+
+        // Render the cart page with the calculated values
+        res.render('cartPage', {
+            cartItems: filteredProducts,
+            cartTotal,
+            shippingCost,
+            totalPrice,
+            isEligibleForCOD,
+            user
+        });
+    } catch (error) {
+        console.log(error.message);
+        res.status(500).send('Internal Server Error');
+    }
+};
+
+//update cart form cart page
+const updateCart = async (req, res) => {
+    try {
+        const { productId, quantity } = req.body;
+        const userId = req.session.user_id;
+
+        // Find the user's cart
+        const cart = await Cart.findOne({ UserId: userId }).populate('Products.ProductId');
+
+        if (cart) {
+            // Find the product in the cart and update the quantity
+            const product = cart.Products.find(p => p.ProductId._id.toString() === productId);
+
+            if (product) {
+                product.Quantity = parseInt(quantity); // Update the quantity
+
+                // Calculate the updated total price for this product
+                const updatedProductPrice = product.Quantity*product.ProductId.Price;
+
+                await cart.save(); // Save the updated cart
+
+                // Recalculate the subtotal of the cart
+                let newSubtotal = 0;
+                cart.Products.forEach(p => {
+                    newSubtotal += p.Quantity*p.ProductId.Price;
+                });
+
+                // Check for eligibility for Cash on Delivery
+                const isEligibleForCOD = newSubtotal > 499;
+                const newTotal = isEligibleForCOD ? newSubtotal : newSubtotal+50;
+
+                res.json({
+                    success: true,
+                    updatedProductPrice, 
+                    newSubtotal,         
+                    newTotal,            
+                    isEligibleForCOD, 
+                });
+            } else {
+                res.json({ success: false, message: "Product not found in cart" });
+            }
+        } else {
+            res.json({ success: false, message: "Cart not found" });
+        }
+    } catch (error) {
+        console.error("Error updating cart:", error.message);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
+
+//remove ptoduct from cart
+const removeFromCart = async (req, res) => {
+    try {
+        const productId = req.params.productId;
+        const userId = req.session.user_id; // Assuming you have user authentication
+
+        // Remove the item from the cart
+        await Cart.updateOne(
+            { UserId: userId },
+            { $pull: { Products: { ProductId: productId } } }
+        );
+
+        // Calculate the new cart total
+        const cart = await Cart.findOne({ UserId: userId });
+        const newCartTotal = cart.Products.reduce((total, item) => total + (item.Price * item.Quantity
+        ), 0);
+
+        res.json({ success: true, newCartTotal });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false });
+    }
+};
+
+const loadCheckout = async (req, res) => {
+    try {
+        // Fetch address and cart information from the database
+        const address = await Address.findOne({ UserId: req.session.user_id }).exec();
+        const cart = await Cart.findOne({ UserId: req.session.user_id }).populate('Products.ProductId').exec();
+
+        // Get selected product IDs from the form submission
+        const selectedItems = req.body.selectedItems.split(',').map(id => id.trim()).filter(Boolean);
+
+        // Filter cart products based on selected product IDs
+        const selectedProducts = cart.Products.filter(product => selectedItems.includes(product.ProductId._id.toString()));
+
+        // Calculate subtotal and total for selected products
+        const cartSubtotal = selectedProducts.reduce((total, item) => total + (item.Price * item.Quantity), 0);
+        const shippingCost = cartSubtotal > 499 ? 0 : 50; // Adjust shipping cost based on total
+        const cartTotal = cartSubtotal + shippingCost;
+
+        // Fetch user details for the selected address (if needed)
+        const userAddress = address ? {
+            fullName: address.FullName,
+            address: address.Address,
+            city: address.City,
+            state: address.State,
+            pincode: address.Pincode,
+            mobileNo: address.MobileNo
+        } : null;
+
+        // Render the checkout page with all necessary data
+        res.render('checkoutPage', {
+            address: userAddress,
+            cartItems: selectedProducts,
+            cartSubtotal,  // Pass subtotal (products only)
+            cartTotal // Pass total (with shipping)
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Internal Server Error');
+    }
+};
+
 module.exports = {
     loadHome,
     loadShop,
@@ -783,4 +944,8 @@ module.exports = {
     addToCart,
     editPasswordLoad,
     editPassword,
+    loadCart,
+    updateCart,
+    removeFromCart,
+    loadCheckout,
 }
