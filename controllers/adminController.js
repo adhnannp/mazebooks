@@ -5,7 +5,7 @@ const User = require("../models/userModel");
 const bcrypt = require("bcrypt");
 const Product = require("../models/productModel");
 const Category = require("../models/categoryModel");
-
+const Order = require("../models/orderModel");
 
 //login setup
 const loadLogin = async(req,res)=>{
@@ -411,6 +411,103 @@ const editCategory = async (req, res) => {
     }
 };
 
+const ordersLoad = async (req, res) => {
+    try {
+        const admin = await User.findById(req.session.user_id); // Fetch admin details if needed
+
+        // Pagination variables
+        const currentPage = parseInt(req.query.page) || 1; // Get current page, default to 1
+        const itemsPerPage = 5; // Number of items per page
+
+        // Calculate total orders and pages
+        const totalOrders = await Order.countDocuments();
+        const totalPages = Math.ceil(totalOrders / itemsPerPage);
+
+        // Fetch orders with pagination
+        const orders = await Order.find()
+            .skip((currentPage - 1) * itemsPerPage)
+            .limit(itemsPerPage)
+            .sort({ createdAt: -1 })
+            .populate({
+                path: 'Products.ProductId',
+                select: 'Name Images' // Select only the fields you need
+            })
+            .exec();
+            orders.forEach(order => {
+                console.log(`Order ID: ${order.OrderId}`);
+                console.log('Products:', order.Products);
+            });
+        // Render the orders with pagination
+        res.render("orders.ejs", {
+            orders,
+            admin,
+            currentPage,
+            totalPages,
+        });
+    } catch (error) {
+        console.error("Error loading orders:", error);
+        res.status(500).send("Server Error");
+    }
+};
+
+const cancelOrder = async (req,res)=>{
+    try {
+        const orderId = req.params.orderId;
+
+        // Find the order by its ID
+        const order = await Order.findById(orderId).populate('Products.ProductId');
+
+        if (!order) {
+            return res.status(404).send('Order not found');
+        }
+
+        // Check if the order is already canceled
+        if (order.Status === 'Cancelled') {
+            res.status(404).send('it is allready cancelled');
+        }
+
+        // Update the order status to "Cancelled"
+        order.Status = 'Cancelled';
+        await order.save();  // Save the updated order
+
+        // Loop through each product in the order and update the stock
+        await Promise.all(order.Products.map(async (item) => {
+            const product = await Product.findById(item.ProductId._id);
+            if (product) {
+                product.Quantity += item.Quantity;  // Add the canceled quantity back to the stock
+                await product.save();  // Save the updated product
+                console.log(product);
+            }
+        }));
+
+        // Redirect back to the order history page
+        res.redirect('/orders');
+    } catch (error) {
+        console.error('Error cancelling order:', error);
+        // Redirect back to order history with an error message if something goes wrong
+        res.redirect('/orders');
+    }
+}
+
+const statusChangeOrder = async (req,res)=>{
+    try {
+        const { orderId } = req.params;
+        const newStatus = req.body.status; // Assuming you're sending the status in the request body
+        const order = await Order.findById(orderId);
+        if (!order) {
+            return res.status(404).send('Order not found');
+        }
+
+        // Update the order status
+        order.Status = newStatus;
+        await order.save();
+
+        res.redirect('/admin/orders'); // Redirect to the orders page after update
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Server Error');
+    }
+}
 
 module.exports = {
     loadLogin,
@@ -432,4 +529,7 @@ module.exports = {
     unlistCategory,
     addCategory,
     editCategory,
+    ordersLoad,
+    cancelOrder,
+    statusChangeOrder,
 }

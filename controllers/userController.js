@@ -1,3 +1,4 @@
+const mongoose = require('mongoose')
 const User = require('../models/userModel');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
@@ -7,6 +8,7 @@ const Product = require("../models/productModel");
 const Category = require("../models/categoryModel");
 const Address = require("../models/addressModel");
 const Cart = require("../models/cartModel");
+const Order = require("../models/orderModel");
 
 //registration
 
@@ -763,44 +765,53 @@ const editPassword = async (req, res) => {
 
 const loadCart = async (req, res) => {
     try {
-        // Find the user and cart for the logged-in user
-        const user = await User.findById(req.session.user_id);
-        const cart = await Cart.findOne({ UserId: req.session.user_id }).populate('Products.ProductId');
+        // Fetch the user's cart, and only include products and categories that are listed
+        const cart = await Cart.findOne({ UserId: req.session.user_id })
+            .populate({
+                path: 'Products.ProductId',
+                match: { Is_list: true }, // Only include listed products
+                populate: {
+                    path: 'CategoryId',
+                    match: { Is_list: true }, // Only include categories that are listed
+                },
+            })
+            .exec();
 
-        // Check if the cart exists and has products
-        if (!cart || !cart.Products || cart.Products.length === 0) {
-            return res.render('cartPage', { cartItems: [], cartTotal: 0, shippingCost: 0, totalPrice: 0, isEligibleForCOD: false, user });
+        // If cart is not found, return empty cart page
+        if (!cart) {
+            return res.render('cartPage', { 
+                user: req.session.user_id, 
+                cartItems: [], // Pass an empty cartItems array
+                cartTotal: 0 // Set total to 0 if no cart found
+            });
         }
 
-        // Filter products to include only listed items
-        const filteredProducts = cart.Products.filter(product => product.ProductId && product.ProductId.Is_list);
-        
-        // Handle empty filtered products
-        if (filteredProducts.length === 0) {
-            return res.render('cartPage', { cartItems: [], cartTotal: 0, shippingCost: 0, totalPrice: 0, isEligibleForCOD: false, user });
-        }
+        // Filter out products that are valid (product and category must both be listed)
+        const validCartProducts = cart.Products.filter(product =>
+            product.ProductId && // Ensure the product exists
+            product.ProductId.CategoryId && // Ensure the product's category exists
+            product.Quantity > 0 // Ensure the product is in stock
+        );
 
-        // Calculate the cart total
-        let cartTotal = 0;
-        filteredProducts.forEach(item => {
-            cartTotal += item.Price * item.Quantity;
-        });
+        // Calculate cart subtotal based on the valid products
+        const cartSubtotal = validCartProducts.reduce((total, item) => total + (item.Quantity * item.Price), 0);
 
-        const isEligibleForCOD = cartTotal > 499;
-        const shippingCost = isEligibleForCOD ? 0 : 50;
-        const totalPrice = cartTotal + shippingCost;
+        // Calculate shipping cost (free if subtotal > 499, otherwise 50)
+        const shippingCost = cartSubtotal > 499 ? 0 : 50;
 
-        // Render the cart page with the calculated values
+        // Total cart cost including shipping
+        const cartTotal = cartSubtotal + shippingCost;
+
+        // Render the cart page with necessary data
         res.render('cartPage', {
-            cartItems: filteredProducts,
-            cartTotal,
-            shippingCost,
-            totalPrice,
-            isEligibleForCOD,
-            user
+            user: req.session.user_id, // Pass the user session
+            cartItems: validCartProducts, // Pass the valid cart items
+            cartTotal: cartTotal, // Pass the cart total with shipping
+            cartSubtotal
         });
+
     } catch (error) {
-        console.log(error.message);
+        console.error(error.message);
         res.status(500).send('Internal Server Error');
     }
 };
@@ -881,43 +892,208 @@ const removeFromCart = async (req, res) => {
 
 const loadCheckout = async (req, res) => {
     try {
-        // Fetch address and cart information from the database
-        const address = await Address.findOne({ UserId: req.session.user_id }).exec();
-        const cart = await Cart.findOne({ UserId: req.session.user_id }).populate('Products.ProductId').exec();
+        // Fetch all addresses and cart information from the database
+        const userId = req.session.user_id
+        const addresses = await Address.find({ UserId: req.session.user_id }).exec();
+        const cart = await Cart.findOne({ UserId: req.session.user_id })
+            .populate('Products.ProductId') // Populate ProductId
+            .exec();
 
         // Get selected product IDs from the form submission
         const selectedItems = req.body.selectedItems.split(',').map(id => id.trim()).filter(Boolean);
 
+        // Convert selected items to ObjectId
+        const selectedObjectIds = selectedItems.map(id => new mongoose.Types.ObjectId(id));
+
         // Filter cart products based on selected product IDs
-        const selectedProducts = cart.Products.filter(product => selectedItems.includes(product.ProductId._id.toString()));
+        const selectedProducts = cart.Products.filter(product => {
+            const productId = product.ProductId ? product.ProductId._id : null;
+            return productId && selectedObjectIds.some(selectedId => selectedId.equals(productId));
+        });
 
         // Calculate subtotal and total for selected products
         const cartSubtotal = selectedProducts.reduce((total, item) => total + (item.Price * item.Quantity), 0);
         const shippingCost = cartSubtotal > 499 ? 0 : 50; // Adjust shipping cost based on total
         const cartTotal = cartSubtotal + shippingCost;
 
-        // Fetch user details for the selected address (if needed)
-        const userAddress = address ? {
-            fullName: address.FullName,
-            address: address.Address,
-            city: address.City,
-            state: address.State,
-            pincode: address.Pincode,
-            mobileNo: address.MobileNo
-        } : null;
+        // Prepare addresses for rendering
+        const userAddresses = addresses.map(address => ({
+            FullName: address.FullName,
+            MobileNo: address.MobileNo,
+            Address: address.Address,
+            Landmark: address.Landmark,
+            Pincode: address.Pincode,
+            FlatNo: address.FlatNo,
+            State: address.State,
+            District: address.District,
+            City: address.City,
+            Country: address.Country,
+            AddressType: address.AddressType
+        }));
 
         // Render the checkout page with all necessary data
         res.render('checkoutPage', {
-            address: userAddress,
+            addresses: userAddresses,
             cartItems: selectedProducts,
             cartSubtotal,  // Pass subtotal (products only)
-            cartTotal // Pass total (with shipping)
+            cartTotal, // Pass total (with shipping)
+            userId
         });
     } catch (error) {
         console.error(error);
         res.status(500).send('Internal Server Error');
     }
 };
+
+const placeOrder = async (req, res) => {
+    try {
+        const { paymentMethod, Products, TotalPrice, Address } = req.body;
+        console.log(paymentMethod, Address, Products, TotalPrice);
+        const userId = req.session.user_id; // Assuming user ID is stored in session
+
+        // Create a new order
+        const newOrder = new Order({
+            UserId: userId,
+            PaymentMethod: paymentMethod,
+            Products: Products.map(item => ({
+                ProductId: item.ProductId,
+                Quantity: item.Quantity
+            })),
+            TotalPrice: parseFloat(TotalPrice), // Ensure it's a number
+            Address: {
+                FullName: Address.FullName,
+                Address: Address.Address,
+                MobileNo: Address.MobileNo,
+                Pincode: Address.Pincode,
+                FlatNo: Address.FlatNo,
+                Country: Address.Country,
+                City: Address.City,
+                District: Address.District,
+                Landmark: Address.Landmark,
+                State: Address.State
+            },
+            Status: 'Pending' // Default status
+        });
+
+        // Save the new order
+        await newOrder.save();
+        console.log(newOrder);
+
+        // Update product quantities and remove items from cart
+        for (const item of Products) {
+            await Product.findByIdAndUpdate(
+                item.ProductId,
+                { $inc: { Quantity: -item.Quantity } } // Decrease quantity by the ordered amount
+            );
+        }
+
+         // Find the user's cart and remove the ordered products
+         await Cart.findOneAndUpdate(
+            { UserId: userId },
+            { $pull: { Products: { ProductId: { $in: Products.map(item => item.ProductId) } } } } // Remove ordered products
+        );
+
+        // Redirect to the order success page
+        req.session.order_id = newOrder.OrderId;
+        res.redirect(`/order-success?orderId=${req.session.order_id}`);
+    } catch (error) {
+        console.error('Error placing order:', error);
+        res.status(500).send('Error placing order');
+    }
+};
+
+//order success page
+const successPage = async (req, res) => {
+    try {
+        const orderId = req.query.orderId;
+        if (!orderId) {
+            return res.redirect('/'); // Redirect if no orderId is found  
+        }
+        // Optionally fetch order details to display
+        const order = await Order.findOne({ OrderId: orderId }).populate('Products.ProductId');
+        req.session.order_id ='';
+        res.render('orderSuccessPage', { order }); // Render the order success page
+    } catch (error) {
+        console.error('Error fetching order:', error);
+        res.redirect('/'); // Redirect on error
+    }
+};
+
+
+//load order history
+const loadOrderHistory = async (req,res)=>{
+    try {
+        const error = req.query.error; 
+        const userId = req.session.user_id; // Assuming user ID is stored in session
+
+        // Pagination variables
+        const currentPage = parseInt(req.query.page) || 1; // Get current page, default to 1
+        const itemsPerPage = 5; // Number of items per page
+
+        // Calculate total orders and pages for this user
+        const totalOrders = await Order.countDocuments({ UserId: userId });
+        const totalPages = Math.ceil(totalOrders / itemsPerPage);
+
+        // Fetch paginated orders
+        const orders = await Order.find({ UserId: userId })
+            .skip((currentPage - 1) * itemsPerPage)
+            .limit(itemsPerPage)
+            .populate('Products.ProductId')
+            .sort({ createdAt: -1 });
+
+        // Render the orders with pagination
+        res.render('orderHistoryPage', {
+            orders,
+            currentPage,
+            totalPages,
+            error,
+        });
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+        res.status(500).send('Error fetching orders');
+    }
+}
+
+// Controller for cancelling the order and updating product stock
+const cancelOrder = async (req, res) => {
+    try {
+        const orderId = req.params.orderId;
+
+        // Find the order by its ID
+        const order = await Order.findById(orderId).populate('Products.ProductId');
+
+        if (!order) {
+            return res.redirect('/myaccount/order-history?error=Order not found');
+        }
+
+        // Check if the order is already canceled
+        if (order.Status === 'Cancelled') {
+            return res.redirect('/myaccount/order-history?error=Order is already cancelled');
+        }
+
+        // Update the order status to "Cancelled"
+        order.Status = 'Cancelled';
+        await order.save();  // Save the updated order
+
+        // Loop through each product in the order and update the stock
+        await Promise.all(order.Products.map(async (item) => {
+            const product = await Product.findById(item.ProductId._id);
+            if (product) {
+                product.Quantity += item.Quantity;  // Add the canceled quantity back to the stock
+                await product.save();  // Save the updated product
+                console.log(product);
+            }
+        }));
+
+        // Redirect back to the order history page
+        res.redirect('/myaccount/order-history?success=Order cancelled successfully');
+    } catch (error) {
+        console.error('Error cancelling order:', error);
+        // Redirect back to order history with an error message if something goes wrong
+        res.redirect('/myaccount/order-history?error=Could not cancel the order');
+    }
+};
+
 
 module.exports = {
     loadHome,
@@ -948,4 +1124,8 @@ module.exports = {
     updateCart,
     removeFromCart,
     loadCheckout,
+    placeOrder,
+    successPage,
+    loadOrderHistory,
+    cancelOrder,
 }

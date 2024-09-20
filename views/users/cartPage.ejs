@@ -1,6 +1,6 @@
 <%- include('../userLayouts/header') %>
 <div class="cart-container">
-    <% if (user && user.Is_verified) { %>
+    <% if (user) { %>
         <% if (cartItems.length === 0) { %>
             <!-- Display if cart is empty -->
             <div class="empty-cart-message">
@@ -12,29 +12,38 @@
             <!-- Display if cart has items -->
             <div class="cart-items">
                 <% cartItems.forEach(item => { %>
-                    <div class="product-card" id="product-card-<%= item.ProductId._id %>">
+                    <div class="product-card <%= item.ProductId.Quantity === 0 ? 'sold-out' : '' %>" id="product-card-<%= item.ProductId._id %>">
                         <div class="product-checkbox-container">
-                            <input type="checkbox" class="product-checkbox" id="checkbox-<%= item.ProductId._id %>" value="<%= item.ProductId._id %>" onchange="toggleProductSelection('<%= item.ProductId._id %>')">
-                            <label for="checkbox-<%= item.ProductId._id %>" class="checkbox-label"></label>
+                            <% if (item.ProductId.Quantity > 0) { %>
+                                <input type="checkbox" class="product-checkbox" id="checkbox-<%= item.ProductId._id %>" value="<%= item.ProductId._id %>" autocomplete="off" onchange="toggleProductSelection('<%= item.ProductId._id %>')">
+                                <label for="checkbox-<%= item.ProductId._id %>" class="checkbox-label"></label>
+                            <% } else { %>
+                                <span class="sold-out-message">Sold Out</span>
+                            <% } %>
                         </div>
                         <img src="/static/uploads/<%= item.ProductId.Images[0] %>" alt="<%= item.ProductId.Name %>" class="product-image">
                         <div class="product-details">
                             <div class="product-name"><%= item.ProductId.Name %></div>
-                            <div class="product-price">₹ <%= item.Price.toFixed(2) %></div>
-                            <div class="product-quantity">
-                                <label for="quantity-<%= item.ProductId._id %>">Quantity:</label>
-                                <select id="quantity-<%= item.ProductId._id %>" name="quantity" onchange="updateCart('<%= item.ProductId._id %>')">
-                                    <% for (let i = 1; i <= Math.min(item.ProductId.Quantity, 8); i++) { %>
-                                        <option value="<%= i %>" <%= i === item.Quantity ? 'selected' : '' %>><%= i %></option>
+                            <% if (item.ProductId.Quantity > 0) { %>
+                                <div class="product-price">₹ <%= item.Price.toFixed(2) %></div>
+                                <div class="product-quantity">
+                                    <label for="quantity-<%= item.ProductId._id %>">Quantity:</label>
+                                    <select id="quantity-<%= item.ProductId._id %>" name="quantity" onchange="updateCart('<%= item.ProductId._id %>')">
+                                        <% for (let i = 1; i <= Math.min(item.ProductId.Quantity, 8); i++) { %>
+                                            <option value="<%= i %>" <%= i === item.Quantity ? 'selected' : '' %>><%= i %></option>
+                                        <% } %>
+                                    </select>
+                                    <% if (item.ProductId.Quantity < 8) { %>
+                                        <span style="color: red;">Only <%= item.ProductId.Quantity %> left</span>
                                     <% } %>
-                                </select>
-                                <% if (item.ProductId.Quantity < 8) { %>
-                                    <p style="color: red; margin: 5px 0;"><%= item.ProductId.Quantity %> left</p>
-                                <% } %>
-                            </div>
-                            <div class="product-total" id="total-price-<%= item.ProductId._id %>">
-                                Total: ₹ <%= (item.Quantity * item.ProductId.Price).toFixed(2) %>
-                            </div>
+                                </div>
+                                <div class="product-total" id="total-price-<%= item.ProductId._id %>">
+                                    Total: ₹ <%= (item.Quantity * item.ProductId.Price).toFixed(2) %>
+                                </div>
+                            <% } else { %>
+                                <div class="product-price">₹ <%= item.Price.toFixed(2) %></div><br>
+                                <p style="color: red; margin: 5px 0;">This product is sold out</p>
+                            <% } %>
                             <i class="fas fa-trash delete-icon" onclick="openDeleteModal('<%= item.ProductId._id %>')"></i>
                         </div>
                     </div>
@@ -43,16 +52,16 @@
     
             <div class="cart-totals">
                 <h2>Cart Summary</h2>
-                <p>Subtotal: ₹ <span id="cart-subtotal"><%= cartTotal.toFixed(2) %></span></p>
+                <p>Subtotal: ₹ <span id="cart-subtotal"><%= cartSubtotal.toFixed(2) %></span></p>
                 <p id="shipping-message">
-                    <% if (cartTotal > 499) { %>
+                    <% if (cartSubtotal > 499) { %>
                         You are eligible for Cash on Delivery
                     <% } else { %>
                         ₹ 50 cash on delivery fee applied
                     <% } %>
                 </p>
-                <p>Total: ₹ <span id="cart-total"><%= (cartTotal > 499 ? cartTotal : cartTotal + 50).toFixed(2) %></span></p>
-                <form id="checkout-form" action="/product/checkout" method="POST">
+                <p>Total: ₹ <span id="cart-total"><%= (cartSubtotal > 499 ? cartSubtotal : cartSubtotal + 50).toFixed(2) %></span></p>
+                <form id="checkout-form" action="/product/checkout" method="post">
                     <input type="hidden" id="selected-items" name="selectedItems" value="">
                     <button type="button" class="checkout-btn" onclick="proceedToCheckout()">PROCEED TO CHECKOUT</button>
                 </form>
@@ -84,6 +93,18 @@
         margin: 0;
         padding: 20px;
         background-color: #f4f4f4;
+    }
+    .sold-out {
+        opacity: 0.5;
+        background-color: #f5f5f5;
+    }
+
+    /* Sold-out message instead of checkbox */
+    .sold-out-message {
+        font-size: 14px;
+        color: red;
+        margin-left: 10px;
+        font-weight: bold;
     }
     .product-checkbox-container {
         margin-right: 15px;

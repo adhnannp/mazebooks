@@ -111,6 +111,14 @@ user_route.post('/cart/update-cart',auth.isAdminLogin,userController.updateCart)
 
 user_route.delete('/cart/remove/:productId',auth.isAdminLogin,userController.removeFromCart);
 
-user_route.post('/product/checkout',auth.isLogin,userController.loadCheckout)
+user_route.post('/product/checkout',auth.isAdminLogin,auth.noOrderId,userController.loadCheckout)
+
+user_route.post('/place-order',auth.isAdminLogin,userController.placeOrder)
+
+user_route.get('/order-success',auth.isAdminLogin,auth.isblock,auth.isLogin,auth.haveOrderId,userController.successPage)
+
+user_route.get('/myaccount/order-history',auth.isAdminLogin,auth.isblock,auth.isLogin,userController.loadOrderHistory)
+
+user_route.post('/myaccount/cancel-order/:orderId', userController.cancelOrder);
 
 module.exports = user_route;

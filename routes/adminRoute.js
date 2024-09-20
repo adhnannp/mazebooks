@@ -53,6 +53,12 @@ admin_route.post('/categories/addcategories',adminController.addCategory)
 
 admin_route.post('/logout', auth.isLogin, adminController.logout);
 
+admin_route.get('/orders', auth.isLogin, adminController.ordersLoad);
+
+admin_route.post('/orders/cancel-order/:orderId', adminController.cancelOrder);
+
+admin_route.post('/orders/change-status/:orderId', adminController.statusChangeOrder);
+
 admin_route.get('*', function (req, res) {
     res.redirect('/admin');
 });

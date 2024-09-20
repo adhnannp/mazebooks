@@ -1,0 +1,361 @@
+<%- include('../userLayouts/header') %>
+<style>
+    /* Existing styles */
+    body {
+        background-color: white;
+        font-family: Arial, sans-serif;
+    }
+    .account-container {
+        width: 80%;
+        margin: 0 auto;
+    }
+    .account-breadcrumbs {
+        margin: 20px 0;
+        font-size: 14px;
+    }
+    .account-breadcrumbs a {
+        color: #4F2F2D;
+        text-decoration: none;
+    }
+    .account-breadcrumbs span {
+        margin: 0 5px;
+        color: #999;
+    }
+    .account-overview-container {
+        display: flex;
+        margin-top: 20px;
+    }
+    .account-sidebar {
+        width: 25%;
+        border-right: 1px solid #ddd;
+        padding-right: 20px;
+    }
+    .account-sidebar a {
+        display: block;
+        padding: 10px 20px;
+        color: #333;
+        text-decoration: none;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        transition: background-color 0.3s, box-shadow 0.3s;
+    }
+    .account-sidebar a:hover {
+        background-color: #f0f0f0;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .account-sidebar a.account-selected {
+        background-color: #e0e0e0;
+        font-weight: bold;
+    }
+    /* Custom styles for the address cards */
+    .card {
+        border-radius: 8px;
+        transition: box-shadow 0.3s ease;
+    }
+    .card:hover {
+        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .card-title {
+        font-size: 1rem;
+        font-weight: bold;
+    }
+    .card-text {
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+    .btn-outline-secondary {
+        border-color: #4F2F2D;
+        color: #4F2F2D;
+    }
+    .btn-outline-secondary:hover {
+        background-color: #4F2F2D;
+        color: white;
+    }
+    .order-history {
+        padding: 20px;
+        flex: 1; /* Make main content take the remaining space */
+    }
+    .order-cards {
+        display: flex;
+        flex-direction: column; /* Stack order cards vertically */
+        gap: 20px; /* Space between cards */
+    }
+    .order-card {
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        box-sizing: border-box;
+    }
+    .order-header {
+        margin-bottom: 15px;
+    }
+    .order-items-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px; /* Space above the table */
+    }
+    .order-items-table th, .order-items-table td {
+        padding: 10px;
+        text-align: left;
+        border-bottom: 1px solid #ddd; /* Add border for clarity */
+    }
+    .product-image {
+        max-width: 50px; /* Limit the image size */
+        height: auto; /* Keep aspect ratio */
+    }
+    .cancel-order-button {
+        background-color: #ff4d4d;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 15px;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+    .cancel-order-button:hover {
+        background-color: #e60000;
+    }
+    @media (max-width: 600px) {
+        .order-card {
+            width: 100%;
+        }
+    }
+    .empty-order-message {
+        text-align: center;
+        margin: 40px 0;
+    }
+    .empty-order-message h2 {
+        font-size: 24px;
+        margin-bottom: 10px;
+    }
+    .empty-order-message p {
+        font-size: 16px;
+        color: #555;
+    }
+    .continue-shopping-btn {
+        display: inline-block;
+        margin-top: 20px;
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+    }
+    .continue-shopping-btn:hover {
+        background-color: #0056b3;
+    }
+    .alert {
+        padding: 15px;
+        margin-bottom: 20px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+    }
+    .alert-danger {
+        color: #a94442;
+        background-color: #f2dede;
+        border-color: #ebccd1;
+    }
+    .pagination {
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+    }
+    .pagination .page-item .page-link {
+        color: #fff;
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+    .pagination .page-item.active .page-link {
+        background-color: #5a6268;
+        border-color: #5a6268;
+    }
+    .pagination .page-item.disabled .page-link {
+        color: #adb5bd;
+    }
+</style>
+
+<div class="account-container">
+    <!-- Breadcrumbs -->
+    <div class="account-breadcrumbs">
+        <a href="/">Home</a> <span>&gt;</span><a href="/myaccount">My Account</a><span>&gt;</span><span>Order History</span>
+    </div>
+
+    <div class="account-overview-container">
+        <!-- Sidebar -->
+        <div class="account-sidebar">
+            <a href="/myaccount">Account Overview</a>
+            <a href="/myaccount/edit-password">Change Password</a>
+            <a href="/myaccount/order-history" class="account-selected">Order History</a>
+            <a href="/myaccount/address-book">Address Book</a>
+        </div>
+
+        <!-- Main Content -->
+        <div class="account-main-content">
+            <div class="order-history">
+                <h3>Order History</h3>
+                <!-- Display error message if it exists -->
+                <% if (error) { %>
+                    <div class="alert alert-danger">
+                        <p><%= error %></p>
+                    </div>
+                <% } %>
+
+                <% if (orders.length === 0) { %>
+                    <!-- Display if no orders -->
+                    <div class="empty-order-message">
+                        <h2>No Orders Found</h2>
+                        <p>Looks like you haven't placed any orders yet!</p>
+                        <a href="/shop" class="continue-shopping-btn">Continue Shopping</a>
+                    </div>
+                <% } else { %>
+                    <div class="order-cards">
+                        <% orders.forEach(order => { %>
+                            <div class="order-card">
+                                <table class="order-items-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Status</th>
+                                            <th>Image</th>
+                                            <th>Name</th>
+                                            <th>Quantity</th>
+                                            <th>Price</th>
+                                            <% if (order.Status !== 'Placed' && order.Status !== 'Cancelled') { %>
+                                                <th>Action</th>
+                                            <% } %>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <!-- Order status -->
+                                            <td>
+                                                <% let statusClass; %>
+                                                <% if (order.Status === 'Pending') { %>
+                                                    <span class="text-warning">&#9673;<%= order.Status %></span>
+                                                <% } else if (order.Status === 'Shipped') { %>
+                                                    <span class="text-secondary">&#9673;<%= order.Status %></span>
+                                                <% } else if (order.Status === 'Delivered') { %>
+                                                    <span class="text-info">&#9673;<%= order.Status %></span>
+                                                <% } else if (order.Status === 'Placed') { %>
+                                                    <span class="text-success">&#9673;<%= order.Status %></span>
+                                                <% } else if (order.Status === 'Cancelled') { %>
+                                                    <span class="text-danger">&#9673;<%= order.Status %></span>
+                                                <% } %>
+                                            </td>
+
+                                            <!-- Combine product images, names, quantities, and prices into a single row for all products -->
+                                            <td>
+                                                <% order.Products.forEach(item => { %>
+                                                    <img src="/static/uploads/<%= item.ProductId.Images[0] %>" alt="<%= item.ProductId.Name %>" class="product-image" style="display:block; margin-bottom: 5px;">
+                                                <% }) %>
+                                            </td>
+                                            <td>
+                                                <% order.Products.forEach(item => { %>
+                                                    <p style="margin-bottom: 5px;"><%= item.ProductId.Name %></p>
+                                                <% }) %>
+                                            </td>
+                                            <td>
+                                                <% order.Products.forEach(item => { %>
+                                                    <p style="margin-bottom: 5px;"><%= item.Quantity %></p>
+                                                <% }) %>
+                                            </td>
+                                            <td>
+                                                <% order.Products.forEach(item => { %>
+                                                    <p style="margin-bottom: 5px;">₹ <%= (item.Quantity * item.ProductId.Price).toFixed(2) %></p>
+                                                <% }) %>
+                                            </td>
+
+                                            <!-- Cancel button for the entire order -->
+                                            <td>
+                                                <% if (order.Status !== 'Placed' && order.Status !== 'Cancelled') { %>
+                                                    <form action="/myaccount/cancel-order/<%= order._id %>" method="POST" class="cancel-order-form">
+                                                        <button type="button" class="cancel-order-button btn btn-sm" onclick="openConfirmModal(this)">Cancel Order</button>
+                                                    </form>
+                                                <% } %>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <% }) %>
+                    </div>
+                    <!-- Pagination -->
+                    <div class="pagination">
+                        <% if (totalPages > 1) { %>
+                        <nav aria-label="Page navigation example">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+                                    <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                <% for (let i = 1; i <= totalPages; i++) { %>
+                                <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                                    <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                                </li>
+                                <% } %>
+                                <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+                                    <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                        <% } %>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmCancelModal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Cancellation</h5>
+                <button type="button" class="close btn-secondary" style="border: none;" aria-label="Close" onclick="closeConfirmModal()">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel this order?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeConfirmModal()">No</button>
+                <button type="button" class="btn btn-danger" id="confirmCancelButton">Cancel Order</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Bootstrap JS and dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+<script>
+function openConfirmModal(buttonElement) {
+    const confirmModal = document.getElementById('confirmCancelModal');
+    const modalInstance = new bootstrap.Modal(confirmModal);
+    modalInstance.show();
+
+    const confirmButton = document.getElementById('confirmCancelButton');
+    confirmButton.onclick = function() {
+        buttonElement.closest('form').submit();
+    };
+}
+
+function closeConfirmModal() {
+    const confirmModal = document.getElementById('confirmCancelModal');
+    const modalInstance = bootstrap.Modal.getInstance(confirmModal);
+    modalInstance.hide();
+}
+</script>
+
+</body>
+</html>

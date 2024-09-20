@@ -84,6 +84,31 @@ const isAnyOne = async (req, res, next) => {
     }
 };
 
+// Middleware to protect success page
+const haveOrderId = async (req, res, next) => {
+    try {
+        if (req.session.user_id && req.session.order_id) {
+            return next();
+        } 
+        return res.redirect('/home')
+    } catch (error) {
+        console.log(error.message);
+        return res.status(500).send('Internal Server Error');
+    }
+};
+
+const noOrderId = async (req, res, next) => {
+    try {
+        if (req.session.user_id && !req.session.order_id) {
+            return next();
+        } 
+        return res.redirect('/home')
+    } catch (error) {
+        console.log(error.message);
+        return res.status(500).send('Internal Server Error');
+    }
+};
+
 module.exports = {
     isLogin,
     isLogout,
@@ -91,4 +116,6 @@ module.exports = {
     isVerified,
     isblock,
     isAnyOne,
+    haveOrderId,
+    noOrderId,
 };
