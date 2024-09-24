@@ -169,29 +169,41 @@
         }
     
         function startTimer() {
-            let timeLeft = 60; // Set the countdown time in seconds
+            const countdownDuration = 60; // Set the countdown time in seconds
             const timerElement = document.getElementById('timer');
             const resendBtn = document.getElementById('resendOtpBtn');
-    
+
+            // Retrieve the stored end time or calculate a new one
+            let endTime = localStorage.getItem('otpEndTime');
+            
+            // If no end time exists or the end time has passed, reset the timer
+            if (!endTime || new Date().getTime() > parseInt(endTime)) {
+                endTime = new Date().getTime() + countdownDuration * 1000;
+                localStorage.setItem('otpEndTime', endTime);
+            }
+
             function updateTimer() {
+                const timeLeft = Math.floor((parseInt(endTime) - new Date().getTime()) / 1000);
+
                 if (timeLeft <= 0) {
                     clearInterval(timer);
                     resendBtn.style.pointerEvents = 'auto'; // Enable the button
                     resendBtn.style.color = '#007bff'; // Restore button color
                     resendBtn.disabled = false; // Enable the button
                     timerElement.textContent = "";
+                    localStorage.removeItem('otpEndTime'); // Remove the end time from localStorage
                 } else {
                     resendBtn.style.pointerEvents = 'none'; // Disable button
                     resendBtn.style.color = '#ccc'; // Change color to indicate disabled state
                     resendBtn.disabled = true; // Disable the button
-                    timerElement.textContent = `Resend OTP in ${timeLeft--} seconds`;
+                    timerElement.textContent = `Resend OTP in ${timeLeft} seconds`;
                 }
             }
-    
+
             updateTimer(); // Initial update
             const timer = setInterval(updateTimer, 1000); // Update every second
         }
-    
+
         // Start the timer when the modal is shown
         startTimer();
     </script>

@@ -258,17 +258,22 @@
                           </div>
                           <div class="form-group">
                               <label for="productPrice">Price</label>
-                              <input type="number" class="form-control" id="productPrice" name="price" style="background-color: #333; color: white;" >
+                              <input type="text" class="form-control" id="productPrice" name="price" style="background-color: #333; color: white;" >
                               <p id="price-error" style="color: red; display: none;"></p>
                           </div>
                       
                            <!-- Image Upload and Cropping Section -->
                             <div class="form-group">
-                              <label for="productImages1" class="image-label">Upload Image 1</label>
+                              <label for="productImages1" class="image-label">Upload Cover Image</label>
                               <input type="file" name="img1" class="file-upload-default" id="productImages1" accept="image/*" style="display: none;">
-                              <img id="preview1" style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;" src="#" alt="Upload Image 1" />
+                              <img id="preview1" style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;" src="#" alt="Upload cover Image" />
                               <button type="button" id="changeImage1" class="change-image-button" style="display: none;">Change Image</button>
                           </div>
+                          <style>
+                            img[src="#"] {
+                                display: none;
+                            }
+                          </style>
 
                           <div class="form-group">
                               <label for="productImages2" class="image-label">Image 2</label>
@@ -309,7 +314,7 @@
       <!-- page-body-wrapper ends -->
     </div>
     <!-- container-scroller -->
-
+    <script src="/static/admin/js/imageCrop.js"></script>
     <!-- plugins:js -->
     <script src="/static/admin/vendors/js/vendor.bundle.base.js"></script>
     <!-- endinject -->
@@ -335,7 +340,7 @@
     <!-- endinject -->
     <!-- Custom js for this page -->
     <script src="/static/admin/js/dashboard.js"></script>
-    <script src="/static/admin/js/imageCrop.js"></script>
+  
     <!-- End custom js for this page -->
 
   </body>

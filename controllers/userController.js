@@ -86,6 +86,8 @@ const loadShop = async (req, res) => {
 
         // Prepare sort option
         let sortOption = {};
+        let collation = {}; // Initialize empty collation
+
         switch (selectedSort) {
             case 'low-to-high':
                 sortOption = { Price: 1 };
@@ -95,24 +97,26 @@ const loadShop = async (req, res) => {
                 break;
             case 'a-to-z':
                 sortOption = { Name: 1 };
+                collation = { locale: 'en', strength: 2 }; // Case-insensitive collation
                 break;
             case 'z-to-a':
                 sortOption = { Name: -1 };
+                collation = { locale: 'en', strength: 2 }; // Case-insensitive collation
                 break;
             case 'featured':
             default:
-                // No sorting, default case
-                sortOption = {}; 
+                sortOption = {}; // No sorting for the default case
         }
 
         // Calculate total products and pages
         const totalProducts = await Product.countDocuments(productFilter);
         const totalPages = Math.ceil(totalProducts / itemsPerPage);
 
-        // Fetch products with pagination, sorting, and populate category
+        // Fetch products with sorting and collation
         const products = await Product.find(productFilter)
             .populate('CategoryId')
-            .sort(sortOption) // Apply sorting
+            .sort(sortOption)
+            .collation(collation) // Apply collation for case-insensitive sorting
             .skip((currentPage - 1) * itemsPerPage)
             .limit(itemsPerPage);
 
@@ -254,6 +258,7 @@ const varifyLogin = async(req,res)=>{
                     const newOtp = crypto.randomInt(100000, 999999).toString(); // Generate a 6-digit OTP 
                     //Update the user's OTP in the database
                     userData.OTP = newOtp;
+                    userData.otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes from now
                     await userData.save();
                     // Send OTP via email
                      const mailOptions = {
@@ -309,11 +314,23 @@ const verifyOtp = async (req, res) => {
 
         const user = await User.findById(user_id);
 
-        if (user && user.OTP === enteredOtp) {
-            user.OTP = null; // Clear OTP after successful verification
+        // Check if OTP is valid and not expired
+        if (!user) {
+            return res.render('otpSection', { tipmessage: 'User not found.', user: user });
+        }
 
-            // Set user is_verified and save
-            user.Is_verified = true;
+        // Check if OTP has expired
+        if (Date.now() > user.otpExpires) {
+            return res.render('otpSection', {
+                tipmessage: 'OTP has expired. Please request a new OTP.',
+                user: user
+            });
+        }
+
+        // Validate OTP if not expired
+        if (user.OTP === enteredOtp) {
+            user.OTP = null; // Clear OTP after successful verification
+            user.Is_verified = true; // Set user as verified
             await user.save();
 
             // Update session variables
@@ -322,23 +339,24 @@ const verifyOtp = async (req, res) => {
             // Redirect to the account page after successful verification
             res.redirect('/myaccount');
         } else {
-            res.render('otpSection', {tipmessage: 'Invalid OTP', user: user });
+            res.render('otpSection', { tipmessage: 'Invalid OTP', user: user });
         }
     } catch (error) {
         console.log(error.message);
-        res.render('otpSection', {tipmessage: 'try again, refresh the page', user: req.session.user_id});
+        res.render('otpSection', { tipmessage: 'Try again, refresh the page', user: req.session.user_id });
     }
 };
 
 
 //resend otp
 
-const resendOtp = async(req,res)=>{
+const resendOtp = async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
         if (user) {
             const newOtp = crypto.randomInt(100000, 999999).toString();
             user.OTP = newOtp;
+            user.otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes from now
             await user.save();
 
             // Send OTP via email
@@ -348,16 +366,17 @@ const resendOtp = async(req,res)=>{
                 subject: 'Your Resent OTP Code',
                 text: `Your new OTP code is ${newOtp}`
             };
-            res.json({success: true})
+
             await transporter.sendMail(mailOptions);
+            res.json({ success: true });
         } else {
-            res.json({success: false})
+            res.json({ success: false });
         }
     } catch (error) {
         console.log(error.message);
         res.json({ success: false });
     }
-}
+};
 
 
 //delete user if user click cancel button 
@@ -684,8 +703,8 @@ const addToCart = async(req,res)=>{
             // Existing item in the cart
             let newQuantity = cart.Products[itemIndex].Quantity + parseInt(quantity);
     
-            if (newQuantity > 8) {
-                return res.json({ success: false, message: 'You cannot add more than 8 units of this product.' });
+            if (newQuantity > 0) {
+                return res.json({ success: false, message: 'Product allready in the Cart' });
             }
     
             // Update quantity and price for the existing product in the cart

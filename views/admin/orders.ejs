@@ -218,7 +218,7 @@
                                     <% orders.forEach(order => { %>
                                         <tr>
                                             <td><%= orderNumber++ %></td>
-                                            <td><%= order._id %></td>
+                                            <td><%= order.OrderId %></td>
                                             <td><%= new Date(order.createdAt).toLocaleDateString('en-GB') %></td>
                                             <td>
                                                 <% if (order.Status === 'Pending') { %>

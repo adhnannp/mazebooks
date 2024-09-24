@@ -37,11 +37,11 @@ user_route.post('/register',auth.isLogout,userController.insertUser);
 
 user_route.get('/verify-otp', auth.isAdminLogin, auth.isblock ,auth.isVerified ,userController.otpPage);
 
-user_route.post('/verify-otp', auth.isLogout,userController.verifyOtp);
+user_route.post('/verify-otp',userController.verifyOtp);
 
 user_route.delete('/deleteUser/:id', userController.deleteUser);
 
-user_route.post('/resendOtp/:id',auth.isLogout, userController.resendOtp);
+user_route.post('/resendOtp/:id', userController.resendOtp);
 
 user_route.get('/auth/google',auth.isAnyOne,auth.isblock, (req, res, next) => {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');

@@ -128,102 +128,100 @@
                 <div class="modal fade" id="editModal-<%= address._id %>" tabindex="-1" aria-labelledby="editModalLabel-<%= address._id %>" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
-                            <form action="/myaccount/edit-address/<%= address._id %>" method="post" id="editAddressForm">
+                            <form action="/myaccount/edit-address/<%= address._id %>" method="post" id="editAddressForm-<%= address._id %>">
                                 <div class="modal-header">
-                                    <h5 class="modal-title" id="editModalLabel">Edit Address</h5>
+                                    <h5 class="modal-title" id="editModalLabel-<%= address._id %>">Edit Address</h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <input type="text" style="display: none;" id="addressId" value="<%= address._id %>" hidden />
-                            
+                                    <input type="text" style="display: none;" id="addressId-<%= address._id %>" value="<%= address._id %>" hidden />
+                
                                     <!-- Full Name and Mobile No in one line -->
                                     <div class="row mb-3">
                                         <div class="col-md-6">
-                                            <label for="editFullName" class="form-label">Full Name</label>
-                                            <input type="text" class="form-control" id="editFullName" name="FullName" value="<%= address.FullName %>" required>
-                                            <p class="text-danger" id="editFullNameError"></p>
+                                            <label for="editFullName-<%= address._id %>" class="form-label">Full Name</label>
+                                            <input type="text" class="form-control" id="editFullName-<%= address._id %>" name="FullName" value="<%= address.FullName %>" required>
+                                            <p class="text-danger" id="editFullNameError-<%= address._id %>"></p>
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="editMobileNo" class="form-label">Mobile No</label>
-                                            <input type="text" class="form-control" id="editMobileNo" name="MobileNo" value="<%= address.MobileNo %>" required>
-                                            <p class="text-danger" id="editMobileNoError"></p>
+                                            <label for="editMobileNo-<%= address._id %>" class="form-label">Mobile No</label>
+                                            <input type="text" class="form-control" id="editMobileNo-<%= address._id %>" name="MobileNo" value="<%= address.MobileNo %>" required>
+                                            <p class="text-danger" id="editMobileNoError-<%= address._id %>"></p>
                                         </div>
                                     </div>
-                            
                                     <!-- Address in one line -->
                                     <div class="mb-3">
-                                        <label for="editAddress" class="form-label">Address</label>
-                                        <input type="text" class="form-control" id="editAddress" name="Address" value="<%= address.Address %>" required>
-                                        <p class="text-danger" id="editAddressError"></p>
+                                        <label for="editAddress-<%= address._id %>" class="form-label">Address</label>
+                                        <input type="text" class="form-control" id="editAddress-<%= address._id %>" name="Address" value="<%= address.Address %>" required>
+                                        <p class="text-danger" id="editAddressError-<%= address._id %>"></p>
                                     </div>
                             
                                     <!-- Landmark in one line -->
                                     <div class="mb-3">
-                                        <label for="editLandmark" class="form-label">Landmark (Optional)</label>
-                                        <input type="text" class="form-control" id="editLandmark" name="Landmark" value="<%= address.Landmark %>">
-                                        <p class="text-danger" id="editLandmarkError"></p>
+                                        <label for="editLandmark-<%= address._id %>" class="form-label">Landmark (Optional)</label>
+                                        <input type="text" class="form-control" id="editLandmark-<%= address._id %>" name="Landmark" value="<%= address.Landmark %>">
+                                        <p class="text-danger" id="editLandmarkError-<%= address._id %>"></p>
                                     </div>
                             
                                     <!-- Pincode, Flat No, and City in one line -->
                                     <div class="row mb-3">
                                         <div class="col-md-4">
-                                            <label for="editPincode" class="form-label">Pincode</label>
-                                            <input type="text" class="form-control" id="editPincode" name="Pincode" value="<%= address.Pincode %>" required>
-                                            <p class="text-danger" id="editPincodeError"></p>
+                                            <label for="editPincode-<%= address._id %>" class="form-label">Pincode</label>
+                                            <input type="text" class="form-control" id="editPincode-<%= address._id %>" name="Pincode" value="<%= address.Pincode %>" required>
+                                            <p class="text-danger" id="editPincodeError-<%= address._id %>"></p>
                                         </div>
                                         <div class="col-md-4">
-                                            <label for="editFlatNo" class="form-label">Flat No (Optional)</label>
-                                            <input type="text" class="form-control" id="editFlatNo" name="FlatNo" value="<%= address.FlatNo %>">
-                                            <p class="text-danger" id="editFlatNoError"></p>
+                                            <label for="editFlatNo-<%= address._id %>" class="form-label">Flat No (Optional)</label>
+                                            <input type="text" class="form-control" id="editFlatNo-<%= address._id %>" name="FlatNo" value="<%= address.FlatNo %>">
+                                            <p class="text-danger" id="editFlatNoError-<%= address._id %>"></p>
                                         </div>
                                         <div class="col-md-4">
-                                            <label for="editCity" class="form-label">City</label>
-                                            <input type="text" class="form-control" id="editCity" name="City" value="<%= address.City %>" required>
-                                            <p class="text-danger" id="editCityError"></p>
+                                            <label for="editCity-<%= address._id %>" class="form-label">City</label>
+                                            <input type="text" class="form-control" id="editCity-<%= address._id %>" name="City" value="<%= address.City %>" required>
+                                            <p class="text-danger" id="editCityError-<%= address._id %>"></p>
                                         </div>
                                     </div>
                             
                                     <!-- District, State, and Country in one line -->
                                     <div class="row mb-3">
                                         <div class="col-md-4">
-                                            <label for="editDistrict" class="form-label">District</label>
-                                            <input type="text" class="form-control" id="editDistrict" name="District" value="<%= address.District %>" required>
-                                            <p class="text-danger" id="editDistrictError"></p>
+                                            <label for="editDistrict-<%= address._id %>" class="form-label">District</label>
+                                            <input type="text" class="form-control" id="editDistrict-<%= address._id %>" name="District" value="<%= address.District %>" required>
+                                            <p class="text-danger" id="editDistrictError-<%= address._id %>"></p>
                                         </div>
                                         <div class="col-md-4">
-                                            <label for="editState" class="form-label">State</label>
-                                            <input type="text" class="form-control" id="editState" name="State" value="<%= address.State %>" required>
-                                            <p class="text-danger" id="editStateError"></p>
+                                            <label for="editState-<%= address._id %>" class="form-label">State</label>
+                                            <input type="text" class="form-control" id="editState-<%= address._id %>" name="State" value="<%= address.State %>" required>
+                                            <p class="text-danger" id="editStateError-<%= address._id %>"></p>
                                         </div>
                                         <div class="col-md-4">
-                                            <label for="editCountry" class="form-label">Country</label>
-                                            <input type="text" class="form-control" id="editCountry" name="Country" value="<%= address.Country %>" required>
-                                            <p class="text-danger" id="editCountryError"></p>
+                                            <label for="editCountry-<%= address._id %>" class="form-label">Country</label>
+                                            <input type="text" class="form-control" id="editCountry-<%= address._id %>" name="Country" value="<%= address.Country %>" required>
+                                            <p class="text-danger" id="editCountryError-<%= address._id %>"></p>
                                         </div>
                                     </div>
                             
                                     <!-- Address Type in one line -->
                                     <div class="mb-3">
-                                        <label for="editAddressType" class="form-label">Address Type</label>
-                                        <select class="form-control" id="editAddressType" name="AddressType">
+                                        <label for="editAddressType-<%= address._id %>" class="form-label">Address Type</label>
+                                        <select class="form-control" id="editAddressType-<%= address._id %>" name="AddressType">
                                             <option value="Home" <%= address.AddressType === 'Home' ? 'selected' : '' %>>Home</option>
                                             <option value="Work" <%= address.AddressType === 'Work' ? 'selected' : '' %>>Work</option>
                                             <option value="Other" <%= address.AddressType === 'Other' ? 'selected' : '' %>>Other</option>
                                         </select>
-                                        <p class="text-danger" id="editAddressTypeError"></p>
                                     </div>
                                 </div>
                                 <div class="modal-footer">
                                     <button type="submit" class="btn btn-primary">Save changes</button>
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                 </div>
-                                <p id="editServerError"></p>
+                                <p id="editServerError-<%= address._id %>"></p>
                             </form>
                         </div>
                     </div>
                 </div>
 
-                <% }); %>
+                <% }) %>
             </div>
         </div>
     </div>

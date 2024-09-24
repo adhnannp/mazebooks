@@ -117,7 +117,8 @@ document.getElementById('addProductForm').addEventListener('submit', function(ev
             formData.append(`croppedImage${index}`, blob, `croppedImage${index}.jpg`);
         }
     });
-    console.log(formData);
+    console.log('FormData contents:', Array.from(formData.entries()));
+    console.log('Cropped Images:', croppedImages);
     fetch('/admin/products/add', {
         method: 'POST',
         body: formData
@@ -230,16 +231,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Validate Images
-        const img1 = document.getElementById('productImages1').files.length;
-        const img2 = document.getElementById('productImages2').files.length;
-        const img3 = document.getElementById('productImages3').files.length;
+        const img1Input = document.getElementById('productImages1');
+        const img2Input = document.getElementById('productImages2');
+        const img3Input = document.getElementById('productImages3');
         const imageError = document.getElementById('image-error');
-        if (img1 === 0 || img2 === 0 || img3 === 0) {
+        
+        // Check if each input has at least one file uploaded
+        if (img1Input.files.length === 0 || img2Input.files.length === 0 || img3Input.files.length === 0) {
             imageError.textContent = 'Three images must be uploaded.';
             imageError.style.display = 'block';
             valid = false;
         } else {
-            imageError.style.display = 'none';
+             // Function to validate if the file is an image
+            function isImage(file) {
+                return file.type.startsWith('image/');
+            }
+
+            // Validate each image input
+            const files = [img1Input.files[0], img2Input.files[0], img3Input.files[0]];
+            for (let i = 0; i < files.length; i++) {
+                if (!isImage(files[i])) {
+                    imageError.textContent = `File ${i + 1} is not a valid image. Please upload a valid image file.`;
+                    imageError.style.display = 'block';
+                    valid = false;
+                    break; // Stop validation after finding an invalid file
+                }
+            }
+        
+            // If all files are valid images, hide the error message
+            if (valid) {
+                imageError.style.display = 'none';
+            }
         }
 
         // Enable or disable submit button

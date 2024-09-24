@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema({
     Is_block: { type: Boolean, required: true, default: false },
     Is_verified: { type: Boolean, required: true ,default: false},
     OTP: { type: String },
+    otpExpires: { type: Date }, // Expiration time for the OTP
     resetPasswordToken: { type: String },// Token for resetting the password
     resetPasswordExpires: { type: Date }// Expiration time for the token
 })

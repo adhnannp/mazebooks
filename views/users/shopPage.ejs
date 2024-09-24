@@ -229,18 +229,23 @@
                 <% if (totalPages > 1) { %>
                 <nav aria-label="Page navigation example">
                     <ul class="pagination justify-content-center">
+                        <!-- Previous button -->
                         <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
-                            <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
+                            <a class="page-link" href="?page=<%= currentPage - 1 %>&sort=<%= selectedSort %>&genre=<%= selectedGenre %>" aria-label="Previous">
                                 <span aria-hidden="true">&laquo;</span>
                             </a>
                         </li>
+            
+                        <!-- Page number buttons -->
                         <% for (let i = 1; i <= totalPages; i++) { %>
                         <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-                            <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                            <a class="page-link" href="?page=<%= i %>&sort=<%= selectedSort %>&genre=<%= selectedGenre %>"><%= i %></a>
                         </li>
                         <% } %>
+            
+                        <!-- Next button -->
                         <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
-                            <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
+                            <a class="page-link" href="?page=<%= currentPage + 1 %>&sort=<%= selectedSort %>&genre=<%= selectedGenre %>" aria-label="Next">
                                 <span aria-hidden="true">&raquo;</span>
                             </a>
                         </li>

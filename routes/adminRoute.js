@@ -31,7 +31,7 @@ admin_route.get('/products', auth.isLogin, adminController.productsLoad);
 
 admin_route.get('/products/add',auth.isLogin, adminController.addProductLoadPage);
 
-admin_route.post('/products/add',  upload.fields([{ name: 'img1' }, { name: 'img2' }, { name: 'img3' }]), adminController.addProduct);
+admin_route.post('/products/add', upload.fields([{ name: 'img1' }, { name: 'img2' }, { name: 'img3' }, { name: 'croppedImage0' }, { name: 'croppedImage1' }, { name: 'croppedImage2' }]), adminController.addProduct);
 
 admin_route.get('/products/edit/:id',auth.isLogin, adminController.editProductLoadPage);
 

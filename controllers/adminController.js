@@ -166,18 +166,32 @@ const addProduct = async (req, res) => {
             return res.json({ success: false, message: "Product already exists" });
         }
 
-        // Extract file paths from each field
+        // Define the image fields and cropped fields
         const imageFields = ['img1', 'img2', 'img3'];
+        const croppedImageFields = ['croppedImage0', 'croppedImage1', 'croppedImage2'];
         const imageUrls = [];
 
-        imageFields.forEach(field => {
-            if (req.files[field]) {
-                req.files[field].forEach(file => {
-                    imageUrls.push(file.filename); // Adjust path to reflect the public folder if needed
-                });
+        // Loop through image fields to populate imageUrls
+        imageFields.forEach((field, index) => {
+            // Check if a cropped image exists for this field
+            if (req.files[croppedImageFields[index]]) {
+                // Use cropped image
+                imageUrls.push(req.files[croppedImageFields[index]][0].filename); 
+            } else if (req.files[field]) {
+                // Use original image if no cropped version
+                imageUrls.push(req.files[field][0].filename); 
             }
         });
 
+        // Check if at least one image was added
+        if (imageUrls.length === 0) {
+            return res.json({ success: false, message: "At least one image is required" });
+        }
+
+        // Limit to three images
+        if (imageUrls.length > 3) {
+            return res.json({ success: false, message: "Only three images can be uploaded" });
+        }
         // Create new product with images
         const newProduct = new Product({
             Name: req.body.name,
@@ -193,10 +207,28 @@ const addProduct = async (req, res) => {
         });
 
         await newProduct.save();
+
+        //delete the images wich are not used
+        // Get the uploads directory path
+        const uploadsDir = path.join(__dirname, '../public/uploads'); // Adjust path if necessary
+        // Loop through the uploaded files in req.files
+        Object.keys(req.files).forEach(field => {
+            const uploadedFiles = req.files[field];
+
+            uploadedFiles.forEach(file => {
+                // Check if the file is NOT in imageUrls
+                if (!imageUrls.includes(file.filename)) {
+                    // Delete the file
+                    fs.unlinkSync(path.join(uploadsDir, file.filename));
+                    console.log(`Deleted unused file: ${file.filename}`);
+                }
+            });
+        });
+
         res.json({ success: true }); // Send success response
     } catch (error) {
         console.error('Error adding product:', error);
-        res.status(500).json({ success: false, message: 'Server Error,Please try again' });
+        res.status(500).json({ success: false, message: 'Server Error, Please try again' });
     }
 };
 

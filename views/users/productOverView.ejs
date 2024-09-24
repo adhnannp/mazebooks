@@ -11,8 +11,8 @@
                     <% }) %>
                 </div>
                 <div class="selected-image">
-                    <img src="/static/uploads/<%= book.Images[0] %>" id="main-image" class="zoom">
-                    <div class="zoom-preview" id="zoom-preview"></div> <!-- Preview area -->
+                    <img src="/static/uploads/<%= book.Images[0] %>" id="main-image" class="zoom" 
+                         data-zoom-image="/static/uploads/<%= book.Images[0] %>"> <!-- High-res image for zoom -->
                 </div>
             </div>
             <div class="product-details">
@@ -442,31 +442,23 @@
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz4fnFO9Dcsf54Xr1JPrT9bqU4ZJhPt6yU4EMCqiljW00P17JdG3BOWtFz" crossorigin="anonymous"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/elevatezoom/3.0.8/jquery.elevatezoom.min.js"></script>
+
 <script>
-    function selectImage(imageSrc) {
+   function selectImage(imageSrc) {
     const mainImage = document.getElementById('main-image');
     mainImage.src = `/static/uploads/${imageSrc}`;
-
-    const zoomPreview = document.getElementById('zoom-preview');
-
-    mainImage.addEventListener('mousemove', function(e) {
-        const rect = mainImage.getBoundingClientRect();
-        const x = e.clientX - rect.left; // X position within the image
-        const y = e.clientY - rect.top;  // Y position within the image
-        const imgX = (x / mainImage.offsetWidth) * 100; // Percentage X position
-        const imgY = (y / mainImage.offsetHeight) * 100; // Percentage Y position
-        
-        zoomPreview.style.backgroundImage = `url(${mainImage.src})`;
-        zoomPreview.style.backgroundSize = `${mainImage.offsetWidth * 2}px ${mainImage.offsetHeight * 2}px`; // Adjust zoom level
-        zoomPreview.style.backgroundPosition = `-${imgX}% -${imgY}%`;
-    });
-
-    mainImage.addEventListener('mouseleave', function() {
-        zoomPreview.style.display = 'none'; // Hide preview when mouse leaves the image
-    });
-    
-    mainImage.addEventListener('mouseenter', function() {
-        zoomPreview.style.display = 'block'; // Show preview when mouse enters the image
+    // Re-initialize the zoom on the main image after changing the source
+    $('#main-image').data('zoom-image', `/static/uploads/${imageSrc}`).elevateZoom({
+        zoomType: 'window',  // Can be 'lens', 'inner', or 'window'
+        lensShape: 'square',  // Lens shape ('round' or 'square')
+        lensSize: 200,  // Size of the zoom lens (adjust as needed)
+        cursor: 'crosshair',
+        zoomWindowWidth: 300,  // Width of the zoom window
+        zoomWindowHeight: 300, // Height of the zoom window
+        borderSize: 1,  // Border size of zoom window
+        borderColour: '#888'  // Border color of zoom window
     });
 }
 
