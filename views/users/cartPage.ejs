@@ -274,7 +274,7 @@
                         ₹ 50 cash on delivery fee applied
                     <% } %>
                 </p>
-                <p>Total: ₹ <span id="cart-total"><%= (cartSubtotal > 499 ? cartSubtotal : cartSubtotal + 50).toFixed(2) %></span></p>
+                <p>Total: ₹ <span id="cart-total"><%= cartTotal.toFixed(2) %></span></p>
                 <form id="checkout-form" action="/product/checkout" method="post">
                     <input type="hidden" id="selected-items" name="selectedItems" value="">
                     <button type="button" class="checkout-btn" onclick="proceedToCheckout()">PROCEED TO CHECKOUT</button>
@@ -369,7 +369,7 @@ function updateCart(productId) {
 
             // Update the product's total price (single price * quantity)
             const updatedTotalPrice = data.updatedProductPrice.toFixed(2);
-            totalElement.textContent = `₹ ${updatedTotalPrice}`;
+            totalElement.textContent = `Total: ₹ ${updatedTotalPrice}`;
 
             // Update the cart's subtotal
             document.getElementById('cart-subtotal').textContent = `${data.newSubtotal.toFixed(2)}`;
@@ -380,7 +380,7 @@ function updateCart(productId) {
                 document.getElementById('cart-total').textContent = `${data.newTotal.toFixed(2)}`;
             } else {
                 document.getElementById('shipping-message').textContent = "₹ 50 cash on delivery fee applied";
-                document.getElementById('cart-total').textContent = `${(data.newTotal + 50).toFixed(2)}`;
+                document.getElementById('cart-total').textContent = `${data.newTotal.toFixed(2)}`;
             }
 
         } else {

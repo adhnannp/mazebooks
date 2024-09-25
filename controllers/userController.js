@@ -798,19 +798,41 @@ const loadCart = async (req, res) => {
 
         // If cart is not found, return empty cart page
         if (!cart) {
-            return res.render('cartPage', { 
-                user: req.session.user_id, 
+            return res.render('cartPage', {
+                user: req.session.user_id,
                 cartItems: [], // Pass an empty cartItems array
                 cartTotal: 0 // Set total to 0 if no cart found
             });
         }
 
+        // Flag to check if the cart needs updating
+        let cartUpdated = false;
+
         // Filter out products that are valid (product and category must both be listed)
-        const validCartProducts = cart.Products.filter(product =>
-            product.ProductId && // Ensure the product exists
-            product.ProductId.CategoryId && // Ensure the product's category exists
-            product.Quantity > 0 // Ensure the product is in stock
-        );
+        const validCartProducts = cart.Products.filter(product => {
+            if (
+                product.ProductId && // Ensure the product exists
+                product.ProductId.Quantity > 0 && // Ensure the product is in stock
+                product.ProductId.CategoryId && // Ensure the product's category exists
+                product.Quantity > 0 // Ensure the cart item is in stock
+            ) {
+                // Adjust quantity if the cart quantity exceeds product stock
+                if (product.Quantity > product.ProductId.Quantity) {
+                    product.Quantity = product.ProductId.Quantity;
+                    cartUpdated = true; // Mark that cart was updated
+                }
+                return true;
+            }
+            // If the product is not valid, it will be removed from the cart
+            cartUpdated = true;
+            return false;
+        });
+
+        // Update cart in database if there were changes
+        if (cartUpdated) {
+            cart.Products = validCartProducts;
+            await cart.save();
+        }
 
         // Calculate cart subtotal based on the valid products
         const cartSubtotal = validCartProducts.reduce((total, item) => total + (item.Quantity * item.Price), 0);
@@ -845,33 +867,36 @@ const updateCart = async (req, res) => {
         const cart = await Cart.findOne({ UserId: userId }).populate('Products.ProductId');
 
         if (cart) {
+            // Remove any invalid products with null ProductId references
+            cart.Products = cart.Products.filter(p => p.ProductId);
+
             // Find the product in the cart and update the quantity
-            const product = cart.Products.find(p => p.ProductId._id.toString() === productId);
+            const product = cart.Products.find(p => p.ProductId && p.ProductId._id.toString() === productId);
 
             if (product) {
                 product.Quantity = parseInt(quantity); // Update the quantity
 
                 // Calculate the updated total price for this product
-                const updatedProductPrice = product.Quantity*product.ProductId.Price;
+                const updatedProductPrice = product.Quantity * product.ProductId.Price;
 
                 await cart.save(); // Save the updated cart
 
                 // Recalculate the subtotal of the cart
                 let newSubtotal = 0;
                 cart.Products.forEach(p => {
-                    newSubtotal += p.Quantity*p.ProductId.Price;
+                    newSubtotal += p.Quantity * p.ProductId.Price;
                 });
 
                 // Check for eligibility for Cash on Delivery
                 const isEligibleForCOD = newSubtotal > 499;
-                const newTotal = isEligibleForCOD ? newSubtotal : newSubtotal+50;
+                const newTotal = isEligibleForCOD ? newSubtotal : newSubtotal + 50;
 
                 res.json({
                     success: true,
-                    updatedProductPrice, 
-                    newSubtotal,         
-                    newTotal,            
-                    isEligibleForCOD, 
+                    updatedProductPrice,
+                    newSubtotal,
+                    newTotal,
+                    isEligibleForCOD,
                 });
             } else {
                 res.json({ success: false, message: "Product not found in cart" });
