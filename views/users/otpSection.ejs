@@ -113,7 +113,7 @@
         <div class="account-overview-container">
             <!-- Sidebar -->
             <div class="account-sidebar">
-                <a href="/account" class="account-selected">Account Overview</a>
+                <a href="/myaccount" class="account-selected">Account Overview</a>
             </div>
     
             <!-- OTP Verification Form -->
@@ -160,6 +160,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
+                        alert("otp has resented")
                         startTimer(); // Restart the timer after resending OTP
                     } else {
                         alert("Failed to resend OTP. Please try again.");

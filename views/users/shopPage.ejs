@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MAZE BOOK STORE</title>
     <!-- Bootstrap CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 
 <!-- Font Awesome CSS -->
@@ -62,6 +63,11 @@
         .container {
             padding: 20px 0;
         }
+        .badge-custom {
+            font-size: 0.7rem; /* Smaller font size */
+            padding: 0.2em 0.4em; /* Adjust padding for a smaller badge */
+            border-radius: 0.5rem; /* Ensure it remains rounded */
+        }
 </style>
 </head>
 
@@ -106,8 +112,26 @@
 
                     <!-- Icons at the End -->
                     <li class="nav-item d-flex align-items-center">
-                        <a href="/cart" class="icon-link"><i class="fas fa-shopping-cart"></i></a>
-                        <a href="#" class="icon-link"><i class="fas fa-heart"></i></a>
+                        <a href="/cart" class="icon-link position-relative">
+                            <i class="fas fa-shopping-cart"></i>
+                            <% if (user && cartItemCount > 0) { %>
+                                <span class="badge-custom top-0 start-100 translate-middle badge rounded-pill bg-primary">
+                                    <%= cartItemCount > 9 ? '9+' : cartItemCount %>
+                                </span>
+                            <% } else { %>
+                                <span class="badge-custom top-0 start-100 translate-middle badge rounded-pill bg-primary">0</span>
+                            <% } %>
+                        </a>
+                        <a href="/wishlist" class="icon-link position-relative">
+                            <i class="fas fa-heart"></i>
+                            <% if (user && wishlistItemCount > 0) { %>
+                                <span class="badge-custom top-0 start-100 translate-middle badge rounded-pill bg-primary">
+                                    <%= wishlistItemCount > 9 ? '9+' : wishlistItemCount %>
+                                </span>
+                            <% } else { %>
+                                <span class="badge-custom top-0 start-100 translate-middle badge rounded-pill bg-primary">0</span>
+                            <% } %>
+                        </a>
                         <a href="/myaccount" class="icon-link"><i class="fas fa-user"></i></a>
                     </li>
                 </ul>
@@ -216,8 +240,79 @@
                             <h2 class="product-title"><%= book.Name %></h2>
                             <p class="product-price">&#8377;<%= book.Price %></p>
                             <div class="product-actions">
-                                <button class="btn"><i class="fas fa-heart"></i></button>
-                                <button class="btn btn-primary">Buy Now</button>
+                                <% if (user) { %>
+                                    <form id="wishlist-form-<%= book._id %>" action="/wishlist/toggle" method="post">
+                                        <input type="text" hidden value="<%= book._id %>" name="productId">
+                                        <button type="button" class="btn btn-heart" id="wishlist-btn-<%= book._id %>" onclick="toggleWishlist('<%= book._id %>')">
+                                            <i class="fas fa-heart"></i>
+                                        </button>
+                                    </form>
+                                    <script>
+                                        // Initial state check based on server-side data
+                                        document.addEventListener("DOMContentLoaded", () => {
+                                            const productId = "<%= book._id %>";
+                                            const isInWishlist = <%= wishlistItems.includes(book._id.toString()) ? 'true' : 'false'%>; // Convert ID to string to match
+                                    
+                                            // Change the color if the product is already in the wishlist
+                                            const wishlistButton = document.getElementById(`wishlist-btn-${productId}`);
+                                            if (isInWishlist) {
+                                                wishlistButton.style.color = "hsl(350, 76%, 65%)"; // Pink color
+                                            }
+                                        });
+                                    
+                                        // Function to toggle wishlist
+                                        async function toggleWishlist(productId) {
+                                            try {
+                                                // Get the button element
+                                                const wishlistButton = document.getElementById(`wishlist-btn-${productId}`);
+                                    
+                                                // Send AJAX request to toggle wishlist
+                                                const response = await fetch('/wishlist/toggle', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Content-Type': 'application/json',
+                                                    },
+                                                    body: JSON.stringify({ productId }),
+                                                });
+                                    
+                                                // Parse the JSON response
+                                                const data = await response.json();
+                                    
+                                                // Check the server response to update the button style
+                                                if (data.isInWishlist) {
+                                                    wishlistButton.style.color = "hsl(350, 76%, 65%)"; // Pink color
+                                                    showAlert('Product added to wishlist', 'success');
+                                                } else {
+                                                    wishlistButton.style.color = "#000"; // Default color
+                                                    showAlert('Product removed from wishlist', 'info');
+                                                }
+                                                setTimeout(() => {
+                                                    window.location.reload();
+                                                }, 1000); // Delay in milliseconds
+                                            } catch (error) {
+                                                console.error("Failed to toggle wishlist", error);
+                                                showAlert('Failed to update wishlist. Please try again.', 'error');
+                                            }
+                                        }
+                                    
+                                        // Function to show SweetAlert notification
+                                        function showAlert(message, type) {
+                                            Swal.fire({
+                                                text: message,
+                                                icon: type, // 'success', 'info', 'warning', 'error'
+                                                showConfirmButton: false, // Hide the OK button
+                                                timer: 2000, // Auto close after 0.5 seconds
+                                                position: 'center', // Position in the center of the screen
+                                                backdrop: true, // Show a background overlay (default behavior)
+                                                customClass: {
+                                                    popup: 'custom-alert' // Optional: Apply custom styles (if needed)
+                                                }
+                                            });
+                                        }
+                                    </script>
+                                <% } else { %>
+                                    <button class="btn-heart" onclick="showLoginModal()"><i class="fas fa-heart"></i></button>
+                                <% } %>
                             </div>
                         </div>
                     </div>
@@ -257,8 +352,41 @@
     </div>
 </div>
 
+<!-- Login Modal -->
+<div id="loginModal" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Login Required</h5>
+                <button type="button" style="border: none;" class="close btn-danger" onclick="closeLoginModal()" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>You are not logged in. Please login or register.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="redirectToLogin()">Login</button>
+                <button type="button" class="btn btn-secondary" onclick="redirectToRegister()">Register</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Style Section -->
 <style>
+    .btn-heart {
+        background: none;
+        border: none;
+        color: #000; /* Default color */
+        font-size: 20px;
+        transition: color 0.3s, text-shadow 0.3s;
+    }
+
+    .btn-heart:hover {
+        color: hsl(350, 76%, 65%);
+    }
+    
     h1 {
         font-size: 2.5rem;
         text-align: center;
@@ -408,10 +536,29 @@
 </style>
 <!-- Popper.js (required for Bootstrap's JavaScript components) -->
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
-
-<!-- Bootstrap Bundle JS (includes Bootstrap's JavaScript and Popper.js) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz4fnFO9Dcsf54Xr1JPrT9bqU4ZJhPt6yU4EMCqiljW00P17JdG3BOWtFz" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
+<script>
+    function redirectToLogin() {
+    window.location.href = '/login'; // Adjust the path as needed
+}
+
+function redirectToRegister() {
+    window.location.href = '/register'; // Adjust the path as needed
+}
+
+function showLoginModal() {
+  $('#loginModal').modal('show');
+}
+
+function closeLoginModal() {
+  $('#loginModal').modal('hide');
+}
+</script>
 </body>
 
 </html>

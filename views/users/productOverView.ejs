@@ -19,7 +19,90 @@
                 <h1 class="product-title">
                     <%= book.Name %>
                     <% if (isLoggedIn) { %>
-                        <button class="btn-heart" onclick="addToWishlist()"><i class="fas fa-heart"></i></button>
+                        <form id="wishlist-form-<%= book._id %>" action="/wishlist/toggle" method="post">
+                            <input type="text" hidden value="<%= book._id %>" name="productId">
+                            <button type="button" class="btn btn-heart" id="wishlist-btn-<%= book._id %>" onclick="toggleWishlist('<%= book._id %>')">
+                                <i class="fas fa-heart"></i>
+                            </button>
+                        </form>
+                        <script>
+                            // Initial state check based on server-side data
+                            document.addEventListener("DOMContentLoaded", () => {
+                                const productId = "<%= book._id %>";
+                                const isInWishlist = <%= wishlistItems.includes(book._id.toString()) ? 'true' : 'false'%>; // Convert ID to string to match
+                        
+                                // Change the color if the product is already in the wishlist
+                                const wishlistButton = document.getElementById(`wishlist-btn-${productId}`);
+                                if (isInWishlist) {
+                                    wishlistButton.style.color = "hsl(350, 76%, 65%)"; // Pink color
+                                }
+                            });
+                        
+                            // Function to toggle wishlist
+                            async function toggleWishlist(productId) {
+                                try {
+                                    // Get the button element
+                                    const wishlistButton = document.getElementById(`wishlist-btn-${productId}`);
+                        
+                                    // Send AJAX request to toggle wishlist
+                                    const response = await fetch('/wishlist/toggle', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                        },
+                                        body: JSON.stringify({ productId }),
+                                    });
+                        
+                                    // Parse the JSON response
+                                    const data = await response.json();
+                        
+                                    // Check the server response to update the button style
+                                    if (data.isInWishlist) {
+                                        wishlistButton.style.color = "hsl(350, 76%, 65%)"; // Pink color
+                                        showAlert('Product added to wishlist', 'success');
+                                        
+                                    } else {
+                                        wishlistButton.style.color = "#000"; // Default color
+                                        showAlert('Product removed from wishlist', 'info');
+                                    }
+                                    setTimeout(() => {
+                                        window.location.reload();
+                                    }, 1000); // Delay in milliseconds
+                                } catch (error) {
+                                    console.error("Failed to toggle wishlist", error);
+                                    showAlert('Failed to update wishlist. Please try again.', 'error');
+                                }
+                            }
+                        
+                            // Function to show SweetAlert notification
+                            function showAlert(message, type) {
+                                Swal.fire({
+                                    text: message,
+                                    icon: type, // 'success', 'info', 'warning', 'error'
+                                    showConfirmButton: false, // Hide the OK button
+                                    timer: 2000, // Auto close after 0.5 seconds
+                                    position: 'center', // Position in the center of the screen
+                                    backdrop: true, // Show a background overlay (default behavior)
+                                    customClass: {
+                                        popup: 'custom-alert' // Optional: Apply custom styles (if needed)
+                                    }
+                                });
+                            }
+                        </script>
+                        
+                        <style>
+                            .btn-heart {
+                                background: none;
+                                border: none;
+                                color: #000; /* Default color */
+                                font-size: 20px;
+                                transition: color 0.3s, text-shadow 0.3s;
+                            }
+                        
+                            .btn-heart:hover {
+                                color: hsl(350, 76%, 65%);
+                            }
+                        </style>
                     <% } else { %>
                         <button class="btn-heart" onclick="showLoginModal()"><i class="fas fa-heart"></i></button>
                     <% } %>
@@ -486,6 +569,7 @@ function showSuccessModal() {
 
 function closeSuccessModal() {
   $('#successModal').modal('hide');
+  window.location.reload();
 }
 
 function showErrorModal(message) {
@@ -495,6 +579,7 @@ function showErrorModal(message) {
 
 function closeErrorModal() {
   $('#errorModal').modal('hide');
+  window.location.reload();
 }
 
 function addToCart(productId) {

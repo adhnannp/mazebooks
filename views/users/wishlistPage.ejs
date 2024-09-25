@@ -215,73 +215,61 @@
 </style>
 <div class="cart-container">
     <% if (user) { %>
-        <% if (cartItems.length === 0) { %>
+        <% if (wishlistItems.length === 0) { %>
             <!-- Display if cart is empty -->
             <div class="empty-cart-message">
-                <h2>Your Cart is Empty</h2>
-                <p>Looks like you haven't added anything to your cart yet!</p>
+                <h2>Your Wishlist Empty</h2>
+                <p>Looks like you haven't added anything to your Wishlist yet!</p>
                 <a href="/shop" class="continue-shopping-btn">Continue Shopping</a>
             </div>
         <% } else { %>
             <!-- Display if cart has items -->
+            
             <div class="cart-items">
-                <% cartItems.forEach(item => { %>
+                <% wishlistItems.forEach(item => { %>
                     <div class="product-card <%= item.ProductId.Quantity === 0 ? 'sold-out' : '' %>" id="product-card-<%= item.ProductId._id %>">
                         <div class="product-checkbox-container">
                             <% if (item.ProductId.Quantity > 0) { %>
-                                <input type="checkbox" class="product-checkbox" id="checkbox-<%= item.ProductId._id %>" value="<%= item.ProductId._id %>" autocomplete="off" onchange="toggleProductSelection('<%= item.ProductId._id %>')">
-                                <label for="checkbox-<%= item.ProductId._id %>" class="checkbox-label"></label>
+                                <!-- Checkbox can be added here if needed -->
                             <% } else { %>
                                 <span class="sold-out-message">Sold Out</span>
                             <% } %>
                         </div>
-                        <a href="/home/product/<%= item.ProductId._id%>">
+                        <a href="/home/products/<%= item.ProductId._id%>">
                             <img src="/static/uploads/<%= item.ProductId.Images[0] %>" alt="<%= item.ProductId.Name %>" class="product-image">
                         </a>
                         <div class="product-details">
                             <div class="product-name"><a href="/home/product/<%= item.ProductId._id%>" style="text-decoration: none; color: inherit; font-size: inherit;" ><%= item.ProductId.Name %></a></div>
+                            <div class="product-price"><strong>Price:</strong> $<%= item.ProductId.Price.toFixed(2) %></div> <!-- Show price -->
                             <% if (item.ProductId.Quantity > 0) { %>
-                                <div class="product-price">₹ <%= item.Price.toFixed(2) %></div>
                                 <div class="product-quantity">
-                                    <label for="quantity-<%= item.ProductId._id %>">Quantity:</label>
-                                    <select id="quantity-<%= item.ProductId._id %>" name="quantity" onchange="updateCart('<%= item.ProductId._id %>')">
-                                        <% for (let i = 1; i <= Math.min(item.ProductId.Quantity, 8); i++) { %>
-                                            <option value="<%= i %>" <%= i === item.Quantity ? 'selected' : '' %>><%= i %></option>
-                                        <% } %>
-                                    </select>
+                                    <label for="quantity-<%= item.ProductId._id %>">Stock:</label>
                                     <% if (item.ProductId.Quantity < 8) { %>
                                         <span style="color: red;">Only <%= item.ProductId.Quantity %> left</span>
+                                    <% } else { %>
+                                        <span style="color: green;"> available</span> <!-- Show available quantity -->
                                     <% } %>
                                 </div>
-                                <div class="product-total" id="total-price-<%= item.ProductId._id %>">
-                                    Total: ₹ <%= (item.Quantity * item.ProductId.Price).toFixed(2) %>
-                                </div>
+                                <% if (!cartProducts.includes(item.ProductId._id.toString())) { %>
+                                    <!-- If product is not in cart, show "Add to Cart" button -->
+                                    <form id="add-to-cart-form-<%= item.ProductId._id %>" action="/cart/add" method="post">
+                                        <input type="text" value="1" name="quantity" hidden>
+                                        <input type="text" value="<%= item.ProductId._id %>" name="productId" hidden>
+                                        <button type="button" onclick="addToCart('<%= item.ProductId._id %>')" style="background: none; border: none; color: blue;">
+                                            Add to Cart
+                                        </button>
+                                    </form>
+                                <% } else { %>
+                                    <!-- If product is in cart, show message -->
+                                    <span style="color: gray;">Already in Cart</span>
+                                <% } %>
                             <% } else { %>
-                                <div class="product-price">₹ <%= item.Price.toFixed(2) %></div><br>
                                 <p style="color: red; margin: 5px 0;">This product is sold out</p>
                             <% } %>
                             <i class="fas fa-trash delete-icon" onclick="openDeleteModal('<%= item.ProductId._id %>')"></i>
                         </div>
                     </div>
                 <% }) %>
-            </div>
-    
-            <div class="cart-totals">
-                <h2>Cart Summary</h2>
-                <p>Subtotal: ₹ <span id="cart-subtotal"><%= cartSubtotal.toFixed(2) %></span></p>
-                <p id="shipping-message">
-                    <% if (cartSubtotal > 499) { %>
-                        You are eligible for Cash on Delivery
-                    <% } else { %>
-                        ₹ 50 cash on delivery fee applied
-                    <% } %>
-                </p>
-                <p>Total: ₹ <span id="cart-total"><%= cartTotal.toFixed(2) %></span></p>
-                <form id="checkout-form" action="/product/checkout" method="post">
-                    <input type="hidden" id="selected-items" name="selectedItems" value="">
-                    <button type="button" class="checkout-btn" onclick="proceedToCheckout()">PROCEED TO CHECKOUT</button>
-                </form>
-                <p id="error-message" style="color: red; display: none;">Please select at least one product to proceed.</p>
             </div>
         <% } %>
     <% } else { %>
@@ -297,7 +285,7 @@
 <div id="deleteConfirmationModal" class="modal">
     <div class="modal-content">
         <span class="close">&times;</span>
-        <h2>Remove this item from Cart?</h2>
+        <h2>Remove this item from Whishlist?</h2>
         <button id="confirmDelete" class="modal-btn confirm-btn">Yes, Remove</button>
         <button id="cancelDelete" class="modal-btn cancel-btn">Cancel</button>
     </div>
@@ -347,56 +335,8 @@ window.onclick = function(event) {
     }
 };
 
-//update cart not delete
-function updateCart(productId) {
-    const quantity = document.getElementById(`quantity-${productId}`).value;
-
-    // Make an AJAX request to update the cart
-    fetch('/cart/update-cart', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            productId: productId,
-            quantity: quantity
-        }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Dynamically update the UI without reloading the page
-            const productRow = document.getElementById(`product-row-${productId}`);
-            const totalElement = document.getElementById(`total-price-${productId}`);
-
-            // Update the product's total price (single price * quantity)
-            const updatedTotalPrice = data.updatedProductPrice.toFixed(2);
-            totalElement.textContent = `Total: ₹ ${updatedTotalPrice}`;
-
-            // Update the cart's subtotal
-            document.getElementById('cart-subtotal').textContent = `${data.newSubtotal.toFixed(2)}`;
-
-            // Update the total price including shipping
-            if (data.isEligibleForCOD) {
-                document.getElementById('shipping-message').textContent = "You are eligible for Cash on Delivery";
-                document.getElementById('cart-total').textContent = `${data.newTotal.toFixed(2)}`;
-            } else {
-                document.getElementById('shipping-message').textContent = "₹ 50 cash on delivery fee applied";
-                document.getElementById('cart-total').textContent = `${data.newTotal.toFixed(2)}`;
-            }
-
-        } else {
-            console.error("Failed to update the cart");
-        }
-    })
-    .catch(error => {
-        console.error("Error updating cart:", error);
-    });
-}
-
 function removeFromCart(productId) {
-    // Send AJAX request to the server to remove the item from the cart
-    fetch(`/cart/remove/${productId}`, {
+    fetch(`/wishlist/remove/${productId}`, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',
@@ -405,55 +345,91 @@ function removeFromCart(productId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Remove the item from the cart in the frontend
+            // Remove the item from the wishlist in the frontend
             document.querySelector(`#product-card-${productId}`).remove();
-            // Update the cart totals
-            updateCartTotals(data.newCartTotal);
-            window.location.reload();
+
+            // Show SweetAlert before reloading the page
+            Swal.fire({
+                text: 'Item removed from wishlist',
+                icon: 'success',
+                showConfirmButton: false,
+                timer: 2000, // Alert stays for 2 seconds
+                position: 'center',
+                backdrop: true,
+            }).then(() => {
+                // Delay page reload until after the alert is closed
+                window.location.reload();
+            });
         } else {
-            alert('Error removing item from cart.');
+            Swal.fire({
+                text: 'Error removing item from wishlist: ' + (data.message || 'Unknown error.'),
+                icon: 'error',
+                showConfirmButton: true,
+            });
         }
     })
     .catch(error => console.error('Error:', error));
-}    
-
-function updateCartTotals(newTotal) {
-    document.getElementById('cart-subtotal').innerText = newTotal.toFixed(2);
-    document.getElementById('cart-total').innerText = (newTotal > 499 ? newTotal : newTotal + 50).toFixed(2);
 }
 
-//select cart products 
+function addToCart(productId) {
+    const quantity = 1;
 
-let selectedProducts = [];
-
-// Function to toggle product selection
-function toggleProductSelection(productId) {
-    const checkbox = document.getElementById('checkbox-' + productId);
-    if (checkbox.checked) {
-        selectedProducts.push(productId);
-    } else {
-        selectedProducts = selectedProducts.filter(id => id !== productId);
-    }
-}
-
-// Function to proceed to checkout
-function proceedToCheckout() {
-    const selectedItemsInput = document.getElementById('selected-items');
-    const errorMessage = document.getElementById('error-message');
-    
-    if (selectedProducts.length === 0) {
-        // Show error message if no products are selected
-        errorMessage.style.display = 'block';
-    } else {
-        // Hide error message if products are selected
-        errorMessage.style.display = 'none';
-
-        // Pass selected products' IDs to hidden input field
-        selectedItemsInput.value = selectedProducts.join(',');
-
-        // Submit the form
-        document.getElementById('checkout-form').submit();
-    }
+    fetch('/cart/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ productId, quantity })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Increase timer to 5000 milliseconds (5 seconds)
+            Swal.fire({
+                text: data.message,
+                icon: 'success',
+                showConfirmButton: false,
+                timer: 2000, // 5 seconds
+                position: 'center',
+                backdrop: true,
+                customClass: {
+                    popup: 'custom-alert'
+                }
+            }).then(() => {
+                // Delay page reload until after the alert is closed
+                window.location.reload();
+            });
+        } else {
+            Swal.fire({
+                text: data.message,
+                icon: 'error',
+                showConfirmButton: false,
+                timer: 2000, // 5 seconds
+                position: 'center',
+                backdrop: true,
+                customClass: {
+                    popup: 'custom-alert'
+                }
+            }).then(() => {
+                // Delay page reload until after the alert is closed
+                window.location.reload();
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            text: 'Something went wrong. Please try again later.',
+            icon: 'error',
+            showConfirmButton: false,
+            timer: 2000, // 5 seconds
+            position: 'center',
+            backdrop: true,
+            customClass: {
+                popup: 'custom-alert'
+            }
+        });
+    });
 }
 </script>
 </body>

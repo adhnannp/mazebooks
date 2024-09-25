@@ -9,6 +9,7 @@ const Category = require("../models/categoryModel");
 const Address = require("../models/addressModel");
 const Cart = require("../models/cartModel");
 const Order = require("../models/orderModel");
+const Wishlist = require("../models/wishlistModel");
 
 //registration
 
@@ -44,9 +45,23 @@ const loadHome = async(req,res)=>{
             .populate('CategoryId')
             .limit(12);
 
+
+         // Fetch the user's wishlist if logged in
+         let wishlistItems = [];
+         if (req.session.user_id) {
+             const wishlist = await Wishlist.findOne({ UserId: req.session.user_id }).select('Products.ProductId');
+             if (wishlist) {
+                 wishlistItems = wishlist.Products.map(item => item.ProductId.toString());
+             }
+         }
+            
         // Render the products or send them as a response
         res.render("home", {
             products,
+            cartItemCount: req.session.cartItemCount,
+            wishlistItemCount: req.session.wishlistItemCount,
+            user:req.session.user_id,
+            wishlistItems,
         });
     } catch (error) {
         console.log(error.message);
@@ -119,6 +134,15 @@ const loadShop = async (req, res) => {
             .collation(collation) // Apply collation for case-insensitive sorting
             .skip((currentPage - 1) * itemsPerPage)
             .limit(itemsPerPage);
+        
+
+        let wishlistItems = [];
+        if (req.session.user_id) {
+            const wishlist = await Wishlist.findOne({ UserId: req.session.user_id }).select('Products.ProductId');
+            if (wishlist) {
+                wishlistItems = wishlist.Products.map(item => item.ProductId.toString());
+            }
+        }
 
         // Render the products or send them as a response
         res.render("shopPage", {
@@ -128,6 +152,10 @@ const loadShop = async (req, res) => {
             selectedSort,  // Pass selected sort to the view
             currentPage,
             totalPages,
+            cartItemCount: req.session.cartItemCount,
+            wishlistItemCount: req.session.wishlistItemCount,
+            wishlistItems,
+            user:req.session.user_id
         });
     } catch (error) {
         console.log(error.message);
@@ -146,7 +174,11 @@ const loadAccountOverview = async(req,res)=>{
         }
         if (req.session.user_id && req.session.is_verified && !req.session.is_block) {
             const user = await User.findOne({_id:req.session.user_id})
-            return res.render('myAccount',{user:user});
+            return res.render('myAccount',{
+                user:user,
+                cartItemCount: req.session.cartItemCount,
+                wishlistItemCount: req.session.wishlistItemCount,
+                });
         }else if (req.session.user_id && !req.session.is_verified && !req.session.is_block){
             return res.redirect('/verify-otp');
         }else {
@@ -160,7 +192,12 @@ const loadAccountOverview = async(req,res)=>{
 //render registration view
 const loadRegister = async(req,res)=>{
     try {
-        res.render('userRegister',{message:''});
+        res.render('userRegister',{
+            message:'',
+            cartItemCount: req.session.cartItemCount,
+            wishlistItemCount: req.session.wishlistItemCount,
+            user:req.session.user_id
+        });
     } catch (error) {
         console.log(error.message);
     }
@@ -236,11 +273,46 @@ const insertUser = async (req, res) => {
 
 const loginLoad = async(req ,res)=>{
     try {
-        res.render('userLogin',{message:""});
+        res.render('userLogin',{
+            message:"",
+            cartItemCount: req.session.cartItemCount,
+            wishlistItemCount: req.session.wishlistItemCount,
+            user:req.session.user_id
+        });
     } catch (error) {
         console.log(error.message);
     }
 }
+
+//get count of listed products whose category is also listed for wish list and cart
+const getCounts = async (userId) => {
+    const cart = await Cart.findOne({ UserId: userId }).populate({
+        path: 'Products.ProductId',
+        populate: { path: 'CategoryId' },
+    });
+
+    const wishlist = await Wishlist.findOne({ UserId: userId }).populate({
+        path: 'Products.ProductId',
+        populate: { path: 'CategoryId' },
+    });
+
+    const cartItemCount = cart ? cart.Products.filter(item => 
+        item.ProductId && 
+        item.ProductId.Is_list && 
+        item.ProductId.CategoryId && 
+        item.ProductId.CategoryId.Is_list
+    ).length : 0;
+
+    const wishlistItemCount = wishlist ? wishlist.Products.filter(item => 
+        item.ProductId && 
+        item.ProductId.Is_list && 
+        item.ProductId.CategoryId && 
+        item.ProductId.CategoryId.Is_list
+    ).length : 0;
+
+    return { cartItemCount, wishlistItemCount };
+};
+
 
 //varify login
 const varifyLogin = async(req,res)=>{
@@ -275,6 +347,10 @@ const varifyLogin = async(req,res)=>{
                     req.session.is_verified = userData.Is_verified
                     req.session.is_block = userData.Is_block;
 
+                    const counts = await getCounts(userData._id);
+                    req.session.cartItemCount = counts.cartItemCount;
+                    req.session.wishlistItemCount = counts.wishlistItemCount;
+
                     res.redirect('/verify-otp')
 
                 }else {
@@ -282,6 +358,10 @@ const varifyLogin = async(req,res)=>{
                     req.session.is_admin = userData.Is_admin;
                     req.session.is_verified = userData.Is_verified;
                     req.session.is_block = userData.Is_block;
+
+                    const counts = await getCounts(userData._id);
+                    req.session.cartItemCount = counts.cartItemCount;
+                    req.session.wishlistItemCount = counts.wishlistItemCount;
 
                     res.redirect('/myAccount');
                 }
@@ -301,7 +381,12 @@ const varifyLogin = async(req,res)=>{
 const otpPage = async(req,res)=>{
     try{
         const user = await User.findOne({_id:req.session.user_id})
-        res.render('otpSection',{tipmessage:'Please verify your eamil',user:user});
+        res.render('otpSection',{
+            tipmessage:'Please verify your eamil',
+            user:user,
+            cartItemCount: req.session.cartItemCount,
+            wishlistItemCount: req.session.wishlistItemCount,
+        });
     } catch (error) {
     console.log(error.message);
     }
@@ -323,7 +408,9 @@ const verifyOtp = async (req, res) => {
         if (Date.now() > user.otpExpires) {
             return res.render('otpSection', {
                 tipmessage: 'OTP has expired. Please request a new OTP.',
-                user: user
+                user: user,
+                cartItemCount: req.session.cartItemCount,
+                wishlistItemCount: req.session.wishlistItemCount,
             });
         }
 
@@ -339,7 +426,12 @@ const verifyOtp = async (req, res) => {
             // Redirect to the account page after successful verification
             res.redirect('/myaccount');
         } else {
-            res.render('otpSection', { tipmessage: 'Invalid OTP', user: user });
+            res.render('otpSection', { 
+                tipmessage: 'Invalid OTP', 
+                user: user,
+                cartItemCount: req.session.cartItemCount,
+                wishlistItemCount: req.session.wishlistItemCount,
+            });
         }
     } catch (error) {
         console.log(error.message);
@@ -409,7 +501,22 @@ const listProduct = async (req, res) => {
         const book = await Product.findById(productId).populate('CategoryId'); // Populate the Category details
         const isLoggedIn = req.session && req.session.user_id; // Check if user is logged in
 
-        res.render('productOverView', { book, isLoggedIn });
+        let wishlistItems = [];
+        if (req.session.user_id) {
+            const wishlist = await Wishlist.findOne({ UserId: req.session.user_id }).select('Products.ProductId');
+            if (wishlist) {
+                wishlistItems = wishlist.Products.map(item => item.ProductId.toString());
+            }
+        }
+
+        res.render('productOverView', { 
+            book, 
+            isLoggedIn,
+            cartItemCount: req.session.cartItemCount,
+            wishlistItemCount: req.session.wishlistItemCount,
+            wishlistItems,
+            user:req.session.user_id
+         });
     } catch (error) {
         console.log(error.message); // Corrected from 'error.massage' to 'error.message'
         res.redirect('/home');
@@ -570,7 +677,13 @@ const addressLoad = async(req,res)=>{
         const addresses = await Address.find({ UserId: userId });
 
         // Render the addressBook.ejs template with the addresses
-        res.render('addressBook', { addresses,userId});
+        res.render('addressBook', { 
+            addresses,
+            userId,
+            cartItemCount: req.session.cartItemCount,
+            wishlistItemCount: req.session.wishlistItemCount,
+            user:req.session.user_id
+        });
     } catch (error) {
         console.error(error);
         res.status(500).send('Server error');
@@ -683,7 +796,7 @@ const addToCart = async(req,res)=>{
     try {
         const { productId, quantity } = req.body;
         const userId = req.session.user_id;
-    
+        
         // Check if the product exists
         const product = await Product.findById(productId);
         if (!product) {
@@ -722,6 +835,10 @@ const addToCart = async(req,res)=>{
     
         // Save the cart and respond with success
         await cart.save();
+
+        const cartItemCount = cart ? cart.Products.length : 0;
+        req.session.cartItemCount=cartItemCount;
+
         res.json({ success: true, message: 'Product added to cart successfully.' });
     } catch (error) {
         console.error(error);
@@ -733,7 +850,12 @@ const addToCart = async(req,res)=>{
 const editPasswordLoad = async(req,res)=>{
     try {
         const userData = await User.findById(req.session.user_id)
-        res.render('editPassword',{message:"",user:userData});
+        res.render('editPassword',{
+            message:"",
+            user:userData,
+            cartItemCount: req.session.cartItemCount,
+            wishlistItemCount: req.session.wishlistItemCount,  
+        });
     } catch (error) {
         console.log(error.message);
     }
@@ -774,7 +896,12 @@ const editPassword = async (req, res) => {
         user.UpdatedAt = Date.now()
         await user.save();
 
-        res.render('editPassword', { message: "Password updated successfully",user});
+        res.render('editPassword', { 
+            message: "Password updated successfully",
+            user,
+            cartItemCount: req.session.cartItemCount,
+            wishlistItemCount: req.session.wishlistItemCount,
+        });
     } catch (error) {
         const user = await User.findById(req.session.user_id);
         console.log(error.message);
@@ -812,9 +939,7 @@ const loadCart = async (req, res) => {
         const validCartProducts = cart.Products.filter(product => {
             if (
                 product.ProductId && // Ensure the product exists
-                product.ProductId.Quantity > 0 && // Ensure the product is in stock
-                product.ProductId.CategoryId && // Ensure the product's category exists
-                product.Quantity > 0 // Ensure the cart item is in stock
+                product.ProductId.CategoryId // Ensure the product's category exists
             ) {
                 // Adjust quantity if the cart quantity exceeds product stock
                 if (product.Quantity > product.ProductId.Quantity) {
@@ -848,7 +973,9 @@ const loadCart = async (req, res) => {
             user: req.session.user_id, // Pass the user session
             cartItems: validCartProducts, // Pass the valid cart items
             cartTotal: cartTotal, // Pass the cart total with shipping
-            cartSubtotal
+            cartSubtotal,
+            cartItemCount: req.session.cartItemCount,
+            wishlistItemCount: req.session.wishlistItemCount,
         });
 
     } catch (error) {
@@ -890,6 +1017,11 @@ const updateCart = async (req, res) => {
                 // Check for eligibility for Cash on Delivery
                 const isEligibleForCOD = newSubtotal > 499;
                 const newTotal = isEligibleForCOD ? newSubtotal : newSubtotal + 50;
+                
+                //update cart in session
+                const updatedCart = await Cart.findOne({ UserId: userId });
+                const cartItemCount = updatedCart ? updatedCart.Products.length : 0;
+                req.session.cartItemCount = cartItemCount;
 
                 res.json({
                     success: true,
@@ -926,6 +1058,9 @@ const removeFromCart = async (req, res) => {
         const cart = await Cart.findOne({ UserId: userId });
         const newCartTotal = cart.Products.reduce((total, item) => total + (item.Price * item.Quantity
         ), 0);
+
+        const cartItemCount = cart ? cart.Products.length : 0;
+        req.session.cartItemCount=cartItemCount;
 
         res.json({ success: true, newCartTotal });
     } catch (error) {
@@ -1091,6 +1226,9 @@ const loadOrderHistory = async (req,res)=>{
             currentPage,
             totalPages,
             error,
+            cartItemCount: req.session.cartItemCount,
+            wishlistItemCount: req.session.wishlistItemCount,
+            user:req.session.user_id
         });
     } catch (error) {
         console.error('Error fetching orders:', error);
