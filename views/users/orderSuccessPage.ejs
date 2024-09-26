@@ -94,5 +94,12 @@
             <a href="/shop"><button class="btn btn-success" type="button">Continue Shopping</button></a>
         </div>
     </div>
+    <script>
+        // Replace the history state to prevent going back to the checkout page
+        if (window.history.replaceState) {
+            window.history.replaceState(null, null, window.location.href);
+        }
+    </script>
+    
 </body>
 </html>

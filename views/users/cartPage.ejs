@@ -270,8 +270,10 @@
                 <h2>Cart Summary</h2>
                 <p>Subtotal: ₹ <span id="cart-subtotal"><%= cartSubtotal.toFixed(2) %></span></p>
                 <p id="shipping-message">
-                    <% if (cartSubtotal > 499) { %>
-                        You are eligible for Cash on Delivery
+                    <% if (cartSubtotal > 499 && cartSubtotal > 5000) { %>
+                        Cash on delivery is unavailable for bulk orders. Please use online payment.
+                    <% } else if (cartSubtotal > 499) { %>
+                        Free Shipping, Eligible For COD
                     <% } else { %>
                         ₹ 50 cash on delivery fee applied
                     <% } %>
@@ -377,8 +379,11 @@ function updateCart(productId) {
             document.getElementById('cart-subtotal').textContent = `${data.newSubtotal.toFixed(2)}`;
 
             // Update the total price including shipping
-            if (data.isEligibleForCOD) {
-                document.getElementById('shipping-message').textContent = "You are eligible for Cash on Delivery";
+            if (data.newSubtotal.toFixed(2)>5000){
+                document.getElementById('shipping-message').textContent = "Cash on delivery is unavailable for bulk orders. Please use online payment.";
+                document.getElementById('cart-total').textContent = `${data.newTotal.toFixed(2)}`;
+            }else if (data.isEligibleForCOD) {
+                document.getElementById('shipping-message').textContent = "Free Shipping, Eligible For COD";
                 document.getElementById('cart-total').textContent = `${data.newTotal.toFixed(2)}`;
             } else {
                 document.getElementById('shipping-message').textContent = "₹ 50 cash on delivery fee applied";

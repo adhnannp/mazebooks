@@ -4,6 +4,9 @@ const { Schema } = mongoose;
 const orderSchema = new Schema({
     OrderId: { type: String, unique: true },
     PaymentMethod: { type: String, required: true },
+    PaymentStatus: { type: String, required: true ,default:'pending'},
+    RazorpayPaymentId :{ type: String, unique: true, required :false },
+    RazorpayOrderId: { type: String, required :false },
     UserId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     Products: [{
        ProductId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },

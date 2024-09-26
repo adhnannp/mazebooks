@@ -21,6 +21,8 @@ user_route.use(passport.session());
 
 const userController = require('../controllers/userController');
 const wishListController = require('../controllers/userWishList');
+const orderPlacingController = require('../controllers/orderPlacingController');
+
 
 user_route.get(['/','/home'], auth.isAdminLogin ,auth.isblock,auth.ifNotVerified,auth.updateCartAndWishlistCounts,userController.loadHome);
 
@@ -112,15 +114,17 @@ user_route.post('/cart/update-cart',auth.isAdminLogin,userController.updateCart)
 
 user_route.delete('/cart/remove/:productId',auth.isAdminLogin,userController.removeFromCart);
 
-user_route.post('/product/checkout',auth.isAdminLogin,auth.ifNotVerified,auth.noOrderId,userController.loadCheckout)
+user_route.post('/product/checkout',auth.isAdminLogin,auth.isLogin,auth.isblock,auth.ifNotVerified,orderPlacingController.loadCheckout)
 
-user_route.post('/place-order',auth.isAdminLogin,auth.ifNotVerified,userController.placeOrder)
+user_route.post('/verify-payment',auth.isAdminLogin,auth.ifNotVerified,orderPlacingController.verifyPayment)
 
-user_route.get('/order-success',auth.isAdminLogin,auth.isblock,auth.isLogin,auth.haveOrderId,userController.successPage)
+user_route.post('/place-order',auth.isAdminLogin,auth.ifNotVerified,orderPlacingController.placeOrder)
 
-user_route.get('/myaccount/order-history',auth.isAdminLogin,auth.isLogin,auth.isblock,auth.ifNotVerified,auth.updateCartAndWishlistCounts,userController.loadOrderHistory)
+user_route.get('/order-success',auth.isAdminLogin,auth.isblock,auth.isLogin,auth.haveOrderId,orderPlacingController.successPage)
 
-user_route.post('/myaccount/cancel-order/:orderId', userController.cancelOrder);
+user_route.get('/myaccount/order-history',auth.isAdminLogin,auth.isLogin,auth.isblock,auth.ifNotVerified,auth.updateCartAndWishlistCounts,orderPlacingController.loadOrderHistory)
+
+user_route.post('/myaccount/cancel-order/:orderId', orderPlacingController.cancelOrder);
 
 user_route.post('/wishlist/toggle',auth.isLogin,auth.ifNotVerified,wishListController.toggleWishlist);
 

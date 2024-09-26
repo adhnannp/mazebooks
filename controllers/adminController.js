@@ -465,10 +465,6 @@ const ordersLoad = async (req, res) => {
                 select: 'Name Images' // Select only the fields you need
             })
             .exec();
-            orders.forEach(order => {
-                console.log(`Order ID: ${order.OrderId}`);
-                console.log('Products:', order.Products);
-            });
         // Render the orders with pagination
         res.render("orders.ejs", {
             orders,

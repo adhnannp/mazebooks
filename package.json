@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+      "test": "echo \"Error: no test specified\" && exit 1",
+      "start": "nodemon index.js"
   },
   "author": "Adhnan p",
   "license": "ISC",
@@ -30,6 +31,8 @@
     "nodemailer": "^6.9.14",
     "nodemon": "^3.1.4",
     "passport": "^0.7.0",
-    "passport-google-oauth20": "^2.0.0"
+    "passport-google-oauth20": "^2.0.0",
+    "razorpay": "^2.9.4",
+    "sweetalert2": "^11.14.1"
   }
 }

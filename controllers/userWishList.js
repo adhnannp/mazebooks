@@ -79,6 +79,8 @@ const loadWishlist = async (req, res) => {
                 user: req.session.user_id,
                 wishlistItems: [], // Pass an empty wishlistItems array
                 cartProducts: [], // Pass an empty array for cart products
+                cartItemCount: req.session.cartItemCount,
+                wishlistItemCount: req.session.wishlistItemCount,
             });
         }
 
