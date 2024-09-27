@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 const orderSchema = new Schema({
     OrderId: { type: String, unique: true },
     PaymentMethod: { type: String, required: true },
-    PaymentStatus: { type: String, required: true ,default:'pending'},
+    PaymentStatus: { type: String, required: true ,default:'Pending'},
     RazorpayPaymentId :{ type: String, unique: true, required :false },
     RazorpayOrderId: { type: String, required :false },
     UserId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
@@ -25,7 +25,14 @@ const orderSchema = new Schema({
       Landmark: { type: String, required: false },
       State: { type: String, required: true }
     },
-    Status: { type: String, required: true ,default:'pending'}
+    Status: { type: String, required: true ,default:'Pending'},
+    PlacedAt: { type: Date, required:false},  // Date when the order is placed
+    ReturnRequest: {
+      reason: { type: String, required: false, default: null }, // Reason for return
+      comments: { type: String, required: false, default: null }, // Additional comments
+      requestedAt: { type: Date, required: false, default: null }, // Date when the return was requested
+      status: { type: String, default: null, required:false } // Status of the return request
+    }
     },
     {
       timestamps: true

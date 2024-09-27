@@ -190,6 +190,7 @@
             <a href="/myaccount/edit-password">Change Password</a>
             <a href="/myaccount/order-history" class="account-selected">Order History</a>
             <a href="/myaccount/address-book">Address Book</a>
+            <a href="/myaccount/wallet">My Wallet</a>
         </div>
 
         <!-- Main Content -->
@@ -222,16 +223,17 @@
                                             <th>Name</th>
                                             <th>Quantity</th>
                                             <th>Price</th>
-                                            <% if (order.Status !== 'Placed' && order.Status !== 'Cancelled') { %>
+                                            <% if (order.Status !== 'Placed' && order.Status !== 'Cancelled'&& order.ReturnRequest.status !== 'Returned' && order.ReturnRequest.status !== 'Rejected' ) { %>
+                                                <th>Payment Status</th>
                                                 <th>Action</th>
                                             <% } %>
+                                            <th>Order Date</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
                                             <!-- Order status -->
                                             <td>
-                                                <% let statusClass; %>
                                                 <% if (order.Status === 'Pending') { %>
                                                     <span class="text-warning">&#9673;<%= order.Status %></span>
                                                 <% } else if (order.Status === 'Shipped') { %>
@@ -242,9 +244,11 @@
                                                     <span class="text-success">&#9673;<%= order.Status %></span>
                                                 <% } else if (order.Status === 'Cancelled') { %>
                                                     <span class="text-danger">&#9673;<%= order.Status %></span>
+                                                <% } else if (order.Status === 'Returned') { %>
+                                                    <span class="text-danger">&#9673;<%= order.Status %></span>
                                                 <% } %>
                                             </td>
-
+                                
                                             <!-- Combine product images, names, quantities, and prices into a single row for all products -->
                                             <td>
                                                 <% order.Products.forEach(item => { %>
@@ -266,15 +270,62 @@
                                                     <p style="margin-bottom: 5px;">₹ <%= (item.Quantity * item.ProductId.Price).toFixed(2) %></p>
                                                 <% }) %>
                                             </td>
-
-                                            <!-- Cancel button for the entire order -->
-                                            <td>
-                                                <% if (order.Status !== 'Placed' && order.Status !== 'Cancelled') { %>
-                                                    <form action="/myaccount/cancel-order/<%= order._id %>" method="POST" class="cancel-order-form">
-                                                        <button type="button" class="cancel-order-button btn btn-sm" onclick="openConfirmModal(this)">Cancel Order</button>
+                                
+                                            <!-- Payment Status -->
+                                            <% if (order.PaymentStatus !== 'Paid' && order.Status !== 'Placed' && order.Status !== 'Cancelled' && order.PaymentMethod !== 'Cash On Delivery') { %>
+                                                <td>
+                                                    <form action="/myaccount/retry-payment/<%= order._id %>" method="POST">
+                                                        <button type="submit" class="btn btn-sm btn-primary">Retry Payment</button>
                                                     </form>
-                                                <% } %>
+                                                </td>
+                                            <% } else if (order.Status !== 'Placed' && order.Status !== 'Cancelled' && order.ReturnRequest.status !== 'Returned' && order.ReturnRequest.status !== 'Rejected' && order.PaymentMethod !== 'Cash On Delivery') { %>
+                                                <td>
+                                                    <p style="margin-bottom: 5px;margin-left: 5px;">Paid</p>
+                                                </td>
+                                            <% } else if (order.Status !== 'Placed' && order.Status !== 'Cancelled' && order.ReturnRequest.status !== 'Returned' && order.ReturnRequest.status !== 'Rejected' && order.PaymentMethod == 'Cash On Delivery') { %>
+                                                <td>
+                                                    <p style="margin-bottom: 5px;margin-left: 5px;">COD</p>
+                                                </td>
+                                            <% } %>
+                                
+                                            <!-- Cancel button for the entire order -->
+                                            <% if (order.Status !== 'Placed' && order.Status !== 'Cancelled' && order.ReturnRequest.status !== 'Returned' && order.ReturnRequest.status !== 'Rejected' ) { %>
+                                                <td>
+                                                    <form action="/myaccount/cancel-order/<%= order._id %>" method="POST" class="cancel-order-form">
+                                                        <button type="button" class=" btn btn-sm btn-danger" onclick="openConfirmModal(this)">Cancel Order</button>
+                                                    </form>
+                                                </td>
+                                            <% } %>
+                                            <!-- Order creation date -->
+                                            <td>
+                                                <p style="margin-bottom: 5px;"><%= new Date(order.createdAt).toLocaleDateString('en-GB') %></p>
                                             </td>
+                                            <!-- Display 'Return Order' button if payment is 'Paid' and status is 'Placed' within 7 days -->
+                                            <% if (order.Status === 'Placed' && order.PaymentStatus === 'Paid') { %>
+                                                <% 
+                                                    const placedAt = new Date(order.PlacedAt);
+                                                    const currentDate = new Date();
+                                                    const timeDifference = Math.floor((currentDate - placedAt) / (1000 * 60 * 60 * 24)); // Difference in days
+                                                %>
+                                                
+                                                <% if (order.ReturnRequest && order.ReturnRequest.status === 'Requested') { %>
+                                                    <td>
+                                                        <button type="button" class="btn btn-sm btn-secondary" disabled>Return Requested</button>
+                                                    </td>
+                                                <% } else if (order.ReturnRequest && order.ReturnRequest.status === 'Returned') { %>
+                                                    <td>
+                                                        <button type="button" class="btn btn-sm btn-secondary" disabled>Returned</button>
+                                                    </td>
+                                                <% } else if (order.ReturnRequest && order.ReturnRequest.status === 'Rejected') { %>
+                                                    <td>
+                                                        <button type="button" class="btn btn-sm btn-warning" disabled>Return Request Rejected</button>
+                                                    </td>
+                                                <% } else if (timeDifference <= 7) { %> <!-- Show return option only within 7 days -->
+                                                    <td>
+                                                        <button type="button" class="btn btn-sm btn-warning" onclick="openReturnModal('<%= order._id %>')">Return Order</button>
+                                                    </td>
+                                                <% } %> 
+                                            <% } %>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -337,7 +388,6 @@
 <!-- Bootstrap JS and dependencies -->
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-
 <script>
 function openConfirmModal(buttonElement) {
     const confirmModal = document.getElementById('confirmCancelModal');
@@ -354,6 +404,69 @@ function closeConfirmModal() {
     const confirmModal = document.getElementById('confirmCancelModal');
     const modalInstance = bootstrap.Modal.getInstance(confirmModal);
     modalInstance.hide();
+}
+</script>
+<script>
+function openReturnModal(orderId) {
+    Swal.fire({
+        title: 'Return Order',
+        html: `
+            <form id="returnForm-${orderId}" action="/myaccount/return-order/${orderId}" method="POST">
+                <p>Why do you want to return this order?</p>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="returnReason" id="quality-${orderId}" value="Quality Issue,Damaged">
+                    <label class="form-check-label" for="quality-${orderId}" style="display: inline-block; text-align: left; width: 100%;">Quality Issue,Damaged</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="returnReason" id="wrong-product-${orderId}" value="Bought the wrong product">
+                    <label class="form-check-label" for="wrong-product-${orderId}" style="display: inline-block; text-align: left; width: 100%;">Bought the wrong product</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="returnReason" id="arrived-late-${orderId}" value="Arrived too late">
+                    <label class="form-check-label" for="arrived-late-${orderId}" style="display: inline-block; text-align: left; width: 100%;">Arrived too late</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="returnReason" id="impulse-purchase-${orderId}" value="Changed mind or impulse purchase">
+                    <label class="form-check-label" for="impulse-purchase-${orderId}" style="display: inline-block; text-align: left; width: 100%;">Changed mind or impulse purchase</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="returnReason" id="other-${orderId}" value="Other">
+                    <label class="form-check-label" for="other-${orderId}" style="display: inline-block; text-align: left; width: 100%;">Other</label>
+                </div>
+                <div class="form-group">
+                    <label for="comments-${orderId}" style="text-align: left;">Additional Comments:</label>
+                    <textarea class="form-control" id="comments-${orderId}" name="comments"></textarea>
+                </div>
+            </form>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Submit Return Request',
+        preConfirm: () => {
+            // Validate at least one radio button is checked
+            const checkedRadio = Array.from(document.querySelectorAll(`#returnForm-${orderId} input[name="returnReason"]:checked`));
+            if (checkedRadio.length === 0) {
+                Swal.showValidationMessage('Please select at least one reason for returning the order.');
+                return false; // Prevent the form from submitting
+            }
+            // Submit the form via JavaScript
+            const comments = document.getElementById(`comments-${orderId}`).value; // Get the comments
+            document.getElementById(`returnForm-${orderId}`).submit();
+        }
+    });
+
+    // Add custom CSS for checkbox borders
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .form-check-input {
+            border: 1px solid #888; /* Darker border color */
+            border-radius: 4px; /* Optional: adjust border radius */
+        }
+        .form-check-input:checked {
+            background-color: #007bff; /* Customize checked background color */
+            border-color: #0056b3; /* Customize checked border color */
+        }
+    `;
+    document.head.appendChild(style);
 }
 </script>
 

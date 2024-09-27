@@ -1,0 +1,130 @@
+<%- include('../userLayouts/header') %>
+<style>
+    body {
+        background-color: white;
+        font-family: Arial, sans-serif;
+    }
+    .account-container {
+        width: 80%;
+        margin: 0 auto;
+    }
+    .account-breadcrumbs {
+        margin: 20px 0;
+        font-size: 14px;
+    }
+    .account-breadcrumbs a {
+        color: #4F2F2D;
+        text-decoration: none;
+    }
+    .account-breadcrumbs span {
+        margin: 0 5px;
+        color: #999;
+    }
+    .account-overview-container {
+        display: flex;
+        margin-top: 20px;
+    }
+    .account-sidebar {
+        width: 25%;
+        border-right: 1px solid #ddd;
+        padding-right: 20px;
+    }
+    .account-sidebar a {
+        display: block;
+        padding: 10px 20px;
+        color: #333;
+        text-decoration: none;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        transition: background-color 0.3s, box-shadow 0.3s;
+    }
+    .account-sidebar a:hover {
+        background-color: #f0f0f0;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .account-sidebar a.account-selected {
+        background-color: #e0e0e0;
+        font-weight: bold;
+    }
+    .account-main-content {
+        width: 75%;
+        padding-left: 20px;
+    }
+    .wallet-balance {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+    .transaction-list {
+        margin-top: 20px;
+    }
+    .transaction-item {
+        border-bottom: 1px solid #eee;
+        padding: 10px 0;
+    }
+    .transaction-item:last-child {
+        border-bottom: none;
+    }
+    .add-funds-btn {
+        margin-top: 20px;
+    }
+</style>
+</head>
+<body>
+<div class="account-container">
+    <!-- Breadcrumbs -->
+    <div class="account-breadcrumbs">
+        <a href="/">Home</a> <span>&gt;</span> <a href="/myaccount">My Account</a> <span>&gt;</span> <span>My Wallet</span>
+    </div>
+
+    <div class="account-overview-container">
+        <!-- Sidebar -->
+        <div class="account-sidebar">
+            <a href="/myaccount">Account Overview</a>
+            <a href="/myaccount/edit-password">Change Password</a>
+            <a href="/myaccount/order-history">Order History</a>
+            <a href="/myaccount/address-book">Address Book</a>
+            <a href="/myaccount/wallet" class="account-selected">My Wallet</a>
+        </div>
+
+        <!-- Main Content -->
+        <div class="account-main-content">
+            <h2>My Wallet</h2>
+            <div class="wallet-balance">
+                Current Balance: &#8377;<%= wallet.Balance.toFixed(2) %> <!-- Show wallet balance -->
+            </div><br>
+        
+            <h3>Recent Transactions</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (recentTransactions.length > 0) { %>
+                        <% recentTransactions.forEach(transaction => { %>
+                            <tr>
+                                <td><strong><%= transaction.Type %></strong></td>
+                                <td>&#8377;<%= transaction.Amount.toFixed(2) %></td>
+                                <td><%= new Date(transaction.Date).toLocaleDateString() %></td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="3">No transactions found.</td> <!-- Show if no transactions -->
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS and dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>

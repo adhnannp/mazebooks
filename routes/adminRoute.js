@@ -13,6 +13,7 @@ admin_route.set('views', path.join(__dirname, '../views/admin'));
 
 // controller
 const adminController = require('../controllers/adminController');
+const returnOrder = require('../controllers/returnOrderController');
 
 // routes
 admin_route.get('/', auth.isUserLogin, auth.isLogout, adminController.loadLogin);
@@ -58,6 +59,8 @@ admin_route.get('/orders', auth.isLogin, adminController.ordersLoad);
 admin_route.post('/orders/cancel-order/:orderId', adminController.cancelOrder);
 
 admin_route.post('/orders/change-status/:orderId', adminController.statusChangeOrder);
+
+admin_route.post('/orders/handle-return-request/:orderId', returnOrder.handleReturnRequest);
 
 admin_route.get('*', function (req, res) {
     res.redirect('/admin');

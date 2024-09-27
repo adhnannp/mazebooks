@@ -213,50 +213,39 @@
             <div class="left-column">
                 <div class="address-box">
                     <h3>Delivery Address</h3>
-                    <!-- Display Addresses as Cards -->
-                    <div class="row mt-3">
+                    <!-- Address Select Dropdown -->
+                    <select id="addressSelect" class="address-select form-select" onchange="handleAddressChange(this)">
+                        <option value="">Select an address</option>
                         <% addresses.forEach((address, index) => { %>
-                            <div class="col-md-6 mb-3">
-                                <div class="card p-3 shadow-sm">
-                                    <div class="form-check">
-                                        <input 
-                                            class="form-check-input" 
-                                            type="radio" 
-                                            name="addressSelect" 
-                                            id="address-<%= address._id %>" 
-                                            value="<%= address._id %>" 
-                                            data-fullname="<%= address.FullName %>"
-                                            data-address="<%= address.Address %>"
-                                            data-city="<%= address.City %>"
-                                            data-state="<%= address.State %>"
-                                            data-country="<%= address.Country %>"
-                                            data-pincode="<%= address.Pincode %>"
-                                            data-mobileno="<%= address.MobileNo %>"
-                                            data-flatno="<%= address.FlatNo || '' %>"
-                                            data-district="<%= address.District %>"
-                                            data-landmark="<%= address.Landmark || '' %>"
-                                            onchange="selectAddress(
-                                                this.dataset.fullname, 
-                                                this.dataset.address, 
-                                                this.dataset.city, 
-                                                this.dataset.state, 
-                                                this.dataset.country, 
-                                                this.dataset.pincode, 
-                                                this.dataset.mobileno, 
-                                                this.dataset.flatno, 
-                                                this.dataset.district, 
-                                                this.dataset.landmark
-                                            )"
-                                        />
-                                        <label class="form-check-label" for="address-<%= address._id %>">
-                                            <h4><%= address.FullName %></h4>
-                                            <p><%= address.Address %>, <%= address.City %>, <%= address.State %>, <%= address.Pincode %></p>
-                                            <p>Mobile: <%= address.MobileNo %></p>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
+                            <option value="<%= address._id %>"
+                                data-fullname="<%= address.FullName %>"
+                                data-address="<%= address.Address %>"
+                                data-city="<%= address.City %>"
+                                data-state="<%= address.State %>"
+                                data-country="<%= address.Country %>"
+                                data-pincode="<%= address.Pincode %>"
+                                data-mobileno="<%= address.MobileNo %>"
+                                data-flatno="<%= address.FlatNo || '' %>"
+                                data-district="<%= address.District %>"
+                                data-landmark="<%= address.Landmark || '' %>">
+                                <%= address.FullName %> - <%= address.Address %>, <%= address.City %>
+                            </option>
                         <% }) %>
+                        <option value="new">+ Add New Address</option>
+                    </select>
+
+                    <!-- Editable Address Fields -->
+                    <div id="addressFields" class="address-form">
+                        <input type="text" id="fullName" class="form-control" placeholder="Full Name">
+                        <input type="text" id="address" class="form-control" placeholder="Address">
+                        <input type="text" id="city" class="form-control" placeholder="City">
+                        <input type="text" id="state" class="form-control" placeholder="State">
+                        <input type="text" id="country" class="form-control" placeholder="Country">
+                        <input type="text" id="pincode" class="form-control" placeholder="Pincode">
+                        <input type="tel" id="mobileNo" class="form-control" placeholder="Mobile Number">
+                        <input type="text" id="flatNo" class="form-control" placeholder="Flat No. (Optional)">
+                        <input type="text" id="district" class="form-control" placeholder="District">
+                        <input type="text" id="landmark" class="form-control" placeholder="Landmark (Optional)">
                     </div>
                 </div>
                 <div class="payment-box">
@@ -374,82 +363,102 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    <script>
-         // Function to handle address selection and update hidden fields
-        function selectAddress(fullName, address, city, state, country, pincode, mobileNo, flatNo, district, landmark) {
-            // Update hidden inputs
-            document.querySelector('input[name="Address[FullName]"]').value = fullName;
-            document.querySelector('input[name="Address[Address]"]').value = address;
-            document.querySelector('input[name="Address[MobileNo]"]').value = mobileNo;
-            document.querySelector('input[name="Address[Pincode]"]').value = pincode;
-            document.querySelector('input[name="Address[FlatNo]"]').value = flatNo || '';
-            document.querySelector('input[name="Address[Country]"]').value = country;
-            document.querySelector('input[name="Address[City]"]').value = city;
-            document.querySelector('input[name="Address[District]"]').value = district;
-            document.querySelector('input[name="Address[Landmark]"]').value = landmark;
-            document.querySelector('input[name="Address[State]"]').value = state;
-
-            document.getElementById('address-error-message').style.display = 'none';
+<script>
+    function handleAddressChange(select) {
+        if (select.value === 'new') {
+            clearAddressFields();
+        } else if (select.value) {
+            fillAddressFields(select.options[select.selectedIndex].dataset);
         }
+    }
 
-        window.onload = function() {
-            const selectedRadio = document.querySelector('input[name="addressSelect"]:checked');
-            if (selectedRadio) {
-                selectAddress(
-                    selectedRadio.dataset.fullname,
-                    selectedRadio.dataset.address,
-                    selectedRadio.dataset.city,
-                    selectedRadio.dataset.state,
-                    selectedRadio.dataset.country,
-                    selectedRadio.dataset.pincode,
-                    selectedRadio.dataset.mobileno,
-                    selectedRadio.dataset.flatno,
-                    selectedRadio.dataset.district,
-                    selectedRadio.dataset.landmark
-                );
-            }
+    function fillAddressFields(data) {
+        document.getElementById('fullName').value = data.fullname;
+        document.getElementById('address').value = data.address;
+        document.getElementById('city').value = data.city;
+        document.getElementById('state').value = data.state;
+        document.getElementById('country').value = data.country;
+        document.getElementById('pincode').value = data.pincode;
+        document.getElementById('mobileNo').value = data.mobileno;
+        document.getElementById('flatNo').value = data.flatno || '';
+        document.getElementById('district').value = data.district;
+        document.getElementById('landmark').value = data.landmark || '';
+    }
 
-            // Payment method selection
-            document.querySelectorAll('input[name="payment"]').forEach(paymentRadio => {
-                paymentRadio.addEventListener('change', function () {
-                    document.getElementById('paymentMethod').value = this.value;
-                });
-            });
+    function clearAddressFields() {
+        const fields = ['fullName', 'address', 'city', 'state', 'country', 'pincode', 'mobileNo', 'flatNo', 'district', 'landmark'];
+        fields.forEach(field => document.getElementById(field).value = '');
+    }
 
-            // Set the initial payment method value
-            const initialPaymentMethod = document.querySelector('input[name="payment"]:checked');
-            if (initialPaymentMethod) {
-                document.getElementById('paymentMethod').value = initialPaymentMethod.value;
-            }
+    function getAddressFromFields() {
+        return {
+            FullName: document.getElementById('fullName').value,
+            Address: document.getElementById('address').value,
+            City: document.getElementById('city').value,
+            State: document.getElementById('state').value,
+            Country: document.getElementById('country').value,
+            Pincode: document.getElementById('pincode').value,
+            MobileNo: document.getElementById('mobileNo').value,
+            FlatNo: document.getElementById('flatNo').value,
+            District: document.getElementById('district').value,
+            Landmark: document.getElementById('landmark').value
         };
+    }
 
-        // Function to validate address selection
-        function validateAddressSelection() {
-            const selectedAddress = document.querySelector('input[name="addressSelect"]:checked');
-            if (!selectedAddress) {
-                document.getElementById('address-error-message').style.display = 'block';
-                return false; // Prevent form submission
-            }
-            return true; // Address is selected
+    window.onload = function() {
+        const addressSelect = document.getElementById('addressSelect');
+        if (addressSelect.value) {
+            fillAddressFields(addressSelect.options[addressSelect.selectedIndex].dataset);
         }
 
-        // Attach validation to form submission
-        document.getElementById('checkout-form').onsubmit = async function (e) {
-            e.preventDefault(); // Prevent the default form submission
+        // Payment method selection remains unchanged
+        document.querySelectorAll('input[name="payment"]').forEach(paymentRadio => {
+            paymentRadio.addEventListener('change', function () {
+                document.getElementById('paymentMethod').value = this.value;
+            });
+        });
 
-            // Validate Address Selection
-            if (!validateAddressSelection()) {
-                return false; // If validation fails, do not proceed
-            }
+        const initialPaymentMethod = document.querySelector('input[name="payment"]:checked');
+        if (initialPaymentMethod) {
+            document.getElementById('paymentMethod').value = initialPaymentMethod.value;
+        }
+    };
 
-            const paymentMethod = document.getElementById('paymentMethod').value;
-            if (!paymentMethod) {
-                alert('Please select a payment method.');
-                return false;
-            }
+    // Updated validation function
+    function validateAddressSelection() {
+        const fullName = document.getElementById('fullName').value;
+        const address = document.getElementById('address').value;
+        if (!fullName || !address) {
+            document.getElementById('address-error-message').style.display = 'block';
+            return false;
+        }
+        document.getElementById('address-error-message').style.display = 'none';
+        return true;
+    }
 
-            // Handle Online Payment
-            if (paymentMethod === 'Online Payment') {
+    // Update the checkout form submission to use the new address fields
+    document.getElementById('checkout-form').onsubmit = async function (e) {
+        e.preventDefault();
+
+        if (!validateAddressSelection()) {
+            return false;
+        }
+
+        const paymentMethod = document.getElementById('paymentMethod').value;
+        if (!paymentMethod) {
+            alert('Please select a payment method.');
+            return false;
+        }
+
+        // Get address from fields
+        const addressDetails = getAddressFromFields();
+
+        // Update hidden inputs with new address details
+        Object.keys(addressDetails).forEach(key => {
+            document.querySelector(`input[name="Address[${key}]"]`).value = addressDetails[key];
+        });
+
+        if (paymentMethod === 'Online Payment') {
                 try {
                     const orderDetails = {
                         paymentMethod: paymentMethod,
@@ -507,14 +516,11 @@
                     console.error('Error:', error);
                     alert('There was an error processing your request. Please try again.');
                 }
-            } else {
-                // If not online payment, submit the form normally
-                this.submit(); // Submit the form for other payment methods
-            }
-        };
-    
-        // Razorpay payment initiation function
-        function initiateRazorpayPayment(data) {
+        } else {
+            this.submit(); // Submit the form for other payment methods
+        }
+    };
+    function initiateRazorpayPayment(data) {
             let paymentSuccess = false; // Flag to check payment status
 
             var options = {
@@ -543,6 +549,7 @@
                     const verificationData = await verifyResponse.json();
                     if (verificationData.success) {
                         // Redirect or show success message
+                        paymentSuccess = true;
                         window.location.href = `/order-success?orderId=${verificationData.orderId}`;
                     } else {
                         alert('Payment verification failed');
@@ -587,7 +594,6 @@
                 }
             }, 1000); // Check every second
         }
-    </script>
-    
+</script>
 </body>
 </html>

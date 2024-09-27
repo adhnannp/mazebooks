@@ -7,6 +7,7 @@ const Product = require("../models/productModel");
 const Address = require("../models/addressModel");
 const Cart = require("../models/cartModel");
 const Order = require("../models/orderModel");
+const Wallet = require("../models/walletModel");
 
 
 
@@ -313,6 +314,33 @@ const cancelOrder = async (req, res) => {
                 console.log(product);
             }
         }));
+
+        if (order.PaymentMethod !== 'Cash On Delivery') {
+            // Find the user's wallet
+            let wallet = await Wallet.findOne({ UserId: order.UserId });
+
+            // If no wallet exists, create a new one
+            if (!wallet) {
+                wallet = await Wallet.create({
+                    UserId: order.UserId,  // Use the correct user ID
+                    Balance: 0,
+                    Transactions: []
+                });
+            }
+
+            // Add the amount of the order to the wallet balance
+            wallet.Balance += order.TotalPrice; // Assuming order.TotalPrice contains the amount to be added
+
+            // Add a transaction record for the return
+            wallet.Transactions.push({
+                Type: 'Cancelled Order',
+                Amount: order.TotalPrice,
+                Date: new Date() // Current date for the transaction
+            });
+
+            // Save the updated wallet
+            await wallet.save();
+        }
 
         // Redirect back to the order history page
         res.redirect('/myaccount/order-history?success=Order cancelled successfully');

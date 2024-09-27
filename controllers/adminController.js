@@ -6,6 +6,7 @@ const bcrypt = require("bcrypt");
 const Product = require("../models/productModel");
 const Category = require("../models/categoryModel");
 const Order = require("../models/orderModel");
+const Wallet = require("../models/walletModel");
 
 //login setup
 const loadLogin = async(req,res)=>{
@@ -449,7 +450,7 @@ const ordersLoad = async (req, res) => {
 
         // Pagination variables
         const currentPage = parseInt(req.query.page) || 1; // Get current page, default to 1
-        const itemsPerPage = 5; // Number of items per page
+        const itemsPerPage = 10; // Number of items per page
 
         // Calculate total orders and pages
         const totalOrders = await Order.countDocuments();
@@ -508,12 +509,39 @@ const cancelOrder = async (req,res)=>{
             }
         }));
 
+        if (order.PaymentMethod !== 'Cash On Delivery') {
+            // Find the user's wallet
+            let wallet = await Wallet.findOne({ UserId: order.UserId });
+
+            // If no wallet exists, create a new one
+            if (!wallet) {
+                wallet = await Wallet.create({
+                    UserId: order.UserId,  // Use the correct user ID
+                    Balance: 0,
+                    Transactions: []
+                });
+            }
+
+            // Add the amount of the order to the wallet balance
+            wallet.Balance += order.TotalPrice; // Assuming order.TotalPrice contains the amount to be added
+
+            // Add a transaction record for the return
+            wallet.Transactions.push({
+                Type: 'Cancelled Order',
+                Amount: order.TotalPrice,
+                Date: new Date() // Current date for the transaction
+            });
+
+            // Save the updated wallet
+            await wallet.save();
+        }
+        
         // Redirect back to the order history page
-        res.redirect('/orders');
+        res.redirect('/admin/orders');
     } catch (error) {
         console.error('Error cancelling order:', error);
         // Redirect back to order history with an error message if something goes wrong
-        res.redirect('/orders');
+        res.redirect('/admin/orders');
     }
 }
 
@@ -524,6 +552,12 @@ const statusChangeOrder = async (req,res)=>{
         const order = await Order.findById(orderId);
         if (!order) {
             return res.status(404).send('Order not found');
+        }
+
+        // Check if status is being updated to 'Placed' and the status was not already 'Placed'
+        if (newStatus === 'Placed' && order.Status !== 'Placed') {
+            order.PaymentStatus = 'Paid';
+            order.PlacedAt = new Date(); // Set PlacedAt only when status changes to 'Placed'
         }
 
         // Update the order status
