@@ -138,7 +138,7 @@
             </a>
           </li>
           <li class="nav-item menu-items">
-            <a class="nav-link" href="/admin/coupens">
+            <a class="nav-link" href="/admin/coupons">
               <span class="menu-icon">
                 <i class="mdi mdi-security"></i>
               </span>
@@ -205,18 +205,14 @@
         }
         </style>
         <div class="main-panel">
+          <div class="content-wrapper"> 
           <div class="row">
             <div class="col-lg-12 grid-margin stretch-card">
               <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="card-title"><a href="/admin/products" style="text-decoration: none;">Products</a>>add</h4>
-                    </div>
-                </div>
                 <div class="col-12 grid-margin stretch-card">
                   <div class="card">
                       <div class="card-body">
-                          <h4 class="card-title">Edit Product</h4>
+                          <h4 class="card-title"><a href="/admin/products">Products</a> > Edit</h4>
                           <form id="addProductForm" action="/admin/products/edit/<%= product._id %>" method="post" enctype="multipart/form-data" class="forms-sample">
                             <!-- Product Information -->
                             <div class="form-group">
@@ -278,6 +274,7 @@
                         </form>
                       </div>
                   </div>
+              </div>
               </div>
               </div>
             </div>

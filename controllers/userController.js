@@ -10,6 +10,7 @@ const Address = require("../models/addressModel");
 const Cart = require("../models/cartModel");
 const Order = require("../models/orderModel");
 const Wishlist = require("../models/wishlistModel");
+const Wallet = require("../models/walletModel");
 
 //registration
 
@@ -455,6 +456,28 @@ const verifyOtp = async (req, res) => {
 
             // Update session variables
             req.session.is_verified = true;
+
+            // Attempt to find the user's wallet
+            let wallet = await Wallet.findOne({ UserId: req.session.user_id }).populate('UserId');
+            
+            // If no wallet exists, create a new one
+            if (!wallet) {
+                wallet = await Wallet.create({
+                    UserId: req.session.user_id,
+                    balance: 0,
+                    transactions: []
+                });
+            }
+
+            let cart = await Cart.findOne({ UserId: user_id });
+            if (!cart) {
+                cart = await Cart.create({ UserId: user_id, Products: [] });
+            }
+
+            let wishlist = await Wishlist.findOne({ UserId: user_id });
+            if (!cart) {
+                wishlist = await Wishlist.create({ UserId: user_id, Products: [] });
+            }
 
             // Redirect to the account page after successful verification
             res.redirect('/myaccount');

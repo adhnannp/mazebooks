@@ -212,83 +212,55 @@
                 <div class="col-12 grid-margin stretch-card">
                     <div class="card">
                       <div class="card-body">
-                        <h4 class="card-title"><a href="/admin/products" style="text-decoration: none;">Products</a> > add</h4>
-                        <form id="addProductForm" action="/admin/products/add" method="post" enctype="multipart/form-data" class="forms-sample">
-                          <!-- Product Information -->
+                        <h4 class="card-title"><a href="/admin/offers" style="text-decoration: none;">Offers</a> > add</h4>
+                        <form id="addOfferForm" action="/admin/offers/add" method="post" class="forms-sample">
+                          <!-- Offer Information -->
                           <div class="form-group">
-                              <label for="productName">Name</label>
-                              <input type="text" class="form-control" id="productName" name="name" style="background-color: #333; color: white;" >
-                              <p id="name-error" style="color: red; display: none;"></p>
+                              <label for="offerTitle">Offer Title</label>
+                              <input type="text" class="form-control" id="offerTitle" name="title" style="background-color: #333; color: white;" >
+                              <p id="title-error" style="color: red; display: none;"></p>
                           </div>
+                          
+                          <!-- Target Type Selection -->
                           <div class="form-group">
-                              <label for="productAuthor">Author</label>
-                              <input type="text" class="form-control" id="productAuthor" name="author" style="background-color: #333; color: white;" >
-                              <p id="author-error" style="color: red; display: none;"></p>
-                          </div>
-                          <div class="form-group">
-                              <label for="productDescription">Description(25-250 charecters)</label>
-                              <textarea class="form-control" id="productDescription" name="description" rows="4" style="background-color: #333; color: white;" ></textarea>
-                              <p id="description-error" style="color: red; display: none;"></p>
-                          </div>
-                          <div class="form-group">
-                              <label for="productCategory">Category</label>
-                              <select class="form-control" id="productCategory" name="categoryId" style="background-color: #333; color: white;" >
-                                  <% categories.forEach(function(category) { %>
-                                  <option value="<%= category._id %>"><%= category.CategoryName %></option>
-                                  <% }) %>
+                              <label for="targetType">Target Type</label>
+                              <select class="form-control" id="targetType" name="targetType" style="background-color: #333; color: white;">
+                                  <option value="" disabled selected>Select Target Type</option>
+                                  <option value="Product">Product</option>
+                                  <option value="Category">Category</option>
                               </select>
-                              <p id="category-error" style="color: red; display: none;"></p>
-                          </div>
-                          <div class="form-group">
-                              <label for="productQuantity">Quantity</label>
-                              <input type="number" class="form-control" id="productQuantity" name="quantity" style="background-color: #333; color: white;" >
-                              <p id="quantity-error" style="color: red; display: none;"></p>
-                          </div>
-                          <div class="form-group">
-                              <label for="productPrice">Price</label>
-                              <input type="text" class="form-control" id="productPrice" name="price" style="background-color: #333; color: white;" >
-                              <p id="price-error" style="color: red; display: none;"></p>
+                              <p id="targetType-error" style="color: red; display: none;"></p>
                           </div>
                       
-                           <!-- Image Upload and Cropping Section -->
-                            <div class="form-group">
-                              <label for="productImages1" class="image-label">Upload Cover Image</label>
-                              <input type="file" name="img1" class="file-upload-default" id="productImages1" accept="image/*" style="display: none;">
-                              <img id="preview1" style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;" src="#" alt="Upload cover Image" />
-                              <button type="button" id="changeImage1" class="change-image-button" style="display: none;">Change Image</button>
+                          <!-- Target Selection -->
+                          <div class="form-group" id="targetSelection" style="display: none;">
+                              <label id="targetLabel"></label>
+                              <div id="productCheckboxes" style="display: none;"></div>
+                              <div id="categoryCheckboxes" style="display: none;"></div>
+                              <p id="target-error" style="color: red; display: none;"></p>
                           </div>
-                          <style>
-                            img[src="#"] {
-                                display: none;
-                            }
-                          </style>
-
+                      
                           <div class="form-group">
-                              <label for="productImages2" class="image-label">Image 2</label>
-                              <input type="file" name="img2" class="file-upload-default" id="productImages2" accept="image/*" style="display: none;">
-                              <img id="preview2" style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;" src="#" alt="Upload Image 2" />
-                              <button type="button" id="changeImage2" class="change-image-button" style="display: none;">Change Image</button>
+                              <label for="discountPercentage">Discount Percentage</label>
+                              <input type="number" class="form-control" id="discountPercentage" name="discount" style="background-color: #333; color: white;" min="0" max="100">
+                              <p id="discount-error" style="color: red; display: none;"></p>
                           </div>
-
+                      
                           <div class="form-group">
-                              <label for="productImages3" class="image-label">Image 3</label>
-                              <input type="file" name="img3" class="file-upload-default" id="productImages3" accept="image/*" style="display: none;">
-                              <img id="preview3" style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;" src="#" alt="Upload Image 3" />
-                              <button type="button" id="changeImage3" class="change-image-button" style="display: none;">Change Image</button>
+                              <label for="startDate">Start Date</label>
+                              <input type="date" class="form-control" id="startDate" name="startDate" style="background-color: #333; color: white;">
+                              <p id="startDate-error" style="color: red; display: none;"></p>
                           </div>
-
-                          <!-- Cropping Section -->
-                          <div id="cropperContainer" style="display: none; width: 400px; height: 400px; margin: 0 auto;">
-                              <img id="cropperImage" src="" alt="Image for cropping" style="max-width: 100%; max-height: 100%;" />
-                              <div style="margin-top: 10px;">
-                                  <button type="button" id="cropButton" class="btn btn-primary">Crop Image</button>
-                                  <button type="button" id="cancelCropButton" class="btn btn-secondary">Cancel</button>
-                              </div>
+                      
+                          <div class="form-group">
+                              <label for="endDate">End Date</label>
+                              <input type="date" class="form-control" id="endDate" name="endDate" style="background-color: #333; color: white;">
+                              <p id="endDate-error" style="color: red; display: none;"></p>
                           </div>
-                          <p id="image-error" style="color: red; display: none;"></p>
-                          <button type="submit" class="btn btn-success mr-2" id="submitButton" disabled>ADD Product</button>
-                          <a href="/admin/products" type="button" class="btn btn-dark">Cancel</a>
-
+                      
+                          <button type="submit" class="btn btn-success mr-2" id="submitButton">ADD Offer</button>
+                          <a href="/admin/offers" type="button" class="btn btn-dark">Cancel</a>
+                      
                           <p id="existingError" style="text-align:center;color:red;display:none"></p>
                       </form>
                       </div>
@@ -323,12 +295,149 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script src="https://unpkg.com/cropperjs/dist/cropper.min.js"></script>
-    <!-- Cropper.js JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
     <!-- endinject -->
     <!-- Custom js for this page -->
     <script src="/static/admin/js/dashboard.js"></script>
+    <script>
+      // Function to validate all fields and enable/disable submit button
+      function validateForm() {
+          const title = document.getElementById('offerTitle').value.trim();
+          const discount = document.getElementById('discountPercentage').value;
+          const startDate = new Date(document.getElementById('startDate').value);
+          const endDate = new Date(document.getElementById('endDate').value);
+          const targetType = document.getElementById('targetType').value;
+          const targetSelected = document.querySelector('#productCheckboxes input:checked') || document.querySelector('#categoryCheckboxes input:checked');
+          
+          const titleError = document.getElementById('title-error');
+          const discountError = document.getElementById('discount-error');
+          const startDateError = document.getElementById('startDate-error');
+          const endDateError = document.getElementById('endDate-error');
+          const targetTypeError = document.getElementById('targetType-error');
+          const targetError = document.getElementById('target-error');
+          
+          const submitButton = document.getElementById('submitButton');
+          let isValid = true;
+  
+          // Validate offer title
+          const titleRegex = /^[A-Za-z]+(?:\s[A-Za-z]+)*$/;
+          if (!titleRegex.test(title)) {
+              titleError.style.display = 'block';
+              titleError.textContent = "Offer title should only contain letters, no numbers, no multiple spaces.";
+              isValid = false;
+          } else {
+              titleError.style.display = 'none';
+          }
+  
+          // Validate discount percentage
+          if (discount < 0 || discount > 100 || discount === "") {
+              discountError.style.display = 'block';
+              discountError.textContent = "Discount percentage must be between 0 and 100.";
+              isValid = false;
+          } else {
+              discountError.style.display = 'none';
+          }
+  
+          // Validate start date
+          const today = new Date();
+          today.setHours(0, 0, 0, 0); // Set to midnight for accurate comparison
+          if (startDate < today || isNaN(startDate.getTime())) {
+              startDateError.style.display = 'block';
+              startDateError.textContent = "Start date cannot be in the past or empty.";
+              isValid = false;
+          } else {
+              startDateError.style.display = 'none';
+          }
+  
+          // Validate end date
+          if (endDate <= startDate || isNaN(endDate.getTime())) {
+              endDateError.style.display = 'block';
+              endDateError.textContent = "End date cannot be earlier than and same as the start date or empty.";
+              isValid = false;
+          } else {
+              endDateError.style.display = 'none';
+          }
+  
+          // Validate target type selection
+          if (!targetType) {
+              targetTypeError.style.display = 'block';
+              targetTypeError.textContent = "Please select a target type.";
+              isValid = false;
+          } else {
+              targetTypeError.style.display = 'none';
+          }
+  
+          // Validate target selection (Product or Category)
+          if (!targetSelected) {
+              targetError.style.display = 'block';
+              targetError.textContent = "Please select at least one target.";
+              isValid = false;
+          } else {
+              targetError.style.display = 'none';
+          }
+  
+          // Enable or disable submit button based on validity
+          submitButton.disabled = !isValid;
+      }
+  
+      // Event listeners for real-time validation
+      document.getElementById('offerTitle').addEventListener('input', validateForm);
+      document.getElementById('discountPercentage').addEventListener('input', validateForm);
+      document.getElementById('startDate').addEventListener('change', validateForm);
+      document.getElementById('endDate').addEventListener('change', validateForm);
+      document.getElementById('targetType').addEventListener('change', function() {
+          validateForm(); // Validate form when target type is selected
+  
+          // Handle the target checkboxes dynamically
+          document.querySelectorAll('input[name="productIds"], input[name="categoryIds"]').forEach(function (checkbox) {
+              checkbox.addEventListener('change', validateForm); // Validate on checkbox change
+          });
+      });
+      
+      // Handle dynamic loading of products and categories
+      const targetTypeSelect = document.getElementById('targetType');
+      const targetSelectionDiv = document.getElementById('targetSelection');
+      const productCheckboxesDiv = document.getElementById('productCheckboxes');
+      const categoryCheckboxesDiv = document.getElementById('categoryCheckboxes');
+      const targetLabel = document.getElementById('targetLabel');
+  
+      const products = <%- JSON.stringify(products) %>; // Products from server
+      const categories = <%- JSON.stringify(categories) %>; // Categories from server
+  
+      targetTypeSelect.addEventListener('change', function () {
+          const selectedValue = this.value;
+          targetSelectionDiv.style.display = 'block';
+  
+          if (selectedValue === 'Product') {
+              targetLabel.innerText = 'Select Products:';
+              productCheckboxesDiv.style.display = 'block';
+              categoryCheckboxesDiv.style.display = 'none';
+  
+              productCheckboxesDiv.innerHTML = ''; // Clear previous checkboxes
+              products.forEach(product => {
+                  const checkbox = document.createElement('div');
+                  checkbox.innerHTML = `<input type="checkbox" name="productIds" value="${product._id}"> ${product.Name}`;
+                  productCheckboxesDiv.appendChild(checkbox);
+              });
+          } else if (selectedValue === 'Category') {
+              targetLabel.innerText = 'Select Categories:';
+              categoryCheckboxesDiv.style.display = 'block';
+              productCheckboxesDiv.style.display = 'none';
+  
+              categoryCheckboxesDiv.innerHTML = ''; // Clear previous checkboxes
+              categories.forEach(category => {
+                  const checkbox = document.createElement('div');
+                  checkbox.innerHTML = `<input type="checkbox" name="categoryIds" value="${category._id}"> ${category.CategoryName}`;
+                  categoryCheckboxesDiv.appendChild(checkbox);
+              });
+          }
+  
+          validateForm(); // Validate after loading checkboxes
+      });
+  
+      // Initially disable the submit button
+      document.getElementById('submitButton').disabled = true;
+  </script>
+  
   
     <!-- End custom js for this page -->
 

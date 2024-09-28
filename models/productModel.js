@@ -12,6 +12,10 @@ const productSchema = new Schema({
     CreatedAt: { type: Date, required: true },
     UpdatedAt: { type: Date, required: true },
     Is_list: { type: Boolean, required: true },
+    Offers: [{
+        OfferId: { type: mongoose.Schema.Types.ObjectId, ref: 'Offer', required: false }, 
+        DiscountPercentage: { type: Number, required: false,}
+    }]
 });
 
 module.exports = mongoose.model("Product", productSchema);

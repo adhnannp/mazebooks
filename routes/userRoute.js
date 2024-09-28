@@ -83,6 +83,7 @@ user_route.get('/auth/google/callback', auth.isAnyOne,auth.isblock,
         `);
     }
 );
+
 user_route.post('/logout', auth.isLogin, userController.userLogout);
 
 user_route.post('/forgot-password',userController.forgotPassword);
@@ -109,7 +110,7 @@ user_route.get('/myaccount/edit-password',auth.isAdminLogin,auth.isLogin,auth.is
 
 user_route.post('/myaccount/edit-password',auth.isLogin,userController.editPassword);
 
-user_route.get('/cart',auth.isAdminLogin,auth.isLogin,auth.isblock,auth.ifNotVerified,auth.updateCartAndWishlistCounts,userController.loadCart);
+user_route.get('/cart',auth.isAdminLogin,auth.isblock,auth.ifNotVerified,auth.updateCartAndWishlistCounts,userController.loadCart);
 
 user_route.post('/cart/update-cart',auth.isAdminLogin,userController.updateCart);
 
@@ -129,7 +130,7 @@ user_route.post('/myaccount/cancel-order/:orderId',auth.isAdminLogin,orderPlacin
 
 user_route.post('/wishlist/toggle',auth.isLogin,auth.ifNotVerified,wishListController.toggleWishlist);
 
-user_route.get('/wishlist',auth.isAdminLogin,auth.isLogin,auth.isblock,auth.ifNotVerified,auth.updateCartAndWishlistCounts,wishListController.loadWishlist);
+user_route.get('/wishlist',auth.isAdminLogin,auth.isblock,auth.ifNotVerified,auth.updateCartAndWishlistCounts,wishListController.loadWishlist);
 
 user_route.delete('/wishlist/remove/:id',auth.isLogin,wishListController.removeFromWishlist);
 

@@ -347,6 +347,9 @@ const categoriesLoad = async (req, res) => {
         const totalCategories = await Category.countDocuments();
         const totalPages = Math.ceil(totalCategories / itemsPerPage);
 
+         // Fetch all categories for hidden input fields
+         const allCategories = await Category.find();
+
         // Fetch categories with pagination
         const categories = await Category.find()
             .skip((currentPage - 1) * itemsPerPage)
@@ -363,6 +366,7 @@ const categoriesLoad = async (req, res) => {
 
         // Render the categories with the product counts
         res.render("category", {
+            allCategories,
             categories: categoryProductCounts,
             admin,
             currentPage,

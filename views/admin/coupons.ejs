@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Corona Admin</title>
+    <!-- plugins:css -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/admin/vendors/mdi/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="/static/admin/vendors/css/vendor.bundle.base.css">
+    <!-- endinject -->
+    <!-- Plugin css for this page -->
+    <link rel="stylesheet" href="/static/admin/vendors/jvectormap/jquery-jvectormap.css">
+    <link rel="stylesheet" href="/static/admin/vendors/flag-icon-css/css/flag-icon.min.css">
+    <link rel="stylesheet" href="/static/admin/vendors/owl-carousel-2/owl.carousel.min.css">
+    <link rel="stylesheet" href="/static/admin/vendors/owl-carousel-2/owl.theme.default.min.css">
+    <!-- End plugin css for this page -->
+    <!-- inject:css -->
+    <!-- endinject -->
+    <!-- Layout styles -->
+    <link rel="stylesheet" href="/static/admin/css/style.css">
+    <!-- End layout styles -->
+    <link rel="shortcut icon" href="/static/admin/images/favicon.png" />
+  </head>
+  <body>
+    <div class="container-scroller">
+      <!-- partial:partials/_sidebar.html -->
+      <nav class="sidebar sidebar-offcanvas" id="sidebar">
+        <div class="sidebar-brand-wrapper d-none d-lg-flex align-items-center justify-content-center fixed-top">
+          <a class="sidebar-brand brand-logo" href="index.html"><img src="/static/admin/images/logo.svg" alt="logo" /></a>
+          <a class="sidebar-brand brand-logo-mini" href="index.html"><img src="/static/admin/images/logo-mini.svg" alt="logo" /></a>
+        </div>
+        <ul class="nav">
+          <li class="nav-item profile">
+            <div class="profile-desc">
+              <div class="profile-pic">
+                <div class="count-indicator">
+                  <img class="img-xs rounded-circle " src="/static/admin/images/faces/face15.jpg" alt="">
+                  <span class="count bg-success"></span>
+                </div>
+                <% if (admin) { %>
+                  <div class="profile-name">
+                    <h5 class="mb-0 font-weight-normal"><%= admin.FirstName+' '+admin.LastName %> </h5>
+                  </div>
+                <% } %>
+              </div>
+              <a href="#" id="profile-dropdown" data-toggle="dropdown"><i class="mdi mdi-dots-vertical"></i></a>
+              <div class="dropdown-menu dropdown-menu-right sidebar-dropdown preview-list" aria-labelledby="profile-dropdown">
+                <a href="#" class="dropdown-item preview-item">
+                  <div class="preview-thumbnail">
+                    <div class="preview-icon bg-dark rounded-circle">
+                      <i class="mdi mdi-settings text-primary"></i>
+                    </div>
+                  </div>
+                  <div class="preview-item-content">
+                    <p class="preview-subject ellipsis mb-1 text-small">Account settings</p>
+                  </div>
+                </a>
+                <div class="dropdown-divider"></div>
+                <a href="#" class="dropdown-item preview-item">
+                  <div class="preview-thumbnail">
+                    <div class="preview-icon bg-dark rounded-circle">
+                      <i class="mdi mdi-onepassword  text-info"></i>
+                    </div>
+                  </div>
+                  <div class="preview-item-content">
+                    <p class="preview-subject ellipsis mb-1 text-small">Change Password</p>
+                  </div>
+                </a>
+                <div class="dropdown-divider"></div>
+                <a href="#" class="dropdown-item preview-item">
+                  <div class="preview-thumbnail">
+                    <div class="preview-icon bg-dark rounded-circle">
+                      <i class="mdi mdi-calendar-today text-success"></i>
+                    </div>
+                  </div>
+                  <div class="preview-item-content">
+                    <p class="preview-subject ellipsis mb-1 text-small">To-do list</p>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </li>
+          <li class="nav-item nav-category">
+            <span class="nav-link">Navigation</span>
+          </li>
+          <li class="nav-item menu-items">
+            <a class="nav-link" href="/admin/home">
+              <span class="menu-icon">
+                <i class="mdi mdi-speedometer"></i>
+              </span>
+              <span class="menu-title">Dashboard</span>
+            </a>
+          </li>
+          <li class="nav-item menu-items">
+            <a class="nav-link" href="/admin/users">
+              <span class="menu-icon">
+                <i class="mdi mdi-laptop"></i>
+              </span>
+              <span class="menu-title">Users</span>
+            </a>
+          </li>
+          <li class="nav-item menu-items">
+            <a class="nav-link" href="/admin/products">
+              <span class="menu-icon">
+                <i class="mdi mdi-playlist-play"></i>
+              </span>
+              <span class="menu-title">Products</span>
+            </a>
+          </li>
+          <li class="nav-item menu-items">
+            <a class="nav-link" href="/admin/categories">
+              <span class="menu-icon">
+                <i class="mdi mdi-table-large"></i>
+              </span>
+              <span class="menu-title">Category</span>
+            </a>
+          </li>
+          <li class="nav-item menu-items">
+            <a class="nav-link" href="/admin/orders">
+              <span class="menu-icon">
+                <i class="mdi mdi-chart-bar"></i>
+              </span>
+              <span class="menu-title">Orders</span>
+            </a>
+          </li>
+          <li class="nav-item menu-items">
+            <a class="nav-link" href="/admin/offers">
+              <span class="menu-icon">
+                <i class="mdi mdi-contacts"></i>
+              </span>
+              <span class="menu-title">Offers</span>
+            </a>
+          </li>
+          <li class="nav-item menu-items">
+            <a class="nav-link" href="/admin/coupens">
+              <span class="menu-icon">
+                <i class="mdi mdi-security"></i>
+              </span>
+              <span class="menu-title">Coupens</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+      <!-- partial -->
+      <div class="container-fluid page-body-wrapper">
+        <!-- partial:partials/_navbar.html -->
+        <nav class="navbar p-0 fixed-top d-flex flex-row">
+          <div class="navbar-brand-wrapper d-flex d-lg-none align-items-center justify-content-center">
+            <a class="navbar-brand brand-logo-mini" href="index.html"><img src="/static/admin/images/logo-mini.svg" alt="logo" /></a>
+          </div>
+          <div class="navbar-menu-wrapper flex-grow d-flex align-items-stretch">
+            <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-toggle="minimize">
+              <span class="mdi mdi-menu"></span>
+            </button>
+            <ul class="navbar-nav w-100 d-flex justify-content-between">
+              <!-- Logout Button on the Left -->
+              <li class="nav-item">
+                <button class="btn btn-primary">Generate Sales Report</button>
+              </li>
+            
+              <!-- Generate Sales Report Button on the Right -->
+              <li class="nav-item">
+                <form action="/admin/logout" method="post" style="margin: 0;">
+                  <button type="submit" class="btn btn-danger">Logout</button>
+                </form>
+              </li>
+            </ul>
+            <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button" data-toggle="offcanvas">
+              <span class="mdi mdi-format-line-spacing"></span>
+            </button>
+          </div>
+        </nav>
+        <div id="hiddenCouponData" style="display: none;">
+          <% allCoupons.forEach(coupon => { %>
+            <input type="hidden" class="existing-coupon" value="<%= coupon.CouponCode.toUpperCase() %>">
+          <% }); %>
+        </div>
+        <!-- partial -->
+        <div class="main-panel">
+          <div class="content-wrapper">
+          <div class="row">
+            <div class="col-12 grid-margin stretch-card">
+              <div class="card corona-gradient-card">
+                <div class="card-body py-0 px-0 px-sm-3">
+                  <div class="row align-items-center">
+                    <div class="col-4 col-sm-3 col-xl-2">
+                      <img src="/static/admin/images/dashboard/Group126@2x.png" class="gradient-corona-img img-fluid" alt="">
+                    </div>
+                    <div class="col-5 col-sm-7 col-xl-8 p-0">
+                      <h4 class="mb-1 mb-sm-0">MANAGE COUPONS</h4>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>  
+          <div class="row">
+              <div class="col-lg-12 grid-margin stretch-card">
+                  <div class="card">
+                      <div class="card-body">
+                          <div class="d-flex justify-content-between align-items-center mb-3">
+                              <h4 class="card-title">Coupons</h4>
+                              <div class="d-flex justify-content-center align-items-center">
+                                  <form action="/search" method="GET" class="form-inline mx-3">
+                                      <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" name="query">
+                                      <button class="btn btn-primary" type="submit">Search</button>
+                                  </form>
+                                  <a href="#" class="btn btn-success" data-toggle="modal" data-target="#addCouponModal">
+                                      <i class="fas fa-plus"></i> New Coupon
+                                  </a>
+                              </div>
+                          </div>
+      
+                          <!-- Add Coupon Modal -->
+                          <div class="modal fade" id="addCouponModal" tabindex="-1" role="dialog" aria-labelledby="addCouponModalLabel" aria-hidden="true">
+                              <div class="modal-dialog" role="document">
+                                  <div class="modal-content" style="background-color: #343a40; color: #fff;">
+                                      <div class="modal-header">
+                                          <h5 class="modal-title" id="addCouponModalLabel">Add New Coupon</h5>
+                                          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                              <span aria-hidden="true" style="color: #fff;">&times;</span>
+                                          </button>
+                                      </div>
+                                      <div class="modal-body">
+                                          <form id="addCouponForm" action="/admin/coupons/add-coupons" method="post">
+                                              <div class="form-group">
+                                                  <label for="CouponCode">Coupon Code</label>
+                                                  <input type="text" class="form-control" id="CouponCode" name="CouponCode" required>
+                                                  <p id="couponCodeError" style="color: red; display: none;"></p>
+                                              </div>
+                                              <div class="form-group">
+                                                  <label for="MaxAmount">Maximum Amount</label>
+                                                  <input type="number" class="form-control" id="MaxAmount" name="MaxAmount" required>
+                                                  <p id="maxAmountError" style="color: red; display: none;"></p>
+                                              </div>
+                                              <div class="form-group">
+                                                  <label for="DiscountPercentage">Discount Percentage</label>
+                                                  <input type="number" class="form-control" id="DiscountPercentage" name="DiscountPercentage" min="0" max="100" required>
+                                                  <p id="discountPercentageError" style="color: red; display: none;"></p>
+                                              </div>
+                                              <div class="form-group">
+                                                  <label for="StartDate">Start Date</label>
+                                                  <input type="date" class="form-control" id="StartDate" name="StartDate" required>
+                                                  <p id="startDateError" style="color: red; display: none;"></p>
+                                              </div>
+                                              <div class="form-group">
+                                                  <label for="EndDate">End Date</label>
+                                                  <input type="date" class="form-control" id="EndDate" name="EndDate" required>
+                                                  <p id="endDateError" style="color: red; display: none;"></p>
+                                              </div>
+                                              <div class="modal-footer">
+                                                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                                  <button type="submit" class="btn btn-primary">Add Coupon</button>
+                                              </div>
+                                          </form>
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+      
+                          <div class="table-responsive">
+                              <table class="table table-bordered">
+                                  <thead>
+                                      <tr>
+                                          <th>No.</th>
+                                          <th>Coupon Code</th>
+                                          <th>Maximum Amount</th>
+                                          <th>Discount Percentage</th>
+                                          <th>Start Date</th>
+                                          <th>End Date</th>
+                                          <th>Action</th>
+                                      </tr>
+                                  </thead>
+                                  <tbody>
+                                      <% let couponNumber = 1; %>
+                                      <% coupons.forEach(coupon => { %>
+                                          <tr>
+                                              <td><%= couponNumber++ %></td>
+                                              <td><%= coupon.CouponCode %></td>
+                                              <td><%= coupon.MaxAmount %></td>
+                                              <td><%= coupon.DiscountPercentage %>%</td>
+                                              <td><%= new Date(coupon.StartDate).toLocaleDateString('en-GB') %></td>
+                                              <td><%= new Date(coupon.EndDate).toLocaleDateString('en-GB') %></td>
+                                              <td>
+                                                <!-- Edit Coupon Button -->
+                                                <a href="#" class="btn btn-primary" data-toggle="modal" data-target="#editModal<%= coupon._id %>">EDIT</a>
+                                                <% if (new Date(coupon.EndDate) < new Date()) { %>
+                                                  <span style="color: rgb(0, 0, 0); font-style: italic;" class="bg-warning">..EXPIRED..</span>
+                                                <% } else if (coupon.IsActive){ %>
+                                                  <!-- Button or action for active coupons -->
+                                                  <a href="#" class="btn btn-danger" data-toggle="modal" data-target="#deactivateModal<%= coupon._id %>">Deactivate</a>
+                                                <% } else { %>
+                                                  <!-- Activate Button -->
+                                                  <a href="#" class="btn btn-success" data-toggle="modal" data-target="#activateModal<%= coupon._id %>">Activate</a>
+                                                <% } %>
+                                              </td>
+                                          </tr>
+      
+                                          <!-- Edit Modal -->
+                                          <div class="modal fade" id="editModal<%= coupon._id %>" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
+                                              <div class="modal-dialog" role="document">
+                                                  <div class="modal-content" style="background-color: #2C2F33; color: #FFFFFF;">
+                                                      <div class="modal-header" style="border-bottom: 1px solid #4E5D6C;">
+                                                          <h5 class="modal-title" id="editModalLabel">Edit Coupon</h5>
+                                                          <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: #FFFFFF;">
+                                                              <span aria-hidden="true">&times;</span>
+                                                          </button>
+                                                      </div>
+                                                      <div class="modal-body">
+                                                          <form id="editCouponForm<%= coupon._id %>" action="/admin/coupons/edit/<%= coupon._id %>" method="post">
+                                                              <div class="form-group">
+                                                                  <label for="CouponCode<%= coupon._id %>">Coupon Code</label>
+                                                                  <input type="text" class="form-control" id="CouponCode<%= coupon._id %>" name="CouponCode" value="<%= coupon.CouponCode %>" required>
+                                                                  <p id="couponCodeError<%= coupon._id %>" style="color: red; display: none;"></p>
+                                                              </div>
+                                                              <div class="form-group">
+                                                                  <label for="MaxAmount<%= coupon._id %>">Maximum Amount</label>
+                                                                  <input type="number" class="form-control" id="MaxAmount<%= coupon._id %>" name="MaxAmount" value="<%= coupon.MaxAmount %>" required>
+                                                                  <p id="maxAmountError<%= coupon._id %>" style="color: red; display: none;"></p>
+                                                              </div>
+                                                              <div class="form-group">
+                                                                  <label for="DiscountPercentage<%= coupon._id %>">Discount Percentage</label>
+                                                                  <input type="number" class="form-control" id="DiscountPercentage<%= coupon._id %>" name="DiscountPercentage" value="<%= coupon.DiscountPercentage %>" min="0" max="100" required>
+                                                                  <p id="discountPercentageError<%= coupon._id %>" style="color: red; display: none;"></p>
+                                                              </div>
+                                                              <div class="form-group">
+                                                                <label for="StartDate<%= coupon._id %>">Start Date</label>
+                                                                <input type="date" class="form-control" id="StartDate<%= coupon._id %>" name="StartDate" value="<%= coupon.StartDate.toISOString().substring(0, 10) %>" required>
+                                                                <p id="startDateError<%= coupon._id %>" style="color: red; display: none;"></p> <!-- Error for start date -->
+                                                              </div>
+                                                              <div class="form-group">
+                                                                <label for="EndDate<%= coupon._id %>">End Date</label>
+                                                                <input type="date" class="form-control" id="EndDate<%= coupon._id %>" name="EndDate" value="<%= coupon.EndDate.toISOString().substring(0, 10) %>" required>
+                                                                <p id="endDateError<%= coupon._id %>" style="color: red; display: none;"></p> <!-- Error for end date -->
+                                                              </div>
+                                                              <div class="modal-footer" style="border-top: 1px solid #4E5D6C;">
+                                                                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                                                  <button type="submit" class="btn btn-primary">Save changes</button>
+                                                              </div>
+                                                          </form>
+                                                      </div>
+                                                  </div>
+                                              </div>
+                                          </div>
+
+                                          <!-- Deactivate Modal -->
+                                          <div class="modal fade" id="deactivateModal<%= coupon._id %>" tabindex="-1" role="dialog" aria-labelledby="deactivateModalLabel" aria-hidden="true">
+                                            <div class="modal-dialog" role="document">
+                                              <div class="modal-content">
+                                                <div class="modal-header">
+                                                  <h5 class="modal-title" id="deactivateModalLabel">Deactivate Coupon</h5>
+                                                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                  </button>
+                                                </div>
+                                                <div class="modal-body">
+                                                  Are you sure you want to deactivate this coupon?
+                                                </div>
+                                                <div class="modal-footer">
+                                                  <form action="/admin/coupons/deactivate/<%= coupon._id %>" method="post">
+                                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-danger">Deactivate</button>
+                                                  </form>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          <!-- Activate Modal -->
+                                          <div class="modal fade" id="activateModal<%= coupon._id %>" tabindex="-1" role="dialog" aria-labelledby="activateModalLabel" aria-hidden="true">
+                                            <div class="modal-dialog" role="document">
+                                              <div class="modal-content">
+                                                <div class="modal-header">
+                                                  <h5 class="modal-title" id="activateModalLabel">Activate Coupon</h5>
+                                                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                  </button>
+                                                </div>
+                                                <div class="modal-body">
+                                                  Are you sure you want to activate this coupon?
+                                                </div>
+                                                <div class="modal-footer">
+                                                  <form action="/admin/coupons/activate/<%= coupon._id %>" method="post">
+                                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-success">Activate</button>
+                                                  </form>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                      <% }) %>
+                                  </tbody>
+                              </table>
+                          </div>
+      
+                          <div class="pagination">
+                              <% if (totalPages > 1) { %>
+                                  <nav aria-label="Page navigation example">
+                                      <ul class="pagination justify-content-center">
+                                          <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+                                              <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
+                                                  <span aria-hidden="true">&laquo;</span>
+                                              </a>
+                                          </li>
+                                          <% for (let i = 1; i <= totalPages; i++) { %>
+                                              <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                                                  <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                                              </li>
+                                          <% } %>
+                                          <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+                                              <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
+                                                  <span aria-hidden="true">&raquo;</span>
+                                              </a>
+                                          </li>
+                                      </ul>
+                                  </nav>
+                              <% } %>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+        </div>
+        </div>
+      
+        <!-- main-panel ends -->
+      </div>
+      <!-- page-body-wrapper ends -->
+    </div>
+    <!-- container-scroller -->
+
+    <!-- plugins:js -->
+    <script src="/static/admin/vendors/js/vendor.bundle.base.js"></script>
+    <!-- endinject -->
+    <!-- Plugin js for this page -->
+    <script src="/static/admin/vendors/chart.js/Chart.min.js"></script>
+    <script src="/static/admin/vendors/progressbar.js/progressbar.min.js"></script>
+    <script src="/static/admin/vendors/jvectormap/jquery-jvectormap.min.js"></script>
+    <script src="/static/admin/vendors/jvectormap/jquery-jvectormap-world-mill-en.js"></script>
+    <script src="/static/admin/vendors/owl-carousel-2/owl.carousel.min.js"></script>
+    <!-- End plugin js for this page -->
+    <!-- inject:js -->
+    <script src="/static/admin/js/off-canvas.js"></script>
+    <script src="/static/admin/js/hoverable-collapse.js"></script>
+    <script src="/static/admin/js/misc.js"></script>
+    <script src="/static/admin/js/settings.js"></script>
+    <script src="/static/admin/js/todolist.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!-- endinject -->
+    <!-- Custom js for this page -->
+    <script src="/static/admin/js/dashboard.js"></script>
+    <script src="/static/admin/js/couponValidation.js"></script>
+    <!-- End custom js for this page -->
+  </body>
+</html>

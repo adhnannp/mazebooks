@@ -14,6 +14,8 @@ admin_route.set('views', path.join(__dirname, '../views/admin'));
 // controller
 const adminController = require('../controllers/adminController');
 const returnOrder = require('../controllers/returnOrderController');
+const couponController = require('../controllers/couponController');
+const offerController = require('../controllers/offerController');
 
 // routes
 admin_route.get('/', auth.isUserLogin, auth.isLogout, adminController.loadLogin);
@@ -62,8 +64,24 @@ admin_route.post('/orders/change-status/:orderId', adminController.statusChangeO
 
 admin_route.post('/orders/handle-return-request/:orderId', returnOrder.handleReturnRequest);
 
+admin_route.get('/coupons', auth.isLogin, couponController.couponLoad);
+
+admin_route.post('/coupons/add-coupons', couponController.addCoupon);
+
+admin_route.post('/coupons/deactivate/:id',couponController.deactivateCoupon)
+
+admin_route.post('/coupons/activate/:id',couponController.activateCoupon)
+
+admin_route.post('/coupons/edit/:id',couponController.editCoupon)
+
+admin_route.get('/offers', auth.isLogin, offerController.offerLoad);
+
+admin_route.get('/offers/add',auth.isLogin,offerController.offerAddLoad)
+
+admin_route.post('/offers/add',auth.isLogin,offerController.addOffer)
+
 admin_route.get('*', function (req, res) {
-    res.redirect('/admin');
+    res.render('error-404');
 });
 
 module.exports = admin_route;
