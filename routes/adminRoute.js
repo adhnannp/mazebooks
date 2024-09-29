@@ -78,7 +78,15 @@ admin_route.get('/offers', auth.isLogin, offerController.offerLoad);
 
 admin_route.get('/offers/add',auth.isLogin,offerController.offerAddLoad)
 
-admin_route.post('/offers/add',auth.isLogin,offerController.addOffer)
+admin_route.post('/offers/add',offerController.addOffer)
+
+admin_route.post('/offers/activate/:id',offerController.activateOffer)
+
+admin_route.post('/offers/deactivate/:id',offerController.deactivateOffer)
+
+admin_route.get('/offers/edit/:id',auth.isLogin,offerController.editOfferLoad)
+
+admin_route.post('/offers/edit/:id',offerController.editOffer)
 
 admin_route.get('*', function (req, res) {
     res.render('error-404');

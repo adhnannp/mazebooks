@@ -142,7 +142,7 @@
               <span class="menu-icon">
                 <i class="mdi mdi-security"></i>
               </span>
-              <span class="menu-title">Coupens</span>
+              <span class="menu-title">Coupons</span>
             </a>
           </li>
         </ul>
@@ -380,6 +380,8 @@
     <script src="/static/admin/vendors/owl-carousel-2/owl.carousel.min.js"></script>
     <!-- End plugin js for this page -->
     <!-- inject:js -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script src="/static/admin/js/off-canvas.js"></script>
     <script src="/static/admin/js/hoverable-collapse.js"></script>
     <script src="/static/admin/js/misc.js"></script>
@@ -395,6 +397,90 @@
     <!-- Custom js for this page -->
     <script src="/static/admin/js/dashboard.js"></script>
     <!-- End custom js for this page -->
-
+    <script>
+      // Check if there are query parameters
+      const urlParams = new URLSearchParams(window.location.search);
+  
+      // Common SweetAlert dark theme settings
+      const swalDarkTheme = {
+          background: '#1f1f1f',  // Dark background
+          color: '#fff',  // White text color
+          confirmButtonColor: '#4CAF50',  // Green button for confirm
+          cancelButtonColor: '#f44336',  // Red button for cancel
+          buttonsStyling: true,
+      };
+  
+      // Show SweetAlert for success message
+      if (urlParams.has('success')) {
+          const successMessage = urlParams.get('success');
+          Swal.fire({
+              icon: 'success',
+              title: 'Success',
+              text: successMessage,
+              ...swalDarkTheme  // Apply dark theme settings
+          }).then(() => {
+              // Remove query parameters from the URL after showing the alert
+              window.history.replaceState({}, document.title, window.location.pathname);
+          });
+      }
+  
+      // Show SweetAlert for error message
+      if (urlParams.has('error')) {
+          const errorMessage = urlParams.get('error');
+          Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: errorMessage,
+              ...swalDarkTheme  // Apply dark theme settings
+          }).then(() => {
+              // Remove query parameters from the URL after showing the alert
+              window.history.replaceState({}, document.title, window.location.pathname);
+          });
+      }
+  
+      // Show SweetAlert for success messages based on status
+      if (urlParams.has('status')) {
+          const status = urlParams.get('status');
+  
+          // Handle offer activation
+          if (status === 'activated') {
+              Swal.fire({
+                  icon: 'success',
+                  title: 'Success',
+                  text: 'Offer activated successfully.',
+                  ...swalDarkTheme  // Apply dark theme settings
+              }).then(() => {
+                  // Remove query parameters from the URL after showing the alert
+                  window.history.replaceState({}, document.title, window.location.pathname);
+              });
+          }
+  
+          // Handle offer deactivation
+          if (status === 'deactivated') {
+              Swal.fire({
+                  icon: 'success',
+                  title: 'Success',
+                  text: 'Offer deactivated successfully.',
+                  ...swalDarkTheme  // Apply dark theme settings
+              }).then(() => {
+                  // Remove query parameters from the URL after showing the alert
+                  window.history.replaceState({}, document.title, window.location.pathname);
+              });
+          }
+  
+          // Handle error case
+          if (status === 'error') {
+              Swal.fire({
+                  icon: 'error',
+                  title: 'Error',
+                  text: 'Something went wrong. Please try again.',
+                  ...swalDarkTheme  // Apply dark theme settings
+              }).then(() => {
+                  // Remove query parameters from the URL after showing the alert
+                  window.history.replaceState({}, document.title, window.location.pathname);
+              });
+          }
+      }
+  </script>
   </body>
 </html>

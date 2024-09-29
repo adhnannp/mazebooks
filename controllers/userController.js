@@ -26,7 +26,7 @@ const transporter = nodemailer.createTransport({
 });
 
 //load home
-const loadHome = async(req,res)=>{
+const loadHome = async (req, res) => {
     try {
         // Fetch categories that are listed
         const listedCategories = await Category.find({ Is_list: true }).select('_id'); // Only selecting the _id field
@@ -36,38 +36,58 @@ const loadHome = async(req,res)=>{
 
         // Calculate total products and pages
         const totalProducts = await Product.countDocuments({
-            CategoryId: { $in: listedCategoryIds },Is_list:true // Categories that are listed
+            CategoryId: { $in: listedCategoryIds },
+            Is_list: true // Categories that are listed
         });
 
         // Fetch products with pagination and populate category
         const products = await Product.find({
-            CategoryId: { $in: listedCategoryIds },Is_list:true // Categories that are listed
+            CategoryId: { $in: listedCategoryIds },
+            Is_list: true // Categories that are listed
         })
             .populate('CategoryId')
             .limit(12);
 
+        // Fetch the user's wishlist if logged in
+        let wishlistItems = [];
+        if (req.session.user_id) {
+            const wishlist = await Wishlist.findOne({ UserId: req.session.user_id }).select('Products.ProductId');
+            if (wishlist) {
+                wishlistItems = wishlist.Products.map(item => item.ProductId.toString());
+            }
+        }
 
-         // Fetch the user's wishlist if logged in
-         let wishlistItems = [];
-         if (req.session.user_id) {
-             const wishlist = await Wishlist.findOne({ UserId: req.session.user_id }).select('Products.ProductId');
-             if (wishlist) {
-                 wishlistItems = wishlist.Products.map(item => item.ProductId.toString());
-             }
-         }
-            
+        // Calculate discounted prices
+        const productsWithDiscounts = products.map(product => {
+            let discountPrice = product.Price; // Start with the original price
+        
+            // Check if there are any offers associated with the product
+            if (product.Offers.length > 0) {
+                // Get the highest discount percentage from all offers
+                const discountPercentages = product.Offers.map(offer => offer.DiscountPercentage || 0); // Extract percentages
+                const maxDiscountPercentage = Math.max(...discountPercentages); // Find the maximum percentage
+        
+                discountPrice = product.Price - (product.Price * maxDiscountPercentage / 100); // Calculate discounted price
+            }
+        
+            return {
+                ...product.toObject(), // Convert to plain object
+                DiscountPrice: discountPrice // Add the discount price
+            };
+        });
+
         // Render the products or send them as a response
         res.render("home", {
-            products,
+            products: productsWithDiscounts, // Pass the modified products array
             cartItemCount: req.session.cartItemCount,
             wishlistItemCount: req.session.wishlistItemCount,
-            user:req.session.user_id,
+            user: req.session.user_id,
             wishlistItems,
         });
     } catch (error) {
         console.log(error.message);
     }
-} 
+};
 
 //load Shop Page
 const loadShop = async (req, res) => {
@@ -145,9 +165,27 @@ const loadShop = async (req, res) => {
             }
         }
 
+        const productsWithDiscounts = products.map(product => {
+            let discountPrice = product.Price; // Start with the original price
+        
+            // Check if there are any offers associated with the product
+            if (product.Offers.length > 0) {
+                // Get the highest discount percentage from all offers
+                const discountPercentages = product.Offers.map(offer => offer.DiscountPercentage || 0); // Extract percentages
+                const maxDiscountPercentage = Math.max(...discountPercentages); // Find the maximum percentage
+        
+                discountPrice = product.Price - (product.Price * maxDiscountPercentage / 100); // Calculate discounted price
+            }
+        
+            return {
+                ...product.toObject(), // Convert to plain object
+                DiscountPrice: discountPrice // Add the discount price
+            };
+        });
+
         // Render the products or send them as a response
         res.render("shopPage", {
-            products,
+            products:productsWithDiscounts,
             genres,
             selectedGenre, // Pass selected genre to the view
             selectedSort,  // Pass selected sort to the view
@@ -558,7 +596,20 @@ const userLogout = async(req,res)=>{
 const listProduct = async (req, res) => {
     try {
         const productId = req.params.id;
-        const book = await Product.findById(productId).populate('CategoryId'); // Populate the Category details
+        const product = await Product.findById(productId).populate('CategoryId'); // Populate the Category details
+
+        // Calculate the discount price
+        let discountPrice = product.Price; // Start with the original price
+
+        // Check if there are any offers associated with the product
+        if (product.Offers && product.Offers.length > 0) {
+            // Get the highest discount percentage from all offers
+            const discountPercentages = product.Offers.map(offer => offer.DiscountPercentage || 0); // Extract percentages
+            const maxDiscountPercentage = Math.max(...discountPercentages); // Find the maximum percentage
+
+            discountPrice = product.Price - (product.Price * maxDiscountPercentage / 100); // Calculate discounted price
+        }
+
         const isLoggedIn = req.session && req.session.user_id; // Check if user is logged in
 
         let wishlistItems = [];
@@ -570,12 +621,12 @@ const listProduct = async (req, res) => {
         }
 
         res.render('productOverView', { 
-            book, 
+            book: { ...product.toObject(), DiscountPrice: discountPrice }, // Add the DiscountPrice to the book object
             isLoggedIn,
             cartItemCount: req.session.cartItemCount,
             wishlistItemCount: req.session.wishlistItemCount,
             wishlistItems,
-            user:req.session.user_id
+            user: req.session.user_id
          });
     } catch (error) {
         console.log(error.message); // Corrected from 'error.massage' to 'error.message'

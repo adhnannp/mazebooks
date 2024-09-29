@@ -107,7 +107,18 @@
                         <button class="btn-heart" onclick="showLoginModal()"><i class="fas fa-heart"></i></button>
                     <% } %>
                 </h1>
-                <p class="product-price">&#8377;<%= book.Price %></p>
+                <p class="product-price">
+                    <% if (book.DiscountPrice < book.Price) { %>
+                        <span style="color: green;">
+                            <strong><%= (((book.Price - book.DiscountPrice) / book.Price) * 100).toFixed(2) %>%off</strong>
+                        </span><br>
+                        <span style="text-decoration: line-through; color: red">&#8377;<%= book.Price.toFixed(2) %></span>&nbsp;
+                        
+                        <span>&nbsp;&#8377;<%= book.DiscountPrice.toFixed(2) %></span>
+                    <% } else { %>
+                        <span>&#8377;<%= book.Price.toFixed(2) %></span>
+                    <% } %>
+                </p>
                 <p class="product-description"><%= book.Description %></p>
                 <p><strong>Author: </strong><%= book.Author %></p>
                 <p><strong>Genre: </strong><%= book.CategoryId.CategoryName %></p>

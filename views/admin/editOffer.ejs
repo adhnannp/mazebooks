@@ -147,33 +147,6 @@
           </li>
         </ul>
       </nav>
-      <style>
-        .image-label {
-          display: inline-block; 
-          padding: 5px 10px; 
-          font-size: 14px; 
-          font-weight: bold; 
-          color: #fff; 
-          background-color: #007bff; 
-          border: 1px solid #007bff; 
-          border-radius: 3px; 
-          cursor: pointer;
-          text-align: center;
-          margin-right: 10px;
-      }
-      .change-image-button {
-        display: none; 
-        background-color: #bcd8d2; /* Unique green color */
-        color: rgb(0, 0, 0); 
-        border: none; 
-        padding: 4px 8px; /* Reduced padding */
-        font-size: 12px; /* Smaller font size */
-        border-radius: 3px; /* Smaller border radius */
-        cursor: pointer; 
-        margin-top: 3px; /* Reduced margin */
-        text-align: center;
-      }
-      </style>
       <!-- partial -->
       <div class="container-fluid page-body-wrapper">
         <!-- partial:partials/_navbar.html -->
@@ -212,85 +185,58 @@
                 <div class="col-12 grid-margin stretch-card">
                     <div class="card">
                       <div class="card-body">
-                        <h4 class="card-title"><a href="/admin/products" style="text-decoration: none;">Products</a> > add</h4>
-                        <form id="addProductForm" action="/admin/products/add" method="post" enctype="multipart/form-data" class="forms-sample">
-                          <!-- Product Information -->
-                          <div class="form-group">
-                              <label for="productName">Name</label>
-                              <input type="text" class="form-control" id="productName" name="name" style="background-color: #333; color: white;" >
-                              <p id="name-error" style="color: red; display: none;"></p>
-                          </div>
-                          <div class="form-group">
-                              <label for="productAuthor">Author</label>
-                              <input type="text" class="form-control" id="productAuthor" name="author" style="background-color: #333; color: white;" >
-                              <p id="author-error" style="color: red; display: none;"></p>
-                          </div>
-                          <div class="form-group">
-                              <label for="productDescription">Description(25-250 charecters)</label>
-                              <textarea class="form-control" id="productDescription" name="description" rows="4" style="background-color: #333; color: white;" ></textarea>
-                              <p id="description-error" style="color: red; display: none;"></p>
-                          </div>
-                          <div class="form-group">
-                              <label for="productCategory">Category</label>
-                              <select class="form-control" id="productCategory" name="categoryId" style="background-color: #333; color: white;" >
-                                  <% categories.forEach(function(category) { %>
-                                  <option value="<%= category._id %>"><%= category.CategoryName %></option>
-                                  <% }) %>
-                              </select>
-                              <p id="category-error" style="color: red; display: none;"></p>
-                          </div>
-                          <div class="form-group">
-                              <label for="productQuantity">Quantity</label>
-                              <input type="number" class="form-control" id="productQuantity" name="quantity" style="background-color: #333; color: white;" >
-                              <p id="quantity-error" style="color: red; display: none;"></p>
-                          </div>
-                          <div class="form-group">
-                              <label for="productPrice">Price</label>
-                              <input type="text" class="form-control" id="productPrice" name="price" style="background-color: #333; color: white;" >
-                              <p id="price-error" style="color: red; display: none;"></p>
-                          </div>
-                      
-                           <!-- Image Upload and Cropping Section -->
+                        <h4 class="card-title"><a href="/admin/offers" style="text-decoration: none;">Offers</a> > add</h4>
+                        <form id="editOfferForm" action="/admin/offers/edit/<%= offer._id %>" method="post" class="forms-sample">
+                            <!-- Offer Information -->
                             <div class="form-group">
-                              <label for="productImages1" class="image-label">Upload Cover Image</label>
-                              <input type="file" name="img1" class="file-upload-default" id="productImages1" accept="image/*" style="display: none;">
-                              <img id="preview1" style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;" src="#" alt="Upload cover Image" />
-                              <button type="button" id="changeImage1" class="change-image-button" style="display: none;">Change Image</button>
-                          </div>
-                          <style>
-                            img[src="#"] {
-                                display: none;
-                            }
-                          </style>
-
-                          <div class="form-group">
-                              <label for="productImages2" class="image-label">Image 2</label>
-                              <input type="file" name="img2" class="file-upload-default" id="productImages2" accept="image/*" style="display: none;">
-                              <img id="preview2" style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;" src="#" alt="Upload Image 2" />
-                              <button type="button" id="changeImage2" class="change-image-button" style="display: none;">Change Image</button>
-                          </div>
-
-                          <div class="form-group">
-                              <label for="productImages3" class="image-label">Image 3</label>
-                              <input type="file" name="img3" class="file-upload-default" id="productImages3" accept="image/*" style="display: none;">
-                              <img id="preview3" style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;" src="#" alt="Upload Image 3" />
-                              <button type="button" id="changeImage3" class="change-image-button" style="display: none;">Change Image</button>
-                          </div>
-
-                          <!-- Cropping Section -->
-                          <div id="cropperContainer" style="display: none; width: 400px; height: 400px; margin: 0 auto;">
-                              <img id="cropperImage" src="" alt="Image for cropping" style="max-width: 100%; max-height: 100%;" />
-                              <div style="margin-top: 10px;">
-                                  <button type="button" id="cropButton" class="btn btn-primary">Crop Image</button>
-                                  <button type="button" id="cancelCropButton" class="btn btn-secondary">Cancel</button>
-                              </div>
-                          </div>
-                          <p id="image-error" style="color: red; display: none;"></p>
-                          <button type="submit" class="btn btn-success mr-2" id="submitButton" disabled>ADD Product</button>
-                          <a href="/admin/products" type="button" class="btn btn-dark">Cancel</a>
-
-                          <p id="existingError" style="text-align:center;color:red;display:none"></p>
-                      </form>
+                                <label for="offerTitle">Offer Title</label>
+                                <input type="text" class="form-control" id="offerTitle" name="title" value="<%= offer.Title %>" style="background-color: #333; color: white;">
+                                <p id="title-error" style="color: red; display: none;"></p>
+                            </div>
+                        
+                            <!-- Target Type Selection -->
+                            <div class="form-group">
+                                <label for="targetType">Target Type</label>
+                                <select class="form-control" id="targetType" name="targetType" style="background-color: #333; color: white;">
+                                    <option value="" disabled>Select Target Type</option>
+                                    <option value="Product" <%= offer.TargetType === 'Product' ? 'selected' : '' %>>Product</option>
+                                    <option value="Category" <%= offer.TargetType === 'Category' ? 'selected' : '' %>>Category</option>
+                                </select>
+                                <p id="targetType-error" style="color: red; display: none;"></p>
+                            </div>
+                        
+                            <!-- Target Selection -->
+                            <div class="form-group">
+                                <label for="targetSelection">Target Selection</label>
+                                <div id="productCheckboxes" style="display: none;"></div>
+                                <div id="categoryCheckboxes" style="display: none;"></div>
+                                <p id="target-error" style="color: red; display: none;"></p>
+                            </div>
+                        
+                            <!-- Discount Percentage -->
+                            <div class="form-group">
+                                <label for="discountPercentage">Discount Percentage</label>
+                                <input type="number" class="form-control" id="discountPercentage" name="discount" value="<%= offer.DiscountPercentage %>" style="background-color: #333; color: white;" min="0" max="100">
+                                <p id="discount-error" style="color: red; display: none;"></p>
+                            </div>
+                        
+                            <!-- Date Fields -->
+                            <div class="form-group">
+                                <label for="startDate">Start Date</label>
+                                <input type="date" class="form-control" id="startDate" name="startDate" value="<%= offer.StartDate.toISOString().split('T')[0] %>" style="background-color: #333; color: white;">
+                                <p id="startDate-error" style="color: red; display: none;"></p>
+                            </div>
+                        
+                            <div class="form-group">
+                                <label for="endDate">End Date</label>
+                                <input type="date" class="form-control" id="endDate" name="endDate" value="<%= offer.EndDate.toISOString().split('T')[0] %>" style="background-color: #333; color: white;">
+                                <p id="endDate-error" style="color: red; display: none;"></p>
+                            </div>
+                        
+                            <!-- Submit Buttons -->
+                            <button type="submit" class="btn btn-success mr-2" id="submitButton">Update Offer</button>
+                            <a href="/admin/offers" type="button" class="btn btn-dark">Cancel</a>
+                        </form>
                       </div>
                     </div>
                   </div>
@@ -315,6 +261,8 @@
     <script src="/static/admin/vendors/owl-carousel-2/owl.carousel.min.js"></script>
     <!-- End plugin js for this page -->
     <!-- inject:js -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script src="/static/admin/js/off-canvas.js"></script>
     <script src="/static/admin/js/hoverable-collapse.js"></script>
     <script src="/static/admin/js/misc.js"></script>
@@ -323,12 +271,149 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script src="https://unpkg.com/cropperjs/dist/cropper.min.js"></script>
-    <!-- Cropper.js JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
     <!-- endinject -->
     <!-- Custom js for this page -->
     <script src="/static/admin/js/dashboard.js"></script>
+    <script>
+      // Function to validate all fields and enable/disable submit button
+function validateForm() {
+    const title = document.getElementById('offerTitle').value.trim();
+    const discount = document.getElementById('discountPercentage').value;
+    const startDate = new Date(document.getElementById('startDate').value);
+    const endDate = new Date(document.getElementById('endDate').value);
+    const targetType = document.getElementById('targetType').value;
+    const targetSelected = document.querySelector('#productCheckboxes input:checked') || document.querySelector('#categoryCheckboxes input:checked');
+    
+    const titleError = document.getElementById('title-error');
+    const discountError = document.getElementById('discount-error');
+    const startDateError = document.getElementById('startDate-error');
+    const endDateError = document.getElementById('endDate-error');
+    const targetTypeError = document.getElementById('targetType-error');
+    const targetError = document.getElementById('target-error');
+    
+    const submitButton = document.getElementById('submitButton');
+    let isValid = true;
+
+    // Validate offer title
+    const titleRegex = /^[A-Za-z]+(?:\s[A-Za-z]+)*$/;
+    if (!titleRegex.test(title)) {
+        titleError.style.display = 'block';
+        titleError.textContent = "Offer title should only contain letters, no numbers, no multiple spaces.";
+        isValid = false;
+    } else {
+        titleError.style.display = 'none';
+    }
+
+    // Validate discount percentage
+    if (discount < 0 || discount > 100 || discount === "") {
+        discountError.style.display = 'block';
+        discountError.textContent = "Discount percentage must be between 0 and 100.";
+        isValid = false;
+    } else {
+        discountError.style.display = 'none';
+    }
+
+    // Validate end date
+    if (endDate <= startDate || endDate<= new Date() || isNaN(endDate.getTime())) {
+        endDateError.style.display = 'block';
+        endDateError.textContent = "End date cannot be earlier,today or same as the start date.";
+        isValid = false;
+    } else {
+        endDateError.style.display = 'none';
+    }
+
+    // Validate target type selection
+    if (!targetType) {
+        targetTypeError.style.display = 'block';
+        targetTypeError.textContent = "Please select a target type.";
+        isValid = false;
+    } else {
+        targetTypeError.style.display = 'none';
+    }
+
+    // Validate target selection (Product or Category)
+    if (!targetSelected) {
+        targetError.style.display = 'block';
+        targetError.textContent = "Please select at least one target.";
+        isValid = false;
+    } else {
+        targetError.style.display = 'none';
+    }
+
+    // Enable or disable submit button based on validity
+    submitButton.disabled = !isValid;
+}
+
+// Handle dynamic loading of products and categories
+const targetTypeSelect = document.getElementById('targetType');
+const productCheckboxesDiv = document.getElementById('productCheckboxes');
+const categoryCheckboxesDiv = document.getElementById('categoryCheckboxes');
+
+const products = <%- JSON.stringify(products) %>;
+const categories = <%- JSON.stringify(categories) %>;
+const targetIds = <%- JSON.stringify(offer.TargetId) %>;
+
+targetTypeSelect.addEventListener('change', function () {
+    const selectedValue = this.value;
+
+    if (selectedValue === 'Product') {
+        productCheckboxesDiv.innerHTML = ''; // Clear previous checkboxes
+        products.forEach(product => {
+            const isChecked = targetIds.includes(product._id.toString()) ? 'checked' : '';
+            const checkbox = `<div><input type="checkbox" name="productIds" value="${product._id}" ${isChecked}> ${product.Name}</div>`;
+            productCheckboxesDiv.innerHTML += checkbox;
+        });
+        productCheckboxesDiv.style.display = 'block';
+        categoryCheckboxesDiv.style.display = 'none';
+    } else if (selectedValue === 'Category') {
+        categoryCheckboxesDiv.innerHTML = ''; // Clear previous checkboxes
+        categories.forEach(category => {
+            const isChecked = targetIds.includes(category._id.toString()) ? 'checked' : '';
+            const checkbox = `<div><input type="checkbox" name="categoryIds" value="${category._id}" ${isChecked}> ${category.CategoryName}</div>`;
+            categoryCheckboxesDiv.innerHTML += checkbox;
+        });
+        categoryCheckboxesDiv.style.display = 'block';
+        productCheckboxesDiv.style.display = 'none';
+    }
+
+    validateForm();
+});
+
+// Initialize the target type to trigger checkbox rendering on page load
+targetTypeSelect.dispatchEvent(new Event('change'));
+
+// Add real-time validation listeners
+document.getElementById('offerTitle').addEventListener('input', validateForm);
+document.getElementById('discountPercentage').addEventListener('input', validateForm);
+document.getElementById('startDate').addEventListener('change', validateForm);
+document.getElementById('endDate').addEventListener('change', validateForm);
+  </script>
+<script>
+    // Check if there are query parameters
+    const urlParams = new URLSearchParams(window.location.search);
+  
+    // Common SweetAlert dark theme settings for error
+    const swalDarkTheme = {
+        background: '#1f1f1f',  // Dark background
+        color: '#fff',  // White text color
+        confirmButtonColor: '#f44336',  // Red button for error
+        buttonsStyling: true,
+    };
+  
+    // Show SweetAlert for error message
+    if (urlParams.has('error')) {
+        const errorMessage = urlParams.get('error');
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: errorMessage,
+            ...swalDarkTheme  // Apply dark theme settings
+        }).then(() => {
+            // Remove query parameters from the URL after showing the alert
+            window.history.replaceState({}, document.title, window.location.pathname);
+        });
+    }
+  </script>
   
     <!-- End custom js for this page -->
 

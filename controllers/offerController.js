@@ -72,19 +72,31 @@ const addOffer = async (req, res) => {
     try {
         // Extract form data from request body
         const { title, targetType, discount, startDate, endDate } = req.body;
-        console.log(req.body)
+        console.log(req.body);
         let targetIds = [];
 
         // Handle product or category selection based on target type
         if (targetType === 'Product') {
             targetIds = req.body.productIds; // Array of product IDs
         } else if (targetType === 'Category') {
-            targetIds = req.body.categoryIds; // Array of category IDs
+            targetIds = await Product.find({ CategoryId: { $in: req.body.categoryIds } }).select('_id'); // Find all products in the selected categories
+            targetIds = targetIds.map(product => product._id); // Extract product IDs
+        }
+
+        // Check for existing offer with the same title (case insensitive)
+        const existingOffer = await Offer.findOne({ 
+            Title: { $regex: new RegExp(`^${title.trim()}$`, 'i') } // Case insensitive check
+        });
+
+        if (existingOffer) {
+            // Redirect with an error message in query parameters
+            const redirectUrl = `/admin/offers/add?error=Offer with this name already exists.`;
+            return res.redirect(redirectUrl);
         }
 
         // Create a new offer object
         const newOffer = new Offer({
-            Title : title.trim(),
+            Title: title.trim(),
             TargetType: targetType,
             TargetId: targetIds,
             DiscountPercentage: discount,
@@ -95,12 +107,160 @@ const addOffer = async (req, res) => {
         // Save offer to the database
         await newOffer.save();
 
-        // Redirect or send success response
-        res.redirect('/admin/offers')
+        // Add the offer details to the selected products
+        const offerUpdate = {
+            OfferId: newOffer._id,
+            DiscountPercentage: discount
+        };
+
+        // Update products to include the offer details
+        await Product.updateMany(
+            { _id: { $in: targetIds } },
+            { $push: { Offers: offerUpdate } }
+        );
+
+        // Redirect to offers page with success message
+        const successRedirectUrl = `/admin/offers?success=Offer added successfully.`;
+        res.redirect(successRedirectUrl);
     } catch (error) {
         console.error('Error adding offer:', error);
         // Handle validation or server error
-        res.status(500).json({ success: false, message: 'Failed to add offer.' });
+        const errorRedirectUrl = `/admin/offers?error=Failed to add offer.`;
+        res.redirect(errorRedirectUrl);
+    }
+};
+
+const deactivateOffer = async (req, res) => {
+    try {
+      await Offer.findByIdAndUpdate(req.params.id, { IsActive: false });
+  
+      // Redirect with a success status message
+      res.redirect('/admin/offers?status=deactivated');
+    } catch (error) {
+      console.error(error);
+      
+      // Redirect with an error status
+      res.redirect('/admin/offers?status=error');
+    }
+};
+
+const activateOffer = async (req, res) => {
+    try {
+      await Offer.findByIdAndUpdate(req.params.id, { IsActive: true });
+  
+      // Redirect with a success status message
+      res.redirect('/admin/offers?status=activated');
+    } catch (error) {
+      console.error(error);
+      
+      // Redirect with an error status
+      res.redirect('/admin/offers?status=error');
+    }
+  };
+
+  const editOfferLoad = async (req, res) => {
+    try {
+        const offerId = req.params.id; // Get the offer ID from the URL
+        const offer = await Offer.findById(offerId); // Fetch the offer from the database
+
+        if (!offer) {
+            // Redirect to the offers page with an error message if the offer is not found
+            return res.redirect('/admin/offers?error=Offer not found');
+        }
+
+        // Pass the offer data to the edit offer page
+        res.render('editOffer', { 
+            admin:req.session.user_id,
+            offer: offer,
+            products: await Product.find(), // Fetch products to populate checkboxes
+            categories: await Category.find() // Fetch categories to populate checkboxes
+        });
+    } catch (error) {
+        console.error(error);
+        // Redirect to the offers page with a server error message
+        res.redirect('/admin/offers?error=Server error occurred while fetching the offer');
+    }
+};
+
+const editOffer = async (req, res) => {
+    try {
+        // Extract form data from request body
+        const { title, targetType, discount, startDate, endDate } = req.body;
+        const offerId = req.params.id;
+
+        // Validation: Check for empty fields
+        let errorMessages = [];
+        if (!title) errorMessages.push('Title is required.');
+        if (!targetType) errorMessages.push('Target Type is required.');
+        if (!discount) errorMessages.push('Discount Percentage is required.');
+        if (!startDate) errorMessages.push('Start Date is required.');
+        if (!endDate) errorMessages.push('End Date is required.');
+
+        // If there are validation errors, redirect with error messages
+        if (errorMessages.length > 0) {
+            const errorMessage = errorMessages.join(' ');
+            return res.redirect(`/admin/offers/edit/${offerId}?error=${encodeURIComponent(errorMessage)}`);
+        }
+
+        // Find the existing offer by ID
+        const existingOffer = await Offer.findById(offerId);
+
+        // Check if the offer exists
+        if (!existingOffer) {
+            return res.redirect('/admin/offers?error=Offer not found.');
+        }
+
+        // Handle product or category selection based on target type
+        let targetIds = [];
+        
+        // If the target type is Product, get the product IDs from the request
+        if (targetType === 'Product') {
+            targetIds = req.body.productIds; // Array of product IDs
+        } else if (targetType === 'Category') {
+            // Find all products in the selected categories
+            targetIds = await Product.find({ CategoryId: { $in: req.body.categoryIds } }).select('_id');
+            targetIds = targetIds.map(product => product._id); // Extract product IDs
+        }
+
+        // Remove previous offers from the products previously targeted
+        await Product.updateMany(
+            { _id: { $in: existingOffer.TargetId } },
+            { $pull: { Offers: { OfferId: existingOffer._id } } }
+        );
+
+        // Create a new offer object with updated values
+        const updatedOffer = {
+            Title: title.trim(),
+            TargetType: targetType,
+            TargetId: targetIds,
+            DiscountPercentage: discount,
+            StartDate: startDate,
+            EndDate: endDate
+        };
+
+        // Update the offer in the database
+        await Offer.findByIdAndUpdate(offerId, updatedOffer);
+
+        // Add the updated offer details to the selected products
+        const offerUpdate = {
+            OfferId: offerId,
+            DiscountPercentage: discount
+        };
+
+        // Update products to include the new offer details
+        await Product.updateMany(
+            { _id: { $in: targetIds } },
+            { $push: { Offers: offerUpdate } }
+        );
+
+        // Redirect to offers page with success message
+        const successRedirectUrl = `/admin/offers?success=Offer updated successfully.`;
+        res.redirect(successRedirectUrl);
+    } catch (error) {
+        console.error('Error editing offer:', error);
+        // Handle validation or server error
+        const errorRedirectUrl = `/admin/offers?error=Failed to update offer.`;
+        res.redirect(errorRedirectUrl);
     }
 };
 
@@ -108,4 +268,8 @@ module.exports = {
     offerLoad,
     offerAddLoad,
     addOffer,
+    deactivateOffer,
+    activateOffer,
+    editOfferLoad,
+    editOffer,
 }

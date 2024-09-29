@@ -142,38 +142,11 @@
               <span class="menu-icon">
                 <i class="mdi mdi-security"></i>
               </span>
-              <span class="menu-title">Coupens</span>
+              <span class="menu-title">Coupons</span>
             </a>
           </li>
         </ul>
       </nav>
-      <style>
-        .image-label {
-          display: inline-block; 
-          padding: 5px 10px; 
-          font-size: 14px; 
-          font-weight: bold; 
-          color: #fff; 
-          background-color: #007bff; 
-          border: 1px solid #007bff; 
-          border-radius: 3px; 
-          cursor: pointer;
-          text-align: center;
-          margin-right: 10px;
-      }
-      .change-image-button {
-        display: none; 
-        background-color: #bcd8d2; /* Unique green color */
-        color: rgb(0, 0, 0); 
-        border: none; 
-        padding: 4px 8px; /* Reduced padding */
-        font-size: 12px; /* Smaller font size */
-        border-radius: 3px; /* Smaller border radius */
-        cursor: pointer; 
-        margin-top: 3px; /* Reduced margin */
-        text-align: center;
-      }
-      </style>
       <!-- partial -->
       <div class="container-fluid page-body-wrapper">
         <!-- partial:partials/_navbar.html -->
@@ -287,6 +260,7 @@
     <script src="/static/admin/vendors/owl-carousel-2/owl.carousel.min.js"></script>
     <!-- End plugin js for this page -->
     <!-- inject:js -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="/static/admin/js/off-canvas.js"></script>
     <script src="/static/admin/js/hoverable-collapse.js"></script>
     <script src="/static/admin/js/misc.js"></script>
@@ -437,7 +411,33 @@
       // Initially disable the submit button
       document.getElementById('submitButton').disabled = true;
   </script>
-  
+<script>
+  // Check if there are query parameters
+  const urlParams = new URLSearchParams(window.location.search);
+
+  // Common SweetAlert dark theme settings for error
+  const swalDarkTheme = {
+      background: '#1f1f1f',  // Dark background
+      color: '#fff',  // White text color
+      confirmButtonColor: '#f44336',  // Red button for error
+      buttonsStyling: true,
+  };
+
+  // Show SweetAlert for error message
+  if (urlParams.has('error')) {
+      const errorMessage = urlParams.get('error');
+      Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errorMessage,
+          ...swalDarkTheme  // Apply dark theme settings
+      }).then(() => {
+          // Remove query parameters from the URL after showing the alert
+          window.history.replaceState({}, document.title, window.location.pathname);
+      });
+  }
+</script>
+
   
     <!-- End custom js for this page -->
 

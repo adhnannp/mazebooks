@@ -134,11 +134,11 @@
             </a>
           </li>
           <li class="nav-item menu-items">
-            <a class="nav-link" href="/admin/coupens">
+            <a class="nav-link" href="/admin/coupons">
               <span class="menu-icon">
                 <i class="mdi mdi-security"></i>
               </span>
-              <span class="menu-title">Coupens</span>
+              <span class="menu-title">Coupons</span>
             </a>
           </li>
         </ul>
@@ -444,6 +444,7 @@
     <!-- End plugin js for this page -->
     <!-- inject:js -->
     <script src="/static/admin/js/off-canvas.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="/static/admin/js/hoverable-collapse.js"></script>
     <script src="/static/admin/js/misc.js"></script>
     <script src="/static/admin/js/settings.js"></script>
@@ -456,5 +457,87 @@
     <script src="/static/admin/js/dashboard.js"></script>
     <script src="/static/admin/js/couponValidation.js"></script>
     <!-- End custom js for this page -->
+    <script>
+      // Function to get query parameters from the URL
+      function getQueryParams() {
+          const params = new URLSearchParams(window.location.search);
+          return {
+              error: params.get('error'),
+              success: params.get('success')
+          };
+      }
+    
+      // Function to clear query parameters from the URL
+      function clearQueryParams() {
+          const baseUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+          window.history.replaceState({}, document.title, baseUrl);
+      }
+    
+      // Call the function and store the result
+      const queryParams = getQueryParams();
+    
+      // Check if there's an error or success message and show a SweetAlert with dark theme
+      if (queryParams.error) {
+          let errorMessage;
+          switch (queryParams.error) {
+              case 'StartDateMustBeEarlier':
+                  errorMessage = 'The start date must be earlier than the end date.';
+                  break;
+              case 'CouponCodeExists':
+                  errorMessage = 'A coupon with this code already exists.';
+                  break;
+              case 'nocouponfound':
+                  errorMessage = 'No coupon found with this ID.';
+                  break;
+              default:
+                  errorMessage = 'An unknown error occurred.';
+          }
+    
+          Swal.fire({
+              icon: 'error',
+              title: 'Oops...',
+              text: errorMessage,
+              background: '#2f2f2f',   // Dark background
+              color: '#ffffff',         // White text
+              confirmButtonColor: '#d33', // Red confirm button
+              iconColor: '#e74c3c',     // Error icon color (optional, to match theme)
+          }).then(() => {
+              // Clear the query parameters after the alert is closed
+              clearQueryParams();
+          });
+    
+      } else if (queryParams.success) {
+          let successMessage;
+          switch (queryParams.success) {
+              case 'CouponAdded':
+                  successMessage = 'Your coupon was successfully added.';
+                  break;
+              case 'coupondeactivated':
+                  successMessage = 'The coupon was successfully deactivated.';
+                  break;
+              case 'couponactivated':
+                  successMessage = 'The coupon was successfully activated.';
+                  break;
+              case 'couponedited':
+                  successMessage = 'The coupon was successfully edited.';
+                  break;
+              default:
+                  successMessage = 'Action completed successfully.';
+          }
+    
+          Swal.fire({
+              icon: 'success',
+              title: 'Success!',
+              text: successMessage,
+              background: '#2f2f2f',    // Dark background
+              color: '#ffffff',          // White text
+              confirmButtonColor: '#3085d6', // Blue confirm button
+              iconColor: '#27ae60',      // Success icon color (optional, to match theme)
+          }).then(() => {
+              // Clear the query parameters after the alert is closed
+              clearQueryParams();
+          });
+      }
+    </script>
   </body>
 </html>

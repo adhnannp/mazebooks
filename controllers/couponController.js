@@ -76,67 +76,62 @@ const addCoupon = async (req, res) => {
 };
 
 //  for deactivating a coupon
-const deactivateCoupon =  async (req, res) => {
-    try {
+const deactivateCoupon = async (req, res) => {
+  try {
       await Coupon.findByIdAndUpdate(req.params.id, { IsActive: false });
-      res.redirect('/admin/coupons');
-    } catch (error) {
+      res.redirect('/admin/coupons?success=coupondeactivated');
+  } catch (error) {
       console.error(error);
-      res.redirect('/admin/coupons');
-    }
+      res.redirect('/admin/coupons?error=servererror');
+  }
 };
-  
-  //  for activating a coupon
+
+//  for activating a coupon
 const activateCoupon = async (req, res) => {
-    try {
+  try {
       await Coupon.findByIdAndUpdate(req.params.id, { IsActive: true });
-      res.redirect('/admin/coupons');
-    } catch (error) {
+      res.redirect('/admin/coupons?success=couponactivated');
+  } catch (error) {
       console.error(error);
-      res.redirect('/admin/coupons');
-    }
+      res.redirect('/admin/coupons?error=servererror');
+  }
 };
 
 //  for editing a coupon
 const editCoupon = async (req, res) => {
-    const couponId = req.params.id;
+  const couponId = req.params.id;
+  const {
+      CouponCode,
+      MaxAmount,
+      DiscountPercentage,
+      StartDate,
+      EndDate,
+  } = req.body;
 
-    const {
-        CouponCode,
-        MaxAmount,
-        DiscountPercentage,
-        StartDate,
-        EndDate,
-    } = req.body;
+  try {
+      const updatedCoupon = await Coupon.findByIdAndUpdate(
+          couponId,
+          {
+              CouponCode,
+              MaxAmount,
+              DiscountPercentage,
+              StartDate,
+              EndDate,
+          },
+          { new: true, runValidators: true } 
+      );
 
-    try {
-        // Find the coupon by ID and update its fields
-        const updatedCoupon = await Coupon.findByIdAndUpdate(
-            couponId,
-            {
-                CouponCode,
-                MaxAmount,
-                DiscountPercentage,
-                StartDate,
-                EndDate,
-            },
-            { new: true, runValidators: true } // Options to return the updated document and run validators
-        );
+      if (!updatedCoupon) {
+          return res.redirect('/admin/coupons?error=nocouponfound');
+      }
 
-        if (!updatedCoupon) {
-            // If coupon not found, redirect to coupons page
-            return res.redirect('/admin/coupons?error=nocouponfound');
-        }
-
-        // Redirect back to the coupons page
-        res.redirect('/admin/coupons?success=couponedited');
-    } catch (error) {
-        console.error(error);
-        
-        // Redirect back to the coupons page in case of an error
-        res.redirect('/admin/coupons?error=servererror');
-    }
+      res.redirect('/admin/coupons?success=couponedited');
+  } catch (error) {
+      console.error(error);
+      res.redirect('/admin/coupons?error=servererror');
+  }
 };
+
 
 module.exports = {
     couponLoad,

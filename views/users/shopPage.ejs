@@ -68,6 +68,17 @@
             padding: 0.2em 0.4em; /* Adjust padding for a smaller badge */
             border-radius: 0.5rem; /* Ensure it remains rounded */
         }
+        .small-text {
+            font-size: 0.8em; /* For discount percentage */
+        }
+        .price-strike {
+            text-decoration: line-through;
+            color: red;
+            font-size: 0.9em; /* For original price */
+        }
+        .discount-price {
+            font-size: 0.9em; /* For discount price */
+        }
 </style>
 </head>
 
@@ -238,7 +249,19 @@
                                 <a href="/home/product/<%= book._id %>" class="btn btn-primary quick-view-btn">Quick View</a>
                             </div>
                             <h2 class="product-title"><%= book.Name %></h2>
-                            <p class="product-price">&#8377;<%= book.Price %></p>
+                            <p class="product-price">
+                                <% if (book.DiscountPrice < book.Price) { %>
+                                    <span class="price-strike">
+                                        &#8377;<%= book.Price.toFixed(2) %>
+                                    </span>&nbsp;
+                            
+                                    <span >
+                                        &#8377;<%= book.DiscountPrice.toFixed(2) %>
+                                    </span>
+                                <% } else { %>
+                                    <span>&#8377;<%= book.Price.toFixed(2) %></span>
+                                <% } %>
+                            </p>
                             <div class="product-actions">
                                 <% if (user) { %>
                                     <form id="wishlist-form-<%= book._id %>" action="/wishlist/toggle" method="post">
