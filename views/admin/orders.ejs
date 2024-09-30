@@ -201,10 +201,23 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h4 class="card-title">Orders</h4>
                         <div class="d-flex justify-content-center align-items-center">
-                          <form action="/search" method="GET" class="form-inline mx-3">
-                            <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" name="query">
-                            <button class="btn btn-primary" type="submit">Search</button>
-                          </form>
+                          <form action="/admin/orders" method="GET" class="form-inline mx-3">
+                            <select class="form-control mr-sm-2" name="filter" aria-label="Filter by status">
+                                <option value="">Filter by Status</option>
+                                <option value="New" <%= filterOption === "New" ? "selected" : "" %>>New Orders</option>
+                                <option value="Pending" <%= filterOption === "Pending" ? "selected" : "" %>>Pending</option>
+                                <option value="Shipped" <%= filterOption === "Shipped" ? "selected" : "" %>>Shipped</option>
+                                <option value="Delivered" <%= filterOption === "Delivered" ? "selected" : "" %>>Delivered</option>
+                                <option value="Placed" <%= filterOption === "Placed" ? "selected" : "" %>>Placed</option>
+                                <option value="Returned" <%= filterOption === "Returned" ? "selected" : "" %>>Returned</option>
+                                <option value="Cancelled" <%= filterOption === "Cancelled" ? "selected" : "" %>>Cancelled</option>
+                                <option value="Requested" <%= filterOption === "Requested" ? "selected" : "" %>>Return Requests</option>
+                                <option value="Rejected" <%= filterOption === "Rejected" ? "selected" : "" %>>Return Rejected</option>
+                            </select>
+                            <!-- Hidden field to retain filter option -->
+                            <input type="hidden" name="page" value="<%= currentPage %>">
+                            <button class="btn btn-primary" type="submit">Filter</button>
+                        </form>
                         </div>
                     </div>                                            
                 
@@ -398,28 +411,28 @@
                             </table>
                     </div>
 
-                  <div class="pagination">
-                    <% if (totalPages > 1) { %>
-                      <nav aria-label="Page navigation example">
-                        <ul class="pagination justify-content-center">
-                          <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
-                            <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
-                              <span aria-hidden="true">&laquo;</span>
-                            </a>
-                          </li>
-                          <% for (let i = 1; i <= totalPages; i++) { %>
-                            <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-                              <a class="page-link" href="?page=<%= i %>"><%= i %></a>
-                            </li>
-                          <% } %>
-                          <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
-                            <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
-                              <span aria-hidden="true">&raquo;</span>
-                            </a>
-                          </li>
-                        </ul>
-                      </nav>
-                    <% } %>
+                    <div class="pagination">
+                      <% if (totalPages > 1) { %>
+                          <nav aria-label="Page navigation example">
+                              <ul class="pagination justify-content-center">
+                                  <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+                                      <a class="page-link" href="?page=<%= currentPage - 1 %>&filter=<%= filterOption %>" aria-label="Previous">
+                                          <span aria-hidden="true">&laquo;</span>
+                                      </a>
+                                  </li>
+                                  <% for (let i = 1; i <= totalPages; i++) { %>
+                                      <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                                          <a class="page-link" href="?page=<%= i %>&filter=<%= filterOption %>"><%= i %></a>
+                                      </li>
+                                  <% } %>
+                                  <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+                                      <a class="page-link" href="?page=<%= currentPage + 1 %>&filter=<%= filterOption %>" aria-label="Next">
+                                          <span aria-hidden="true">&raquo;</span>
+                                      </a>
+                                  </li>
+                              </ul>
+                          </nav>
+                      <% } %>
                   </div>
                   <style>
                     .pagination {

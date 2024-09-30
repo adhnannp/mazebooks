@@ -67,28 +67,55 @@ const logout = async(req,res)=>{
 //show users
 const adminUsers = async (req, res) => {
     try {
-        // Find the currently logged-in admin
         const admin = await User.findById(req.session.user_id);
+        const query = req.query.query || '';
+        const currentPage = parseInt(req.query.page) || 1;
+        const itemsPerPage = 5;
+        
+        let usersData, totalUsers;
 
-        const currentPage = parseInt(req.query.page) || 1; // Get current page, default to 1
-        const itemsPerPage = 5; // Adjust as needed
-        const totalUsers = await User.countDocuments({ Is_admin: false });
+        // If there is a search query, prioritize search results
+        if (query) {
+            const regex = new RegExp(query, 'i');
+            usersData = await User.find({
+                Is_admin: false,
+                $or: [
+                    { FirstName: regex },
+                    { LastName: regex },
+                    { Email: regex }
+                ]
+            }).limit(itemsPerPage);
+        } else {
+            totalUsers = await User.countDocuments({ Is_admin: false });
+            usersData = await User.find({ Is_admin: false })
+                .skip((currentPage - 1) * itemsPerPage)
+                .limit(itemsPerPage);
+        }
+
+        if (req.xhr) { // Check if request is AJAX (xhr)
+            return res.json({
+                users: usersData,
+                totalPages: Math.ceil(totalUsers / itemsPerPage), // Only return the user data as JSON
+                query,
+                noResults: usersData.length === 0
+            });
+        }
+
         const totalPages = Math.ceil(totalUsers / itemsPerPage);
-        const usersData = await User.find({ Is_admin: false })
-            .skip((currentPage - 1) * itemsPerPage)
-            .limit(itemsPerPage);
 
         res.render('users.ejs', {
             admin,
             user: usersData,
             currentPage,
             totalPages,
+            query,
+            noResults: usersData.length === 0
         });
     } catch (error) {
         console.log(error.message);
         res.redirect('/home');
     }
-}
+};
 
 // Unblock User
 const unblockUser = async (req, res) => {
@@ -120,20 +147,28 @@ const blockUser = async (req, res) => {
 const productsLoad = async (req, res) => {
     try {
         const admin = await User.findById(req.session.user_id);
-        const categories = await Category.find({Is_list:true});
+        const categories = await Category.find({ Is_list: true });
+        
         // Get current page, default to 1
         const currentPage = parseInt(req.query.page) || 1;
         const itemsPerPage = 5; // Number of items per page
 
+        // Fetch the search query
+        const query = req.query.query ? req.query.query.trim() : '';
+
+        // Create the search filter
+        const searchFilter = query ? { Name: { $regex: query, $options: 'i' } } : {};
+
         // Calculate total products and pages
-        const totalProducts = await Product.countDocuments();
+        const totalProducts = await Product.countDocuments(searchFilter);
         const totalPages = Math.ceil(totalProducts / itemsPerPage);
 
-        // Fetch products with pagination and populate category
-        const products = await Product.find()
+        // Fetch products with pagination, filtering by search query, and populate category
+        const products = await Product.find(searchFilter)
             .populate('CategoryId')
+            .sort({ Name: 1 }) // Sort by product name
             .skip((currentPage - 1) * itemsPerPage)
-            .limit(itemsPerPage)
+            .limit(itemsPerPage);
 
         // Render the products or send them as a response
         res.render("products", {
@@ -142,6 +177,7 @@ const productsLoad = async (req, res) => {
             currentPage,
             totalPages,
             categories,
+            query // Pass the query to the view for the search input
         });
     } catch (error) {
         console.error("Error loading products:", error);
@@ -343,15 +379,21 @@ const categoriesLoad = async (req, res) => {
         const currentPage = parseInt(req.query.page) || 1; // Get current page, default to 1
         const itemsPerPage = 5; // Number of items per page
 
-        // Calculate total categories and pages
-        const totalCategories = await Category.countDocuments();
+        // Fetch the search query
+        const query = req.query.query ? req.query.query.trim() : '';
+
+        // Create the search filter for category name
+        const searchFilter = query ? { CategoryName: { $regex: query, $options: 'i' } } : {};
+
+        // Calculate total categories and pages based on search filter
+        const totalCategories = await Category.countDocuments(searchFilter);
         const totalPages = Math.ceil(totalCategories / itemsPerPage);
 
-         // Fetch all categories for hidden input fields
-         const allCategories = await Category.find();
+        // Fetch all categories for hidden input fields (if needed)
+        const allCategories = await Category.find();
 
-        // Fetch categories with pagination
-        const categories = await Category.find()
+        // Fetch categories with pagination and search filter
+        const categories = await Category.find(searchFilter)
             .skip((currentPage - 1) * itemsPerPage)
             .limit(itemsPerPage)
             .exec();
@@ -371,6 +413,7 @@ const categoriesLoad = async (req, res) => {
             admin,
             currentPage,
             totalPages,
+            query // Pass the query to the view for the search input
         });
     } catch (error) {
         console.error("Error loading categories:", error);
@@ -456,26 +499,43 @@ const ordersLoad = async (req, res) => {
         const currentPage = parseInt(req.query.page) || 1; // Get current page, default to 1
         const itemsPerPage = 10; // Number of items per page
 
-        // Calculate total orders and pages
-        const totalOrders = await Order.countDocuments();
+        // Get the filter option from the query
+        const filterOption = req.query.filter;
+        let query = {}; // Initialize the query object
+
+        // Determine the query based on the selected filter option
+        if (filterOption) {
+            if (filterOption === "New") {
+                query = {}; // Fetch all orders for "New" (recently placed orders)
+            } else if (filterOption === "Rejected" || filterOption === "Requested") {
+                query["ReturnRequest.status"] = filterOption; // Find orders with return requests
+            } else {
+                query["Status"] = filterOption; // For regular order statuses
+            }
+        }
+
+        // Calculate total orders and pages after applying filter
+        const totalOrders = await Order.countDocuments(query);
         const totalPages = Math.ceil(totalOrders / itemsPerPage);
 
-        // Fetch orders with pagination
-        const orders = await Order.find()
+        // Fetch orders with pagination and filtering
+        const orders = await Order.find(query)
             .skip((currentPage - 1) * itemsPerPage)
             .limit(itemsPerPage)
-            .sort({ createdAt: -1 })
+            .sort({ createdAt: -1 }) // Sort by createdAt for "New" orders
             .populate({
                 path: 'Products.ProductId',
                 select: 'Name Images' // Select only the fields you need
             })
             .exec();
-        // Render the orders with pagination
+
+        // Render the orders with pagination and filtering
         res.render("orders.ejs", {
             orders,
             admin,
             currentPage,
-            totalPages,
+            totalPages: totalPages > 1 ? totalPages : 0, // Show pagination only if there are multiple pages
+            filterOption // Send the selected filter option to the template
         });
     } catch (error) {
         console.error("Error loading orders:", error);

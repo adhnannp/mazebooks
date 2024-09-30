@@ -198,10 +198,10 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h4 class="card-title">Category</h4>
                         <div class="d-flex justify-content-center align-items-center">
-                          <form action="/search" method="GET" class="form-inline mx-3">
-                            <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" name="query">
+                          <form action="/admin/categories" method="GET" class="form-inline mx-3">
+                            <input class="form-control mr-sm-2" type="search" placeholder="Search Categories" aria-label="Search" name="query" value="<%= query %>">
                             <button class="btn btn-primary" type="submit">Search</button>
-                          </form>
+                        </form>
                           <a href="#" class="btn btn-success" data-toggle="modal" data-target="#addCategoryModal">
                             <i class="fas fa-plus"></i> New Category
                           </a>

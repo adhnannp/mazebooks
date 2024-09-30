@@ -264,6 +264,86 @@
     .discount-price {
         font-size: 0.9em; /* For discount price */
     }
+     /* Basic styles for search bar */
+     .search-results {
+    position: absolute;
+    top: 100%;
+    left: 10%;
+    width: 100%;
+    max-width: 400px;  /* Set a max width for the tooltip-like appearance */
+    background: white;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    display: none;
+    border-radius: 4px; /* Slight rounding of the edges */
+    overflow: hidden; /* Ensure content doesn't spill out */
+}
+
+/* Style for each individual search result item */
+.search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+}
+
+/* Add hover effect */
+.search-result-item:hover {
+    background-color: #f0f0f0;
+}
+
+/* Style for product images */
+.search-result-item img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    margin-right: 10px;
+    border-radius: 4px; /* Rounded image corners */
+}
+
+/* Flexbox for product details (name and price) */
+.search-result-item .details {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Prevent overflow */
+}
+
+/* Product name styling with text overflow ellipsis */
+.search-result-item .details .name {
+    font-weight: bold;
+    white-space: nowrap; /* Ensure text stays on one line */
+    overflow: hidden; /* Hide overflowed text */
+    text-overflow: ellipsis; /* Add ellipsis (...) when the text is too long */
+    max-width: 250px; /* Set a max-width to limit name overflow */
+}
+
+/* Product price styling */
+.search-result-item .details .price {
+    color: #666;
+    font-size: 14px;
+    margin-top: 4px;
+    white-space: nowrap; /* Prevent price text from wrapping */
+}
+
+/* No results found message */
+.no-results {
+    padding: 10px;
+    color: #999;
+    text-align: center;
+}
+.search-result-item.sold-out {
+    opacity: 0.6; /* Make it appear faded */
+    pointer-events: none; /* Disable clicking */
+}
+
+/* Style the "Sold Out" text */
+.sold-out-text {
+    color: red;
+    font-weight: bold;
+    font-size: 14px;
+}
 </style>
 </head>
 
@@ -275,7 +355,8 @@
 
             <!-- Centered Search Bar -->
             <form class="search-bar">
-                <input type="text" placeholder="Search for books...">
+                <input id="search-input" type="text" placeholder="Search for books...">
+                <div id="search-results" class="search-results"></div>
             </form>
 
             <!-- Navbar Toggle -->
@@ -288,16 +369,10 @@
             <div class="collapse navbar-collapse" id="navbarResponsive">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/">Home</a>
+                        <a class="nav-link" style="color: blue;" href="/">Home</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/shop">Shop</a>
-                    </li>
-                    <li class="nav-item"></li>
-                        <a class="nav-link" href="#">Best Seller</a>
-                    </li>
-                    <li class="nav-item"></li>
-                        <a class="nav-link" href="#">Today's Deal</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#">About</a>
@@ -522,6 +597,71 @@ function showLoginModal() {
 function closeLoginModal() {
   $('#loginModal').modal('hide');
 }
+</script>
+<script>
+    document.getElementById('search-input').addEventListener('input', function () {
+    const query = this.value.trim();
+    
+    if (query.length > 0) {
+        fetch(`/search?query=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                const searchResults = document.getElementById('search-results');
+                searchResults.innerHTML = '';  // Clear previous results
+                
+                if (data.length > 0) {
+                    searchResults.style.display = 'block';
+                    data.forEach(product => {
+                        const resultItem = document.createElement('a');
+                        resultItem.href = `/home/product/${product._id}`;
+                        resultItem.classList.add('search-result-item');
+
+                        // Check if the product is sold out
+                        let productContent = '';
+                        if (product.Quantity === 0) {
+                            // Sold out: show a faded style and "Sold Out" text
+                            resultItem.classList.add('sold-out'); // Apply the "sold-out" class
+                            productContent = `
+                                <img src="/static/uploads/${product.Images[0]}" alt="image">
+                                <div class="details">
+                                    <span class="name">${product.Name}</span>
+                                    <span >${product.Author}</span>
+                                    <span class="sold-out-text">Sold Out</span>
+                                </div>
+                            `;
+                        } else {
+                            // Available: show the product price
+                            productContent = `
+                                <img src="/static/uploads/${product.Images[0]}" alt="image">
+                                <div class="details">
+                                    <span class="name">${product.Name}</span>
+                                    <span >${product.Author}</span>
+                                    <span class="price">$${product.Price}</span>
+                                </div>
+                            `;
+                        }
+
+                        resultItem.innerHTML = productContent;
+                        searchResults.appendChild(resultItem);
+                    });
+                } else {
+                    searchResults.style.display = 'block';
+                    searchResults.innerHTML = '<div class="no-results">No results found</div>';
+                }
+            })
+            .catch(error => console.error('Error fetching search results:', error));
+    } else {
+        document.getElementById('search-results').style.display = 'none';
+    }
+});
+
+// Hide search results when clicking outside
+document.addEventListener('click', function (e) {
+    const searchBar = document.querySelector('.search-bar');
+    if (!searchBar.contains(e.target)) {
+        document.getElementById('search-results').style.display = 'none';
+    }
+});
 </script>
 </body>
 

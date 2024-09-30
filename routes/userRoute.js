@@ -136,7 +136,8 @@ user_route.delete('/wishlist/remove/:id',auth.isLogin,wishListController.removeF
 
 user_route.post('/myaccount/return-order/:orderId',auth.isAdminLogin, returnOrder.returnRequest)
 
-user_route.get('/myaccount/wallet',auth.isAdminLogin,auth.isLogin,auth.isblock,auth.ifNotVerified,auth.updateCartAndWishlistCounts,walletController.loadWallet);
+user_route.get('/myaccount/wallet',auth.isAdminLogin,auth.isLogin,auth.isblock,auth.ifNotVerified,auth.updateCartAndWishlistCounts,walletController.loadWallet)
 
+user_route.get('/search',userController.searchResult) 
 
 module.exports = user_route;

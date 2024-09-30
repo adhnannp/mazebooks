@@ -1182,6 +1182,32 @@ const removeFromCart = async (req, res) => {
     }
 };
 
+const searchResult = async (req, res) => {
+    const query = req.query.query;
+    try {
+        const products = await Product.find({
+            $or: [
+                { Name: { $regex: new RegExp(query, 'i') } }, // Case-insensitive search for product name
+                { Author: { $regex: new RegExp(query, 'i') } } // Case-insensitive search for author name
+            ],
+            Is_list: true // Only include listed products
+        })
+        .populate({
+            path: 'CategoryId',
+            match: { Is_list: true }, // Ensure category is also listed
+            select: 'CategoryName' // Optional: you can select the category fields you need
+        })
+        .limit(5);  // Limit the results to 5 products
+
+        // Filter out products whose category is not listed (in case they don't match the `match` condition)
+        const filteredProducts = products.filter(product => product.CategoryId !== null);
+
+        res.json(filteredProducts);  // Send the filtered results as JSON
+    } catch (error) {
+        console.error('Error fetching search results:', error);
+        res.status(500).send('Server error');
+    }
+};
 
 module.exports = {
     loadHome,
@@ -1211,4 +1237,5 @@ module.exports = {
     loadCart,
     updateCart,
     removeFromCart,
+    searchResult,
 }

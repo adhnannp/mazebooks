@@ -62,6 +62,85 @@
     padding: 0.2em 0.4em; /* Adjust padding for a smaller badge */
     border-radius: 0.5rem; /* Ensure it remains rounded */
 }
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 10%;
+    width: 100%;
+    max-width: 400px;  /* Set a max width for the tooltip-like appearance */
+    background: white;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    display: none;
+    border-radius: 4px; /* Slight rounding of the edges */
+    overflow: hidden; /* Ensure content doesn't spill out */
+}
+
+/* Style for each individual search result item */
+.search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+}
+
+/* Add hover effect */
+.search-result-item:hover {
+    background-color: #f0f0f0;
+}
+
+/* Style for product images */
+.search-result-item img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    margin-right: 10px;
+    border-radius: 4px; /* Rounded image corners */
+}
+
+/* Flexbox for product details (name and price) */
+.search-result-item .details {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Prevent overflow */
+}
+
+/* Product name styling with text overflow ellipsis */
+.search-result-item .details .name {
+    font-weight: bold;
+    white-space: nowrap; /* Ensure text stays on one line */
+    overflow: hidden; /* Hide overflowed text */
+    text-overflow: ellipsis; /* Add ellipsis (...) when the text is too long */
+    max-width: 250px; /* Set a max-width to limit name overflow */
+}
+
+/* Product price styling */
+.search-result-item .details .price {
+    color: #666;
+    font-size: 14px;
+    margin-top: 4px;
+    white-space: nowrap; /* Prevent price text from wrapping */
+}
+
+/* No results found message */
+.no-results {
+    padding: 10px;
+    color: #999;
+    text-align: center;
+}
+.search-result-item.sold-out {
+    opacity: 0.6; /* Make it appear faded */
+    pointer-events: none; /* Disable clicking */
+}
+
+/* Style the "Sold Out" text */
+.sold-out-text {
+    color: red;
+    font-weight: bold;
+    font-size: 14px;
+}
 </style>
 <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
     <div class="container">
@@ -69,7 +148,8 @@
 
         <!-- Centered Search Bar -->
         <form class="search-bar">
-            <input type="text" placeholder="Search for books...">
+            <input id="search-input" type="text" placeholder="Search for books...">
+            <div id="search-results" class="search-results"></div>
         </form>
 
         <!-- Navbar Toggle -->
@@ -82,27 +162,21 @@
         <div class="collapse navbar-collapse" id="navbarResponsive">
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
-                    <a class="nav-link" href="/">Home</a>
+                    <a class="nav-link selected-1" href="/">Home</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/shop">Shop</a>
+                    <a class="nav-link selected-2" href="/shop">Shop</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Best Seller</a>
+                    <a class="nav-link selected-3" href="#">About</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Today's Deal</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">About</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Contact</a>
+                    <a class="nav-link selected-4" href="#">Contact</a>
                 </li>
 
                 <!-- Icons at the End -->
                 <li class="nav-item d-flex align-items-center">
-                    <a href="/cart" class="icon-link position-relative">
+                    <a href="/cart" class="icon-link position-relative selected-5">
                         <i class="fas fa-shopping-cart"></i>
                         <% if (user && cartItemCount > 0) { %>
                             <span class="badge-custom top-0 start-100 translate-middle badge rounded-pill bg-primary">
@@ -112,7 +186,7 @@
                             <span class="badge-custom top-0 start-100 translate-middle badge rounded-pill bg-primary">0</span>
                         <% } %>
                     </a>
-                    <a href="/wishlist" class="icon-link position-relative">
+                    <a href="/wishlist" class="icon-link position-relative selected-6">
                         <i class="fas fa-heart"></i>
                         <% if (user && wishlistItemCount > 0) { %>
                             <span class="badge-custom top-0 start-100 translate-middle badge rounded-pill bg-primary">
@@ -122,7 +196,7 @@
                             <span class="badge-custom top-0 start-100 translate-middle badge rounded-pill bg-primary">0</span>
                         <% } %>
                     </a>
-                    <a href="/myaccount" class="icon-link"><i class="fas fa-user"></i></a>
+                    <a href="/myaccount" class="icon-link selected-7"><i class="fas fa-user"></i></a>
                 </li>
             </ul>
         </div>

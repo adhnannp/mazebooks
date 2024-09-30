@@ -175,6 +175,9 @@
     .pagination .page-item.disabled .page-link {
         color: #adb5bd;
     }
+    .selected-7{
+        color: blue;
+    }
 </style>
 
 <div class="account-container">
@@ -468,6 +471,71 @@ function openReturnModal(orderId) {
     `;
     document.head.appendChild(style);
 }
+</script>
+<script>
+    document.getElementById('search-input').addEventListener('input', function () {
+    const query = this.value.trim();
+    
+    if (query.length > 0) {
+        fetch(`/search?query=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                const searchResults = document.getElementById('search-results');
+                searchResults.innerHTML = '';  // Clear previous results
+                
+                if (data.length > 0) {
+                    searchResults.style.display = 'block';
+                    data.forEach(product => {
+                        const resultItem = document.createElement('a');
+                        resultItem.href = `/home/product/${product._id}`;
+                        resultItem.classList.add('search-result-item');
+
+                        // Check if the product is sold out
+                        let productContent = '';
+                        if (product.Quantity === 0) {
+                            // Sold out: show a faded style and "Sold Out" text
+                            resultItem.classList.add('sold-out'); // Apply the "sold-out" class
+                            productContent = `
+                                <img src="/static/uploads/${product.Images[0]}" alt="image">
+                                <div class="details">
+                                    <span class="name">${product.Name}</span>
+                                    <span >${product.Author}</span>
+                                    <span class="sold-out-text">Sold Out</span>
+                                </div>
+                            `;
+                        } else {
+                            // Available: show the product price
+                            productContent = `
+                                <img src="/static/uploads/${product.Images[0]}" alt="image">
+                                <div class="details">
+                                    <span class="name">${product.Name}</span>
+                                    <span >${product.Author}</span>
+                                    <span class="price">$${product.Price}</span>
+                                </div>
+                            `;
+                        }
+
+                        resultItem.innerHTML = productContent;
+                        searchResults.appendChild(resultItem);
+                    });
+                } else {
+                    searchResults.style.display = 'block';
+                    searchResults.innerHTML = '<div class="no-results">No results found</div>';
+                }
+            })
+            .catch(error => console.error('Error fetching search results:', error));
+    } else {
+        document.getElementById('search-results').style.display = 'none';
+    }
+});
+
+// Hide search results when clicking outside
+document.addEventListener('click', function (e) {
+    const searchBar = document.querySelector('.search-bar');
+    if (!searchBar.contains(e.target)) {
+        document.getElementById('search-results').style.display = 'none';
+    }
+});
 </script>
 
 </body>

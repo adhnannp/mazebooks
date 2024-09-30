@@ -197,9 +197,19 @@
                 <div class="card-body">
                   <div class="d-flex justify-content-between align-items-center mb-3">
                     <h4 class="card-title">Users</h4>
-                    <form action="/search" method="GET" class="form-inline">
-                      <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" name="query">
+                    <form action="/admin/users" method="GET" class="form-inline">
+                      <input 
+                        class="form-control mr-sm-2" 
+                        type="search" 
+                        placeholder="Search by name or email" 
+                        aria-label="Search" 
+                        name="query" 
+                        value="<%= query %>"> <!-- Show query in search bar -->
                       <button class="btn btn-primary" type="submit">Search</button>
+                      <!-- Show "No user found" tooltip if no results -->
+                      <% if (noResults) { %>
+                        <span class="text-danger" data-toggle="tooltip" title="No user found">No user found</span>
+                      <% } %>
                     </form>
                   </div>
                   <div class="table-responsive">
@@ -214,7 +224,7 @@
                           <th>Action</th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody id="user-table-body">
                         <% let userNumber = 1; %>
                         <% user.forEach(user => { %>
                           <tr>
@@ -365,5 +375,56 @@
     <!-- Custom js for this page -->
     <script src="/static/admin/js/dashboard.js"></script>
     <!-- End custom js for this page -->
+    <script>
+document.addEventListener("DOMContentLoaded", function() {
+  const searchInput = document.getElementById('searchInput');
+  const userTableBody = document.getElementById('user-table-body');
+  
+  // Add event listener for search input
+  searchInput.addEventListener('input', function() {
+    const query = searchInput.value.trim();
+    
+    // Fetch the filtered users from the server
+    fetch(`/admin/users?query=${encodeURIComponent(query)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      // Clear the existing table content
+      userTableBody.innerHTML = '';
+
+      // If no users are found, show 'No user found' message
+      if (data.users.length === 0) {
+        userTableBody.innerHTML = `<tr><td colspan="6" class="text-center">No user found</td></tr>`;
+      } else {
+        // Populate the table with the returned data
+        data.users.forEach((user, index) => {
+          userTableBody.innerHTML += `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${user.FirstName} ${user.LastName}</td>
+              <td>${user.Email}</td>
+              <td>${new Date(user.CreatedAt).toLocaleDateString('en-GB')}</td>
+              <td>${user.Is_verified ? 'Verified' : 'Not Verified'}</td>
+              <td>
+                <a href="#" class="btn ${user.Is_block ? 'btn-success' : 'btn-danger'}" data-toggle="modal" data-target="#${user.Is_block ? 'unblockModal' : 'blockModal'}${user.id}">
+                  ${user.Is_block ? 'Unblock' : 'Block'}
+                </a>
+              </td>
+            </tr>
+          `;
+        });
+      }
+
+      // Clear the search input after handling the response
+      searchInput.value = '';
+    })
+    .catch(error => console.error('Error:', error));
+  });
+});
+    </script>
   </body>
 </html>
