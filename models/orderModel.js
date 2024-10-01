@@ -13,6 +13,9 @@ const orderSchema = new Schema({
        Quantity: { type: Number, required: true },
     }],
     TotalPrice: { type: Number, required: true },
+    ActualTotalPrice: {type: Number,required: true},
+    AppliedCoupon: {type: String, required: false},
+    PriceWithoutDedection:{type: Number,required: true},
     Address: {
       FullName: { type: String, required: true },
       Address: { type: String, required: true },

@@ -234,56 +234,48 @@
             
                 <div class="cart-items" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
                     <% wishlistItems.forEach(item => { %>
-                        <div class="product-card <%= item.ProductId.Quantity === 0 ? 'sold-out' : '' %>" id="product-card-<%= item.ProductId._id %>" style="width: 250px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; text-align: center; position: relative; display: flex; flex-direction: column; align-items: center;">
+                        <div class="product-card <%= item.Quantity === 0 ? 'sold-out' : '' %>" id="product-card-<%= item._id %>" style="width: 250px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; text-align: center; position: relative; display: flex; flex-direction: column; align-items: center;">
                             
-                            
-                            <a href="/home/products/<%= item.ProductId._id%>">
-                                <img src="/static/uploads/<%= item.ProductId.Images[0] %>" alt="<%= item.ProductId.Name %>" class="product-image" style="max-width: 100%; height: auto; margin-bottom: 10px;">
+                            <a href="/home/product/<%= item._id %>">
+                                <img src="/static/uploads/<%= item.Images[0] %>" alt="<%= item.Name %>" class="product-image" style="max-width: 100%; height: auto; margin-bottom: 10px;">
                             </a>
                             
-                            <!-- Product details now placed directly below the image -->
                             <div class="product-details" style="text-align: center; margin-top: 10px;">
                                 <div class="product-name" style="margin-bottom: 10px; font-weight: bold;">
-                                    <a href="/home/product/<%= item.ProductId._id %>" style="text-decoration: none; color: inherit; font-size: inherit;">
-                                        <%= item.ProductId.Name %>
+                                    <a href="/home/product/<%= item._id %>" style="text-decoration: none; color: inherit; font-size: inherit;">
+                                        <%= item.Name %>
                                     </a>
                                 </div>
                                 
                                 <div class="product-price" style="margin-bottom: 10px;">
-                                    <strong>Price:</strong> $<%= item.ProductId.Price.toFixed(2) %>
+                                    <strong>Price:</strong> $<%= item.Price.toFixed(2) %>
                                 </div>
-            
-                                <% if (item.ProductId.Offers.length > 0) { %>
-                                    <% 
-                                        let maxDiscount = Math.max(...item.ProductId.Offers.map(offer => offer.DiscountPercentage));
-                                        let discountedPrice = item.ProductId.Price - (item.ProductId.Price * (maxDiscount / 100)); 
-                                    %>
+                    
+                                <% if (item.ValidOffers.length > 0) { %> <!-- Check for valid offers -->
                                     <div class="product-discount-price" style="margin-bottom: 10px;">
-                                        <strong>Discounted Price:</strong> $<%= discountedPrice.toFixed(2) %>
+                                        <strong>Discounted Price:</strong> $<%= item.DiscountPrice.toFixed(2) %>
                                     </div>
                                 <% } %>
-            
-                                <% if (item.ProductId.Quantity > 0) { %>
+                    
+                                <% if (item.Quantity > 0) { %>
                                     <div class="product-quantity" style="margin-bottom: 10px;">
-                                        <label for="quantity-<%= item.ProductId._id %>">Stock:</label>
-                                        <% if (item.ProductId.Quantity < 8) { %>
-                                            <span style="color: red;">Only <%= item.ProductId.Quantity %> left</span>
+                                        <label for="quantity-<%= item._id %>">Stock:</label>
+                                        <% if (item.Quantity < 8) { %>
+                                            <span style="color: red;">Only <%= item.Quantity %> left</span>
                                         <% } else { %>
                                             <span style="color: green;">Available</span>
                                         <% } %>
                                     </div>
-                
-                                    <% if (!cartProducts.includes(item.ProductId._id.toString())) { %>
+                    
+                                    <% if (!cartProducts.includes(item._id.toString())) { %>
                                         <div style="margin-top: 10px; display: flex; flex-direction: column; align-items: center;">
-                                            <form id="add-to-cart-form-<%= item.ProductId._id %>" action="/cart/add" method="post" style="margin-bottom: 5px;">
+                                            <form id="add-to-cart-form-<%= item._id %>" action="/cart/add" method="post" style="margin-bottom: 5px;">
                                                 <input type="text" value="1" name="quantity" hidden>
-                                                <input type="text" value="<%= item.ProductId._id %>" name="productId" hidden>
-                                                <button type="button" onclick="addToCart('<%= item.ProductId._id %>')" style="background: none; border: none; color: blue;">
+                                                <input type="text" value="<%= item._id %>" name="productId" hidden>
+                                                <button type="button" onclick="addToCart('<%= item._id %>')" style="background: none; border: none; color: blue;">
                                                     Add to Cart
                                                 </button>
                                             </form>
-                
-                                            
                                         </div>
                                     <% } else { %>
                                         <span style="color: gray;">Already in Cart</span>
@@ -292,8 +284,7 @@
                                     <p style="color: red; margin: 5px 0;">This product is sold out</p>
                                 <% } %>
                             </div>
-                            <!-- Delete button moved after the Add to Cart button -->
-                            <button onclick="openDeleteModal('<%= item.ProductId._id %>')" style="background: none; border: none; color: red; cursor: pointer;">
+                            <button onclick="openDeleteModal('<%= item._id %>')" style="background: none; border: none; color: red; cursor: pointer;">
                                 <i class="fas fa-trash"></i> Remove
                             </button>
                         </div>

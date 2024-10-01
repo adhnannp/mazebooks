@@ -24,6 +24,7 @@ const wishListController = require('../controllers/userWishList');
 const orderPlacingController = require('../controllers/orderPlacingController');
 const returnOrder = require('../controllers/returnOrderController');
 const walletController = require('../controllers/walletController');
+const couponController = require('../controllers/couponController');
 
 user_route.get(['/','/home'], auth.isAdminLogin ,auth.isblock,auth.ifNotVerified,auth.updateCartAndWishlistCounts,userController.loadHome);
 
@@ -134,10 +135,14 @@ user_route.get('/wishlist',auth.isAdminLogin,auth.isblock,auth.ifNotVerified,aut
 
 user_route.delete('/wishlist/remove/:id',auth.isLogin,wishListController.removeFromWishlist);
 
-user_route.post('/myaccount/return-order/:orderId',auth.isAdminLogin, returnOrder.returnRequest)
+user_route.post('/myaccount/return-order/:orderId',auth.isAdminLogin, auth.isLogin,auth.ifNotVerified, returnOrder.returnRequest)
 
 user_route.get('/myaccount/wallet',auth.isAdminLogin,auth.isLogin,auth.isblock,auth.ifNotVerified,auth.updateCartAndWishlistCounts,walletController.loadWallet)
 
 user_route.get('/search',userController.searchResult) 
+
+user_route.post('/checkout/apply-coupon',auth.isAdminLogin, auth.isLogin,auth.ifNotVerified,couponController.applyCoupon)
+
+user_route.post('/checkout/remove-coupon',auth.isAdminLogin, auth.isLogin,auth.ifNotVerified,couponController.removeCoupon)
 
 module.exports = user_route;

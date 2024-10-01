@@ -231,11 +231,11 @@
                                           <% if (offer.Targets && offer.Targets.length > 0) { %>
                                               <% if (offer.TargetType === 'Product') { %>
                                                   <% offer.Targets.forEach((target, index) => { %>
-                                                      <span><%= index + 1 %>. <%= target.Name %></span><br><br>
+                                                      <span><%= index + 1 %>. <%= target.Name || 'No Name' %></span><br><br>
                                                   <% }) %>
                                               <% } else if (offer.TargetType === 'Category') { %>
                                                   <% offer.Targets.forEach((target, index) => { %>
-                                                      <span><%= index + 1 %>. <%= target.CategoryName %></span><br><br>
+                                                      <span><%= index + 1 %>. <%= target.CategoryName || 'No Name' %></span><br><br>
                                                   <% }) %>
                                               <% } %>
                                           <% } else { %>

@@ -71,16 +71,15 @@ const offerAddLoad = async (req, res) => {
 const addOffer = async (req, res) => {
     try {
         // Extract form data from request body
-        const { title, targetType, discount, startDate, endDate } = req.body;
+        const { title, targetType, discount, startDate, endDate, productIds, categoryIds } = req.body;
         console.log(req.body);
         let targetIds = [];
 
         // Handle product or category selection based on target type
         if (targetType === 'Product') {
-            targetIds = req.body.productIds; // Array of product IDs
+            targetIds = productIds; // Array of product IDs
         } else if (targetType === 'Category') {
-            targetIds = await Product.find({ CategoryId: { $in: req.body.categoryIds } }).select('_id'); // Find all products in the selected categories
-            targetIds = targetIds.map(product => product._id); // Extract product IDs
+            targetIds = categoryIds; // Keep category IDs as targetIds
         }
 
         // Check for existing offer with the same title (case insensitive)
@@ -98,7 +97,7 @@ const addOffer = async (req, res) => {
         const newOffer = new Offer({
             Title: title.trim(),
             TargetType: targetType,
-            TargetId: targetIds,
+            TargetId: targetIds, // This now stores category IDs if TargetType is 'Category'
             DiscountPercentage: discount,
             StartDate: startDate,
             EndDate: endDate
@@ -113,11 +112,25 @@ const addOffer = async (req, res) => {
             DiscountPercentage: discount
         };
 
-        // Update products to include the offer details
-        await Product.updateMany(
-            { _id: { $in: targetIds } },
-            { $push: { Offers: offerUpdate } }
-        );
+        // If TargetType is 'Category', find products in those categories and update them with the offer
+        if (targetType === 'Category') {
+            const productsInCategories = await Product.find({ CategoryId: { $in: categoryIds } });
+            const productIdsInCategories = productsInCategories.map(product => product._id);
+            
+            // Update products to include the offer details
+            await Product.updateMany(
+                { _id: { $in: productIdsInCategories } },
+                { $push: { Offers: offerUpdate } }
+            );
+        }
+
+        // If TargetType is 'Product', update those products directly
+        if (targetType === 'Product') {
+            await Product.updateMany(
+                { _id: { $in: targetIds } },
+                { $push: { Offers: offerUpdate } }
+            );
+        }
 
         // Redirect to offers page with success message
         const successRedirectUrl = `/admin/offers?success=Offer added successfully.`;
@@ -202,6 +215,17 @@ const editOffer = async (req, res) => {
             return res.redirect(`/admin/offers/edit/${offerId}?error=${encodeURIComponent(errorMessage)}`);
         }
 
+        // Check if offer with the same title (case-insensitive) already exists, excluding the current offer being edited
+        const existingOfferWithSameTitle = await Offer.findOne({
+            _id: { $ne: offerId }, // Exclude the current offer being edited
+            Title: { $regex: new RegExp(`^${title.trim()}$`, 'i') } // Case-insensitive match
+        });
+
+        // If an offer with the same title exists, redirect with an error message
+        if (existingOfferWithSameTitle) {
+            return res.redirect(`/admin/offers/edit/${offerId}?error=Offer with the same title already exists.`);
+        }
+
         // Find the existing offer by ID
         const existingOffer = await Offer.findById(offerId);
 
@@ -212,27 +236,60 @@ const editOffer = async (req, res) => {
 
         // Handle product or category selection based on target type
         let targetIds = [];
-        
+
         // If the target type is Product, get the product IDs from the request
         if (targetType === 'Product') {
             targetIds = req.body.productIds; // Array of product IDs
-        } else if (targetType === 'Category') {
-            // Find all products in the selected categories
-            targetIds = await Product.find({ CategoryId: { $in: req.body.categoryIds } }).select('_id');
-            targetIds = targetIds.map(product => product._id); // Extract product IDs
-        }
 
-        // Remove previous offers from the products previously targeted
-        await Product.updateMany(
-            { _id: { $in: existingOffer.TargetId } },
-            { $pull: { Offers: { OfferId: existingOffer._id } } }
-        );
+            // Remove previous offers from the products previously targeted
+            await Product.updateMany(
+                { _id: { $in: existingOffer.TargetId } },
+                { $pull: { Offers: { OfferId: existingOffer._id } } }
+            );
+
+            // Add the updated offer details to the selected products
+            const offerUpdate = {
+                OfferId: offerId,
+                DiscountPercentage: discount
+            };
+
+            // Update products to include the new offer details
+            await Product.updateMany(
+                { _id: { $in: targetIds } },
+                { $push: { Offers: offerUpdate } }
+            );
+        } else if (targetType === 'Category') {
+            // If target type is Category, save the CategoryId in the Offer collection
+            targetIds = req.body.categoryIds; // Array of category IDs
+
+            // Find all products in the selected categories
+            const productsInCategory = await Product.find({ CategoryId: { $in: targetIds } }).select('_id');
+            const productIdsInCategory = productsInCategory.map(product => product._id);
+
+            // Remove previous offers from the products in those categories
+            await Product.updateMany(
+                { _id: { $in: existingOffer.TargetId } },
+                { $pull: { Offers: { OfferId: existingOffer._id } } }
+            );
+
+            // Add the updated offer details to the products in the selected categories
+            const offerUpdate = {
+                OfferId: offerId,
+                DiscountPercentage: discount
+            };
+
+            // Update products in the selected categories with the new offer details
+            await Product.updateMany(
+                { _id: { $in: productIdsInCategory } },
+                { $push: { Offers: offerUpdate } }
+            );
+        }
 
         // Create a new offer object with updated values
         const updatedOffer = {
             Title: title.trim(),
             TargetType: targetType,
-            TargetId: targetIds,
+            TargetId: targetType === 'Product' ? targetIds : req.body.categoryIds, // Save CategoryId if targetType is Category
             DiscountPercentage: discount,
             StartDate: startDate,
             EndDate: endDate
@@ -240,18 +297,6 @@ const editOffer = async (req, res) => {
 
         // Update the offer in the database
         await Offer.findByIdAndUpdate(offerId, updatedOffer);
-
-        // Add the updated offer details to the selected products
-        const offerUpdate = {
-            OfferId: offerId,
-            DiscountPercentage: discount
-        };
-
-        // Update products to include the new offer details
-        await Product.updateMany(
-            { _id: { $in: targetIds } },
-            { $push: { Offers: offerUpdate } }
-        );
 
         // Redirect to offers page with success message
         const successRedirectUrl = `/admin/offers?success=Offer updated successfully.`;

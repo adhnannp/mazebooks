@@ -132,6 +132,54 @@ const editCoupon = async (req, res) => {
   }
 };
 
+const applyCoupon = async (req, res) => {
+    const { couponCode, cartTotal } = req.body; // Get coupon code and user info from request body
+    const userId = req.session.user_id;
+    try {
+        // Find the coupon
+        const coupon = await Coupon.findOne({ CouponCode: couponCode, IsActive: true });
+        const currentDate = new Date();
+        
+        if (!coupon || coupon.StartDate > currentDate || coupon.EndDate < currentDate) {
+            return res.status(400).json({ message: 'Invalid coupon' });
+        }
+
+        // Check if the user has already used the coupon
+        if (coupon.UsedBy.includes(userId)) {
+            return res.status(400).json({ message: 'Coupon has already been used by this user' });
+        }
+
+        // Calculate discount
+        const discountAmount = (cartTotal * coupon.DiscountPercentage) / 100;
+        const totalDiscountedPrice = cartTotal - discountAmount;
+
+        // Send back the updated total price
+        res.json({ totalPrice: totalDiscountedPrice.toFixed(2), message: 'Coupon applied successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'An error occurred while applying the coupon' });
+    }
+};
+
+const removeCoupon = async (req, res) => {
+    const { couponCode,cartTotal } = req.body;
+
+    try {
+        const coupon = await Coupon.findOne({ CouponCode: couponCode });
+
+        if (!coupon) {
+            return res.status(404).json({ message: 'Coupon not found' });
+        }
+        
+        // Calculate the new cart total without the discount
+        const totalPrice = cartTotal; /* Your logic to calculate the price without the coupon discount */;
+
+        res.json({ message: 'Coupon removed successfully', totalPrice });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
 
 module.exports = {
     couponLoad,
@@ -139,4 +187,6 @@ module.exports = {
     activateCoupon,
     deactivateCoupon,
     editCoupon,
+    applyCoupon,
+    removeCoupon,
 }

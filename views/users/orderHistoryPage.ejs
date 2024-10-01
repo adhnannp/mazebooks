@@ -225,7 +225,7 @@
                                             <th>Image</th>
                                             <th>Name</th>
                                             <th>Quantity</th>
-                                            <th>Price</th>
+                                            <th>Total</th>
                                             <% if (order.Status !== 'Placed' && order.Status !== 'Cancelled'&& order.ReturnRequest.status !== 'Returned' && order.ReturnRequest.status !== 'Rejected' ) { %>
                                                 <th>Payment Status</th>
                                                 <th>Action</th>
@@ -269,9 +269,7 @@
                                                 <% }) %>
                                             </td>
                                             <td>
-                                                <% order.Products.forEach(item => { %>
-                                                    <p style="margin-bottom: 5px;">₹ <%= (item.Quantity * item.ProductId.Price).toFixed(2) %></p>
-                                                <% }) %>
+                                                <p style="margin-bottom: 5px;">₹ <%= order.TotalPrice.toFixed(2) %></p>
                                             </td>
                                 
                                             <!-- Payment Status -->

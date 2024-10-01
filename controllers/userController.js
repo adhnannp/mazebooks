@@ -11,7 +11,18 @@ const Cart = require("../models/cartModel");
 const Order = require("../models/orderModel");
 const Wishlist = require("../models/wishlistModel");
 const Wallet = require("../models/walletModel");
+const Offer = require("../models/offerModel")
 
+
+const getValidOffers = async () => {
+    const currentDate = new Date(); // Get the current date
+
+    return await Offer.find({
+        IsActive: true,
+        StartDate: { $lte: currentDate }, // Offer has started
+        EndDate: { $gt: currentDate } // Offer has not ended
+    }).select('_id Title DiscountPercentage TargetId TargetType'); // Select relevant fields
+};
 //registration
 
 // Email configuration (update with your SMTP settings)
@@ -57,24 +68,36 @@ const loadHome = async (req, res) => {
             }
         }
 
-        // Calculate discounted prices
-        const productsWithDiscounts = products.map(product => {
-            let discountPrice = product.Price; // Start with the original price
-        
-            // Check if there are any offers associated with the product
-            if (product.Offers.length > 0) {
-                // Get the highest discount percentage from all offers
-                const discountPercentages = product.Offers.map(offer => offer.DiscountPercentage || 0); // Extract percentages
-                const maxDiscountPercentage = Math.max(...discountPercentages); // Find the maximum percentage
-        
-                discountPrice = product.Price - (product.Price * maxDiscountPercentage / 100); // Calculate discounted price
-            }
-        
-            return {
-                ...product.toObject(), // Convert to plain object
-                DiscountPrice: discountPrice // Add the discount price
-            };
-        });
+         // Fetch valid offers
+         const validOffers = await getValidOffers();
+
+         // Calculate discounted prices and include valid offers
+         const productsWithDiscounts = products.map(product => {
+             let discountPrice = product.Price; // Start with the original price
+             let applicableOffers = []; // Array to hold applicable offers
+ 
+             // Check for valid offers associated with the product
+             if (product.Offers.length > 0) {
+                 // Filter offers to find those that are applicable to this product
+                 applicableOffers = validOffers.filter(offer => 
+                     product.Offers.some(prodOffer => prodOffer.OfferId.toString() === offer._id.toString())
+                 );
+ 
+                 // If there are applicable offers, calculate the highest discount percentage
+                 if (applicableOffers.length > 0) {
+                     const discountPercentages = applicableOffers.map(offer => offer.DiscountPercentage || 0);
+                     const maxDiscountPercentage = Math.max(...discountPercentages); // Find the maximum percentage
+ 
+                     discountPrice = product.Price - (product.Price * maxDiscountPercentage / 100); // Calculate discounted price
+                 }
+             }
+ 
+             return {
+                 ...product.toObject(), // Convert to plain object
+                 DiscountPrice: discountPrice, // Add the discount price
+                 ValidOffers: applicableOffers // Include the valid offers in the product object
+             };
+         });
 
         // Render the products or send them as a response
         res.render("home", {
@@ -165,21 +188,33 @@ const loadShop = async (req, res) => {
             }
         }
 
+         const validOffers = await getValidOffers()
+
+        // Calculate discounted prices and include valid offers
         const productsWithDiscounts = products.map(product => {
             let discountPrice = product.Price; // Start with the original price
-        
-            // Check if there are any offers associated with the product
+            let applicableOffers = []; // Array to hold applicable offers
+
+            // Check for valid offers associated with the product
             if (product.Offers.length > 0) {
-                // Get the highest discount percentage from all offers
-                const discountPercentages = product.Offers.map(offer => offer.DiscountPercentage || 0); // Extract percentages
-                const maxDiscountPercentage = Math.max(...discountPercentages); // Find the maximum percentage
-        
-                discountPrice = product.Price - (product.Price * maxDiscountPercentage / 100); // Calculate discounted price
+                // Filter offers to find those that are applicable to this product
+                applicableOffers = validOffers.filter(offer => 
+                    product.Offers.some(prodOffer => prodOffer.OfferId.toString() === offer._id.toString())
+                );
+
+                // If there are applicable offers, calculate the highest discount percentage
+                if (applicableOffers.length > 0) {
+                    const discountPercentages = applicableOffers.map(offer => offer.DiscountPercentage || 0);
+                    const maxDiscountPercentage = Math.max(...discountPercentages); // Find the maximum percentage
+
+                    discountPrice = product.Price - (product.Price * maxDiscountPercentage / 100); // Calculate discounted price
+                }
             }
-        
+
             return {
                 ...product.toObject(), // Convert to plain object
-                DiscountPrice: discountPrice // Add the discount price
+                DiscountPrice: discountPrice, // Add the discount price
+                ValidOffers: applicableOffers // Include the valid offers in the product object
             };
         });
 
@@ -596,41 +631,64 @@ const userLogout = async(req,res)=>{
 const listProduct = async (req, res) => {
     try {
         const productId = req.params.id;
-        const product = await Product.findById(productId).populate('CategoryId'); // Populate the Category details
+        
+        // Fetch the product with populated category
+        const product = await Product.findById(productId).populate('CategoryId');
+
+        // Fetch valid offers
+        const validOffers = await getValidOffers();
 
         // Calculate the discount price
         let discountPrice = product.Price; // Start with the original price
+        let applicableOffers = []; // Array to hold applicable offers
 
         // Check if there are any offers associated with the product
         if (product.Offers && product.Offers.length > 0) {
-            // Get the highest discount percentage from all offers
-            const discountPercentages = product.Offers.map(offer => offer.DiscountPercentage || 0); // Extract percentages
-            const maxDiscountPercentage = Math.max(...discountPercentages); // Find the maximum percentage
+            // Filter offers to find those that are applicable to this product
+            applicableOffers = validOffers.filter(offer => 
+                product.Offers.some(prodOffer => prodOffer.OfferId.toString() === offer._id.toString())
+            );
 
-            discountPrice = product.Price - (product.Price * maxDiscountPercentage / 100); // Calculate discounted price
+            // If there are applicable offers, calculate the highest discount percentage
+            if (applicableOffers.length > 0) {
+                const discountPercentages = applicableOffers.map(offer => offer.DiscountPercentage || 0); // Extract percentages
+                const maxDiscountPercentage = Math.max(...discountPercentages); // Find the maximum percentage
+
+                discountPrice = product.Price - (product.Price * maxDiscountPercentage / 100); // Calculate discounted price
+            }
         }
 
-        const isLoggedIn = req.session && req.session.user_id; // Check if user is logged in
+        // Check if user is logged in
+        const isLoggedIn = req.session && req.session.user_id;
 
+        // Fetch user's wishlist if logged in
         let wishlistItems = [];
-        if (req.session.user_id) {
+        if (isLoggedIn) {
             const wishlist = await Wishlist.findOne({ UserId: req.session.user_id }).select('Products.ProductId');
             if (wishlist) {
                 wishlistItems = wishlist.Products.map(item => item.ProductId.toString());
             }
         }
 
+        // Prepare the product details to render
+        const productDetails = {
+            ...product.toObject(), // Convert to plain object
+            DiscountPrice: discountPrice, // Add the discount price
+            ValidOffers: applicableOffers // Include the valid offers in the product object
+        };
+
+        // Render the product overview with the relevant details
         res.render('productOverView', { 
-            book: { ...product.toObject(), DiscountPrice: discountPrice }, // Add the DiscountPrice to the book object
+            book: productDetails, // Pass the single product object
             isLoggedIn,
             cartItemCount: req.session.cartItemCount,
             wishlistItemCount: req.session.wishlistItemCount,
             wishlistItems,
             user: req.session.user_id
-         });
+        });
     } catch (error) {
-        console.log(error.message); // Corrected from 'error.massage' to 'error.message'
-        res.redirect('/home');
+        console.log(error.message); // Log error message
+        res.redirect('/home'); // Redirect to home on error
     }
 }
 
@@ -1038,15 +1096,15 @@ const loadCart = async (req, res) => {
         if (!cart) {
             return res.render('cartPage', {
                 user: req.session.user_id,
-                cartItems: [], // Pass an empty cartItems array
-                cartTotal: 0, // Set total to 0 if no cart found
+                cartItems: [],
+                cartTotal: 0,
                 cartItemCount: req.session.cartItemCount,
                 wishlistItemCount: req.session.wishlistItemCount,
             });
         }
 
-        // Flag to check if the cart needs updating
-        let cartUpdated = false;
+        // Fetch valid offers
+        const validOffers = await getValidOffers();
 
         // Filter out products that are valid (product and category must both be listed)
         const validCartProducts = cart.Products.filter(product => {
@@ -1054,26 +1112,32 @@ const loadCart = async (req, res) => {
                 product.ProductId && // Ensure the product exists
                 product.ProductId.CategoryId // Ensure the product's category exists
             ) {
-                // Adjust quantity if the cart quantity exceeds product stock
-                if (product.Quantity > product.ProductId.Quantity) {
-                    product.Quantity = product.ProductId.Quantity;
-                    cartUpdated = true; // Mark that cart was updated
-                }
                 return true;
             }
-            // If the product is not valid, it will be removed from the cart
-            cartUpdated = true;
             return false;
         });
 
-        // Update cart in database if there were changes
-        if (cartUpdated) {
-            cart.Products = validCartProducts;
-            await cart.save();
-        }
+        // Calculate the effective price for each product based on the valid offers
+        validCartProducts.forEach(product => {
+            const applicableOffers = validOffers.filter(offer =>
+                product.ProductId.Offers.some(productOffer =>
+                    productOffer.OfferId.equals(offer._id)
+                )
+            );
 
-        // Calculate cart subtotal based on the valid products
-        const cartSubtotal = validCartProducts.reduce((total, item) => total + (item.Quantity * item.Price), 0);
+            // Apply the largest discount if applicable
+            if (applicableOffers.length > 0) {
+                const maxDiscount = Math.max(...applicableOffers.map(offer => offer.DiscountPercentage));
+                product.effectivePrice = product.ProductId.Price - (product.ProductId.Price * (maxDiscount / 100));
+            } else {
+                product.effectivePrice = product.ProductId.Price; // No discount, original price
+            }
+        });
+
+        // Calculate cart subtotal based on the effective prices
+        const cartSubtotal = validCartProducts.reduce((total, item) => {
+            return total + (item.Quantity * item.effectivePrice);
+        }, 0);
 
         // Calculate shipping cost (free if subtotal > 499, otherwise 50)
         const shippingCost = cartSubtotal > 499 ? 0 : 50;
@@ -1083,9 +1147,9 @@ const loadCart = async (req, res) => {
 
         // Render the cart page with necessary data
         res.render('cartPage', {
-            user: req.session.user_id, // Pass the user session
-            cartItems: validCartProducts, // Pass the valid cart items
-            cartTotal: cartTotal, // Pass the cart total with shipping
+            user: req.session.user_id,
+            cartItems: validCartProducts,
+            cartTotal: cartTotal,
             cartSubtotal,
             cartItemCount: req.session.cartItemCount,
             wishlistItemCount: req.session.wishlistItemCount,
@@ -1110,38 +1174,21 @@ const updateCart = async (req, res) => {
             // Remove any invalid products with null ProductId references
             cart.Products = cart.Products.filter(p => p.ProductId);
 
-            // Find the product in the cart and update the quantity
+            // Find the product in the cart
             const product = cart.Products.find(p => p.ProductId && p.ProductId._id.toString() === productId);
 
             if (product) {
                 product.Quantity = parseInt(quantity); // Update the quantity
 
-                // Calculate the updated total price for this product
-                const updatedProductPrice = product.Quantity * product.ProductId.Price;
-
                 await cart.save(); // Save the updated cart
-
-                // Recalculate the subtotal of the cart
-                let newSubtotal = 0;
-                cart.Products.forEach(p => {
-                    newSubtotal += p.Quantity * p.ProductId.Price;
-                });
-
-                // Check for eligibility for Cash on Delivery
-                const isEligibleForCOD = newSubtotal > 499;
-                const newTotal = isEligibleForCOD ? newSubtotal : newSubtotal + 50;
                 
-                //update cart in session
+                // Update cart in session
                 const updatedCart = await Cart.findOne({ UserId: userId });
                 const cartItemCount = updatedCart ? updatedCart.Products.length : 0;
                 req.session.cartItemCount = cartItemCount;
 
                 res.json({
                     success: true,
-                    updatedProductPrice,
-                    newSubtotal,
-                    newTotal,
-                    isEligibleForCOD,
                 });
             } else {
                 res.json({ success: false, message: "Product not found in cart" });
@@ -1167,15 +1214,13 @@ const removeFromCart = async (req, res) => {
             { $pull: { Products: { ProductId: productId } } }
         );
 
-        // Calculate the new cart total
+        // Fetch the updated cart to calculate the new total
         const cart = await Cart.findOne({ UserId: userId });
-        const newCartTotal = cart.Products.reduce((total, item) => total + (item.Price * item.Quantity
-        ), 0);
 
         const cartItemCount = cart ? cart.Products.length : 0;
-        req.session.cartItemCount=cartItemCount;
+        req.session.cartItemCount = cartItemCount;
 
-        res.json({ success: true, newCartTotal });
+        res.json({ success: true });
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false });

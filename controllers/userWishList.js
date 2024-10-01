@@ -4,7 +4,18 @@ const Product = require("../models/productModel");
 const Category = require("../models/categoryModel");
 const Wishlist = require("../models/wishlistModel");
 const Cart = require("../models/cartModel");
+const Offer = require("../models/offerModel")
 
+
+const getValidOffers = async () => {
+    const currentDate = new Date(); // Get the current date
+
+    return await Offer.find({
+        IsActive: true,
+        StartDate: { $lte: currentDate }, // Offer has started
+        EndDate: { $gt: currentDate } // Offer has not ended
+    }).select('_id Title DiscountPercentage TargetId TargetType'); // Select relevant fields
+};
 //add product to whishList
 const toggleWishlist = async (req, res) => {
     try {
@@ -109,10 +120,35 @@ const loadWishlist = async (req, res) => {
         // Extract product IDs from the cart
         const cartProductIds = cart ? cart.Products.map(item => item.ProductId._id.toString()) : [];
 
+        // Calculate discounted prices and include valid offers for the wishlist items
+        const validOffers = await getValidOffers();
+        const validOfferIds = new Set(validOffers.map(offer => offer._id.toString()));
+
+        // Calculate discounted prices and include valid offers for the wishlist items
+        const wishlistItemsWithDiscounts = validWishlistProducts.map(product => {
+            const offers = product.ProductId.Offers || [];
+            const productOffers = offers.filter(offer => validOfferIds.has(offer.OfferId.toString())); // Filter valid offers
+            
+            // If there are valid offers for the product, calculate the discount price
+            let maxDiscountPercentage = 0;
+
+            if (productOffers.length > 0) {
+                maxDiscountPercentage = Math.max(...productOffers.map(offer => offer.DiscountPercentage || 0));
+            }
+
+            const discountPrice = product.ProductId.Price - (product.ProductId.Price * (maxDiscountPercentage / 100));
+
+            return {
+                ...product.ProductId.toObject(), // Convert to plain object
+                DiscountPrice: discountPrice, // Add the discount price
+                ValidOffers: productOffers // Include valid offers in the product object
+            };
+        });
+        console.log(wishlistItemsWithDiscounts)
         // Render the wishlist page with necessary data
         res.render('wishlistPage', {
             user: req.session.user_id, // Pass the user session
-            wishlistItems: validWishlistProducts, // Pass the valid wishlist items
+            wishlistItems: wishlistItemsWithDiscounts, // Pass the valid wishlist items with discounts
             cartProducts: cartProductIds, // Pass cart product IDs to compare
             cartItemCount: req.session.cartItemCount,
             wishlistItemCount: req.session.wishlistItemCount,

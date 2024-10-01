@@ -238,13 +238,16 @@
                                 <span class="sold-out-message">Sold Out</span>
                             <% } %>
                         </div>
-                        <a href="/home/product/<%= item.ProductId._id%>">
+                        <a href="/home/product/<%= item.ProductId._id %>">
                             <img src="/static/uploads/<%= item.ProductId.Images[0] %>" alt="<%= item.ProductId.Name %>" class="product-image">
                         </a>
                         <div class="product-details">
                             <div class="product-name"><a href="/home/product/<%= item.ProductId._id%>" style="text-decoration: none; color: inherit; font-size: inherit;" ><%= item.ProductId.Name %></a></div>
                             <% if (item.ProductId.Quantity > 0) { %>
                                 <div class="product-price">₹ <%= item.Price.toFixed(2) %></div>
+                                <% if(item.Price.toFixed(2) > item.effectivePrice.toFixed(2) ) { %>
+                                    <div class="product-price">offer: ₹ <%= item.effectivePrice.toFixed(2) %></div>
+                                <%}%>   
                                 <div class="product-quantity">
                                     <label for="quantity-<%= item.ProductId._id %>">Quantity:</label>
                                     <select id="quantity-<%= item.ProductId._id %>" name="quantity" onchange="updateCart('<%= item.ProductId._id %>')">
@@ -257,7 +260,7 @@
                                     <% } %>
                                 </div>
                                 <div class="product-total" id="total-price-<%= item.ProductId._id %>">
-                                    Total: ₹ <%= (item.Quantity * item.ProductId.Price).toFixed(2) %>
+                                    Total: ₹ <%= (item.Quantity * item.effectivePrice).toFixed(2) %>
                                 </div>
                             <% } else { %>
                                 <div class="product-price">₹ <%= item.Price.toFixed(2) %></div><br>
@@ -319,150 +322,118 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz4fnFO9Dcsf54Xr1JPrT9bqU4ZJhPt6yU4EMCqiljW00P17JdG3BOWtFz" crossorigin="anonymous"></script>
 <script>
-let productIdToDelete = null;
-
-function openDeleteModal(productId) {
-    productIdToDelete = productId; // Store the product ID to delete
-    const modal = document.getElementById('deleteConfirmationModal');
-    modal.style.display = 'block';
-}
-
-// Close the modal
-const closeModal = document.querySelector('.close');
-closeModal.onclick = function() {
-    document.getElementById('deleteConfirmationModal').style.display = 'none';
-};
-
-// Cancel button event
-document.getElementById('cancelDelete').onclick = function() {
-    document.getElementById('deleteConfirmationModal').style.display = 'none';
-};
-
-// Confirm delete button event
-document.getElementById('confirmDelete').onclick = function() {
-    removeFromCart(productIdToDelete); // Call your removeFromCart function
-    document.getElementById('deleteConfirmationModal').style.display = 'none'; // Close the modal
-};
-
-// Close the modal if user clicks outside of the modal content
-window.onclick = function(event) {
-    const modal = document.getElementById('deleteConfirmationModal');
-    if (event.target == modal) {
-        modal.style.display = 'none';
-    }
-};
-
-//update cart not delete
-function updateCart(productId) {
-    const quantity = document.getElementById(`quantity-${productId}`).value;
-
-    // Make an AJAX request to update the cart
-    fetch('/cart/update-cart', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            productId: productId,
-            quantity: quantity
-        }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Dynamically update the UI without reloading the page
-            const productRow = document.getElementById(`product-row-${productId}`);
-            const totalElement = document.getElementById(`total-price-${productId}`);
-
-            // Update the product's total price (single price * quantity)
-            const updatedTotalPrice = data.updatedProductPrice.toFixed(2);
-            totalElement.textContent = `Total: ₹ ${updatedTotalPrice}`;
-
-            // Update the cart's subtotal
-            document.getElementById('cart-subtotal').textContent = `${data.newSubtotal.toFixed(2)}`;
-
-            // Update the total price including shipping
-            if (data.newSubtotal.toFixed(2)>5000){
-                document.getElementById('shipping-message').textContent = "Cash on delivery is unavailable for bulk orders. Please use online payment.";
-                document.getElementById('cart-total').textContent = `${data.newTotal.toFixed(2)}`;
-            }else if (data.isEligibleForCOD) {
-                document.getElementById('shipping-message').textContent = "Free Shipping, Eligible For COD";
-                document.getElementById('cart-total').textContent = `${data.newTotal.toFixed(2)}`;
-            } else {
-                document.getElementById('shipping-message').textContent = "₹ 50 cash on delivery fee applied";
-                document.getElementById('cart-total').textContent = `${data.newTotal.toFixed(2)}`;
+        let productIdToDelete = null;
+        
+        function openDeleteModal(productId) {
+            productIdToDelete = productId; // Store the product ID to delete
+            const modal = document.getElementById('deleteConfirmationModal');
+            modal.style.display = 'block';
+        };
+        
+        // Close the modal
+        const closeModal = document.querySelector('.close');
+        closeModal.onclick = function() {
+            document.getElementById('deleteConfirmationModal').style.display = 'none';
+        };
+        
+        // Cancel button event
+        document.getElementById('cancelDelete').onclick = function() {
+            document.getElementById('deleteConfirmationModal').style.display = 'none';
+        };
+        
+        // Confirm delete button event
+        document.getElementById('confirmDelete').onclick = function() {
+            removeFromCart(productIdToDelete); // Call your removeFromCart function
+            document.getElementById('deleteConfirmationModal').style.display = 'none'; // Close the modal
+        };
+        
+        // Close the modal if user clicks outside of the modal content
+        window.onclick = function(event) {
+            const modal = document.getElementById('deleteConfirmationModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
             }
+        };
+        
+        function updateCart(productId) {
+            const quantity = document.getElementById(`quantity-${productId}`).value;
 
-        } else {
-            console.error("Failed to update the cart");
+            // Make an AJAX request to update the cart
+            fetch('/cart/update-cart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    productId: productId,
+                    quantity: quantity
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    console.error("Failed to update the cart");
+                }
+            })
+            .catch(error => {
+                console.error("Error updating cart:", error);
+            });
         }
-    })
-    .catch(error => {
-        console.error("Error updating cart:", error);
-    });
-}
-
-function removeFromCart(productId) {
-    // Send AJAX request to the server to remove the item from the cart
-    fetch(`/cart/remove/${productId}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Remove the item from the cart in the frontend
-            document.querySelector(`#product-card-${productId}`).remove();
-            // Update the cart totals
-            updateCartTotals(data.newCartTotal);
-            window.location.reload();
-        } else {
-            alert('Error removing item from cart.');
-        }
-    })
-    .catch(error => console.error('Error:', error));
-}    
-
-function updateCartTotals(newTotal) {
-    document.getElementById('cart-subtotal').innerText = newTotal.toFixed(2);
-    document.getElementById('cart-total').innerText = (newTotal > 499 ? newTotal : newTotal + 50).toFixed(2);
-}
-
-//select cart products 
-
-let selectedProducts = [];
-
-// Function to toggle product selection
-function toggleProductSelection(productId) {
-    const checkbox = document.getElementById('checkbox-' + productId);
-    if (checkbox.checked) {
-        selectedProducts.push(productId);
-    } else {
-        selectedProducts = selectedProducts.filter(id => id !== productId);
-    }
-}
-
-// Function to proceed to checkout
-function proceedToCheckout() {
-    const selectedItemsInput = document.getElementById('selected-items');
-    const errorMessage = document.getElementById('error-message');
-    
-    if (selectedProducts.length === 0) {
-        // Show error message if no products are selected
-        errorMessage.style.display = 'block';
-    } else {
-        // Hide error message if products are selected
-        errorMessage.style.display = 'none';
-
-        // Pass selected products' IDs to hidden input field
-        selectedItemsInput.value = selectedProducts.join(',');
-
-        // Submit the form
-        document.getElementById('checkout-form').submit();
-    }
-}
+        
+        function removeFromCart(productId) {
+            // Send AJAX request to the server to remove the item from the cart
+            fetch(`/cart/remove/${productId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error removing item from cart.');
+                }
+            })
+            .catch(error => console.error('Error:', error)); // Add error handling for the removeFromCart function
+        };
+        
+        // Select cart products 
+        
+        let selectedProducts = [];
+        
+        // Function to toggle product selection
+        function toggleProductSelection(productId) {
+            const checkbox = document.getElementById('checkbox-' + productId);
+            if (checkbox.checked) {
+                selectedProducts.push(productId);
+            } else {
+                selectedProducts = selectedProducts.filter(id => id !== productId);
+            }
+        };
+        
+        // Function to proceed to checkout
+        function proceedToCheckout() {
+            const selectedItemsInput = document.getElementById('selected-items');
+            const errorMessage = document.getElementById('error-message');
+            
+            if (selectedProducts.length === 0) {
+                // Show error message if no products are selected
+                errorMessage.style.display = 'block';
+            } else {
+                // Hide error message if products are selected
+                errorMessage.style.display = 'none';
+        
+                // Pass selected products' IDs to hidden input field
+                selectedItemsInput.value = selectedProducts.join(',');
+        
+                // Submit the form
+                document.getElementById('checkout-form').submit();
+            }
+        };
 </script>
 <script>
     document.getElementById('search-input').addEventListener('input', function () {
@@ -529,5 +500,6 @@ document.addEventListener('click', function (e) {
     }
 });
 </script>
+
 </body>
 </html>

@@ -8,64 +8,136 @@ const Address = require("../models/addressModel");
 const Cart = require("../models/cartModel");
 const Order = require("../models/orderModel");
 const Wallet = require("../models/walletModel");
+const Offer = require("../models/offerModel")
+const Coupon = require("../models/coupenModel")
 
+
+const getValidOffers = async () => {
+    const currentDate = new Date(); // Get the current date
+
+    return await Offer.find({
+        IsActive: true,
+        StartDate: { $lte: currentDate }, // Offer has started
+        EndDate: { $gt: currentDate } // Offer has not ended
+    }).select('_id Title DiscountPercentage TargetId TargetType'); // Select relevant fields
+}
+
+const getValidCoupons = async (userId) => {
+    const currentDate = new Date(); // Get the current date
+    return await Coupon.find({
+        IsActive: true,
+        StartDate: { $lte: currentDate }, // Offer has started
+        EndDate: { $gt: currentDate }, // Offer has not ended
+        UsedBy: { $ne: userId } // Exclude coupons already used by the current user
+    }).select('_id CouponCode DiscountPercentage MaxAmount'); // Select relevant fields
+}
 
 
 
 const loadCheckout = async (req, res) => {
     try {
-        // Fetch all addresses and cart information from the database
-        const userId = req.session.user_id
-        const addresses = await Address.find({ UserId: req.session.user_id }).exec();
-        const cart = await Cart.findOne({ UserId: req.session.user_id })
+        const userId = req.session.user_id;
+
+        // Validate userId
+        if (!userId) {
+            return res.status(400).send('User ID not found in session');
+        }
+
+        // Retrieve addresses associated with the user
+        const addresses = await Address.find({ UserId: userId }).exec();
+
+        // Parse selected items from the request body
+        const selectedItems = req.body.selectedItems
+            ? req.body.selectedItems.split(',').map(id => id.trim()).filter(Boolean)
+            : [];
+
+        // Retrieve the user's cart with populated product details
+        const cart = await Cart.findOne({ UserId: userId })
             .populate('Products.ProductId') // Populate ProductId
             .exec();
 
-        // Get selected product IDs from the form submission
-        const selectedItems = req.body.selectedItems.split(',').map(id => id.trim()).filter(Boolean);
+        // Check if cart exists
+        if (!cart) {
+            return res.status(404).send('Cart not found');
+        }
 
-        // Convert selected items to ObjectId
+        // Map selected items to ObjectId
         const selectedObjectIds = selectedItems.map(id => new mongoose.Types.ObjectId(id));
 
         // Filter cart products based on selected product IDs
-        const selectedProducts = cart.Products.filter(product => {
-            const productId = product.ProductId ? product.ProductId._id : null;
-            return productId && selectedObjectIds.some(selectedId => selectedId.equals(productId));
+        const selectedProducts = cart.Products.filter(item =>
+            selectedObjectIds.some(selectedId => selectedId.equals(item.ProductId._id))
+        );
+
+        // Get valid offers
+        const validOffers = await getValidOffers();
+
+        let cartSubtotal = 0;
+        let actualPriceTotal = 0;
+        const updatedProducts = selectedProducts.map(item => {
+            let itemPrice = item.ProductId.Price; // Access price from ProductId
+
+            // Check for applicable offers
+            const applicableOffers = validOffers.filter(offer =>
+                item.ProductId.Offers && item.ProductId.Offers.some(productOffer =>
+                    productOffer.OfferId && productOffer.OfferId.equals(offer._id)
+                )
+            );
+
+            // Calculate price after applicable offers
+            if (applicableOffers.length > 0) {
+                const maxDiscount = Math.max(...applicableOffers.map(offer => offer.DiscountPercentage));
+                itemPrice -= (itemPrice * maxDiscount / 100);
+            }
+
+            const itemTotalPrice = itemPrice * item.Quantity;
+            cartSubtotal += itemTotalPrice;
+
+             // Calculate the actual price total (without discount)
+            actualPriceTotal += item.ProductId.Price * item.Quantity; // Sum up actual prices
+            return {
+                ...item.toObject(), // Convert to plain object if needed
+                Price: itemPrice // Keep price fixed to 2 decimal places
+            };
         });
 
-        // Calculate subtotal and total for selected products
-        const cartSubtotal = selectedProducts.reduce((total, item) => total + (item.Price * item.Quantity), 0);
-        const shippingCost = cartSubtotal > 499 ? 0 : 50; // Adjust shipping cost based on total
+        // Calculate shipping cost
+        const shippingCost = cartSubtotal > 499 ? 0 : 50;
         const cartTotal = cartSubtotal + shippingCost;
 
-        // Prepare addresses for rendering
-        const userAddresses = addresses.map(address => ({
-            FullName: address.FullName,
-            MobileNo: address.MobileNo,
-            Address: address.Address,
-            Landmark: address.Landmark,
-            Pincode: address.Pincode,
-            FlatNo: address.FlatNo,
-            State: address.State,
-            District: address.District,
-            City: address.City,
-            Country: address.Country,
-            AddressType: address.AddressType
+        // Format addresses for rendering
+        const userAddresses = addresses.map(({ FullName, MobileNo, Address, Landmark, Pincode, FlatNo, State, District, City, Country, AddressType }) => ({
+            FullName,
+            MobileNo,
+            Address,
+            Landmark,
+            Pincode,
+            FlatNo,
+            State,
+            District,
+            City,
+            Country,
+            AddressType
         }));
+        
+        const validCoupons = await getValidCoupons(req.session.user_id);
 
-        // Render the checkout page with all necessary data
+        // Render the checkout page
         res.render('checkoutPage', {
             addresses: userAddresses,
-            cartItems: selectedProducts,
-            cartSubtotal,  // Pass subtotal (products only)
-            cartTotal, // Pass total (with shipping)
-            userId
+            cartItems: updatedProducts,
+            cartSubtotal: cartSubtotal, // Ensure subtotal is fixed to 2 decimal places
+            cartTotal: cartTotal, // Ensure total is fixed to 2 decimal places
+            userId,
+            actualPriceTotal,
+            validCoupons,
         });
     } catch (error) {
-        console.error(error);
+        console.error("Error in loadCheckout:", error);
         res.status(500).send('Internal Server Error');
     }
 };
+
 
 const razorpay = new Razorpay({
     key_id: process.env.YOUR_RAZORPAY_KEY_ID,
@@ -75,9 +147,10 @@ const razorpay = new Razorpay({
 
 const placeOrder = async (req, res) => {
     try {
-        const { paymentMethod, Products, TotalPrice, Address } = req.body;
+        const { paymentMethod, Products, TotalPrice, Address, actualTotalPrice, appliedCouponCode, priceWithoutDedection } = req.body;
+        console.log(req.body);
         const userId = req.session.user_id; // Assuming user ID is stored in session
-        console.log('Incoming Products:', paymentMethod, Products, TotalPrice, Address);
+        console.log('Incoming Products:', paymentMethod, Products, TotalPrice, Address, priceWithoutDedection);
 
         // If payment method is Online Payment, create a Razorpay order
         let razorpayOrderId = null;
@@ -102,6 +175,9 @@ const placeOrder = async (req, res) => {
                     Quantity: item.Quantity
                 })), // Use converted ObjectId array
                 TotalPrice: parseFloat(TotalPrice),
+                ActualTotalPrice: parseFloat(actualTotalPrice),
+                AppliedCoupon: appliedCouponCode ? appliedCouponCode:null,
+                PriceWithoutDedection: priceWithoutDedection,
                 Address: {
                     FullName: Address.FullName,
                     Address: Address.Address,
@@ -120,6 +196,15 @@ const placeOrder = async (req, res) => {
 
             // Save the new order
             await newOrder.save();
+
+            // Check and update the coupon usage if an applied coupon code is present
+            if (appliedCouponCode) {
+                const coupon = await Coupon.findOne({ CouponCode: appliedCouponCode });
+                if (coupon) {
+                    coupon.UsedBy.push(userId); // Add the user ID to the UsedBy array
+                    await coupon.save(); // Save the updated coupon
+                }
+            }
 
             // Update product quantities and remove items from cart
             for (const item of Products) {
@@ -154,6 +239,9 @@ const placeOrder = async (req, res) => {
                 Quantity: item.Quantity
             })), // Use converted ObjectId array
             TotalPrice: parseFloat(TotalPrice),
+            ActualTotalPrice: parseFloat(actualTotalPrice),
+            AppliedCoupon: appliedCouponCode?appliedCouponCode:null,
+            PriceWithoutDedection:priceWithoutDedection,
             Address: {
                 FullName: Address.FullName,
                 Address: Address.Address,
@@ -171,6 +259,15 @@ const placeOrder = async (req, res) => {
 
         // Save the new order
         await newOrder.save();
+
+        // Check and update the coupon usage if an applied coupon code is present
+        if (appliedCouponCode) {
+            const coupon = await Coupon.findOne({ CouponCode: appliedCouponCode });
+            if (coupon) {
+                coupon.UsedBy.push(userId); // Add the user ID to the UsedBy array
+                await coupon.save(); // Save the updated coupon
+            }
+        }
 
         // Update product quantities and remove items from cart
         for (const item of Products) {
@@ -193,6 +290,7 @@ const placeOrder = async (req, res) => {
         res.status(500).json({ message: 'Error placing order', error: error.message });
     }
 };
+
 
 //order success page
 const successPage = async (req, res) => {

@@ -7,7 +7,7 @@ const auth = require("../middleware/adminAuth");
 
 admin_route.use(bodyParser.json());
 admin_route.use(bodyParser.urlencoded({ extended: true }));
-
+ 
 admin_route.set('view engine', 'ejs');
 admin_route.set('views', path.join(__dirname, '../views/admin')); 
 
@@ -16,13 +16,14 @@ const adminController = require('../controllers/adminController');
 const returnOrder = require('../controllers/returnOrderController');
 const couponController = require('../controllers/couponController');
 const offerController = require('../controllers/offerController');
+const dashboardController = require('../controllers/dashboardController');
 
 // routes
 admin_route.get('/', auth.isUserLogin, auth.isLogout, adminController.loadLogin);
 
 admin_route.post('/', adminController.varifyLogin);
 
-admin_route.get('/home', auth.isLogin, adminController.loadAdminHome);
+admin_route.get('/home', auth.isLogin, dashboardController.loadAdminHome);
 
 admin_route.get('/users', auth.isLogin, adminController.adminUsers);
 
@@ -87,6 +88,11 @@ admin_route.post('/offers/deactivate/:id',offerController.deactivateOffer)
 admin_route.get('/offers/edit/:id',auth.isLogin,offerController.editOfferLoad)
 
 admin_route.post('/offers/edit/:id',offerController.editOffer)
+
+admin_route.get('/home/excel',auth.isLogin,dashboardController.generateExcel);
+
+admin_route.get('/home/pdf',auth.isLogin,dashboardController.generatePdf);
+
 
 admin_route.get('*', function (req, res) {
     res.render('error-404');

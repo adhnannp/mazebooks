@@ -156,7 +156,7 @@
             <ul class="navbar-nav w-100 d-flex justify-content-between">
               <!-- Logout Button on the Left -->
               <li class="nav-item">
-                <button class="btn btn-primary">Generate Sales Report</button>
+                
               </li>
             
               <!-- Generate Sales Report Button on the Right -->
@@ -174,10 +174,110 @@
         <!-- partial -->
         <div class="main-panel">
           <div class="content-wrapper">
-            <% if (admin) { %>
-              <h5><%= admin.FirstName + ' ' + admin.LastName %></h5>
-            <% } %>
-            <p>Your additional text goes here...</p>
+            <div class="row">
+              <div class="col-lg-6 grid-margin stretch-card">
+                <div class="card">
+                  <div class="card-body">
+                    <h4 class="card-title">Growth</h4>
+                    <canvas id="lineChart" style="height:250px"></canvas>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-6 grid-margin stretch-card">
+                <div class="card">
+                  <div class="card-body">
+                    <h4 class="card-title">Best Sellers</h4>
+                    <canvas id="barChart" style="height:230px"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-lg-6 grid-margin stretch-card">
+                <div class="card">
+                  <div class="card-body">
+                    <h4 class="card-title">Best Genre</h4>
+                    <canvas id="pieChart" style="height:250px"></canvas>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-6 grid-margin stretch-card">
+                <div class="card">
+                  <div class="card-body">
+                    <h4 class="card-title">Highest Return</h4>
+                    <canvas id="doughnutChart" style="height:250px"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-lg-12 grid-margin stretch-card">
+                  <div class="card">
+                      <div class="card-body">
+                          <h4 class="card-title">Sales Report</h4>
+                          <form method="GET" action="/admin/home">
+                              <div class="row">
+                                  <div class="col-md-4">
+                                      <select name="sortOption" class="form-control" id="sortOption">
+                                          <option value="daily" <%= sortOption === 'daily' ? 'selected' : '' %>>Daily</option>
+                                          <option value="weekly" <%= sortOption === 'weekly' ? 'selected' : '' %>>Weekly</option>
+                                          <option value="monthly" <%= sortOption === 'monthly' ? 'selected' : '' %>>Monthly</option>
+                                          <option value="yearly" <%= sortOption === 'yearly' ? 'selected' : '' %>>Yearly</option>
+                                          <option value="custom" <%= sortOption === 'custom' ? 'selected' : '' %>>Custom Date</option>
+                                      </select>
+                                  </div>
+                                  <div class="col-md-4" id="customDateFields" style="display: <%= sortOption === 'custom' ? 'block' : 'none' %>;">
+                                      <input type="date" name="startDate" class="form-control" id="startDate" placeholder="Start Date" value="<%= startDateValue %>">
+                                      <input type="date" name="endDate" class="form-control" id="endDate" placeholder="End Date" value="<%= endDateValue %>">
+                                  </div>
+                                  <div class="col-md-4">
+                                      <button type="submit" class="btn btn-primary">Filter</button>
+                                  </div>
+                              </div>
+                          </form>
+                          <div class="d-flex justify-content-end mt-3">
+                              <a href="/admin/home/pdf?sortOption=<%= sortOption %>&startDate=<%= startDateValue %>&endDate=<%= endDateValue %>" class="btn btn-danger mr-2">PDF</a>
+                              <a href="/admin/home/excel?sortOption=<%= sortOption %>&startDate=<%= startDateValue %>&endDate=<%= endDateValue %>" class="btn btn-success">Excel</a>
+                          </div>
+                          <div class="table-responsive mt-4">
+                              <table class="table">
+                                  <thead>
+                                      <tr>
+                                          <th>Order ID</th>
+                                          <th>Billing Name</th>
+                                          <th>Date</th>
+                                          <th>Coupon Deduction</th>
+                                          <th>Offer Deduction</th>
+                                          <th>Total</th>
+                                          <th>Payment Method</th>
+                                      </tr>
+                                  </thead>
+                                  <tbody>
+                                      <% orders.forEach(order => { %>
+                                          <tr>
+                                              <td><%= order.OrderId %></td>
+                                              <td><%= order.BillingName %></td>
+                                              <td><%= new Date(order.PlacedAt).toLocaleDateString() %></td>
+                                              <td>
+                                                  <%= order.CouponDeduction ? order.CouponDeduction.toFixed(2) : '0.00' %>
+                                              </td>
+                                              <td><%= order.OfferDeduction.toFixed(2) %></td>
+                                              <td><%= order.FinalPrice.toFixed(2) %></td>
+                                              <td><%= order.PaymentMethod %></td>
+                                          </tr>
+                                      <% }); %>
+                                  </tbody>
+                              </table>
+                          </div>
+                          <div class="mt-4">
+                              <h5>Overall Sales Count: <%= salesData.totalOrders || 0 %></h5>
+                              <h5>Overall Amount: <%= (salesData.totalSales ? salesData.totalSales.toFixed(2) : '0.00') %></h5>
+                              <h5>Overall Discount: <%= (salesData.totalDiscounts ? salesData.totalDiscounts.toFixed(2) : '0.00') %></h5>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+            </div>
           </div>
         </div>
         <!-- main-panel ends -->
@@ -188,8 +288,39 @@
     <!-- plugins:js -->
     <script src="/static/admin/vendors/js/vendor.bundle.base.js"></script>
     <!-- endinject -->
+    <script>
+      document.querySelector('select[name="sortOption"]').addEventListener('change', function() {
+          const customFields = document.getElementById('customDateFields');
+          customFields.style.display = this.value === 'custom' ? 'block' : 'none';
+      });
+  </script>
+ <script>
+  document.addEventListener('DOMContentLoaded', function() {
+      const sortOption = document.getElementById('sortOption');
+      const customDateFields = document.getElementById('customDateFields');
+      const startDateInput = document.getElementById('startDate');
+      const endDateInput = document.getElementById('endDate');
+
+      // Function to toggle the custom date fields
+      const toggleCustomDateFields = () => {
+          if (sortOption.value === 'custom') {
+              customDateFields.style.display = 'block';
+          } else {
+              customDateFields.style.display = 'none';
+              // Clear the dates if not custom
+              startDateInput.value = '';
+              endDateInput.value = '';
+          }
+      };
+
+      // Add event listener for change event on the select element
+      sortOption.addEventListener('change', toggleCustomDateFields);
+
+      // Call the function once on page load to set the initial state
+      toggleCustomDateFields();
+  });
+</script>
     <!-- Plugin js for this page -->
-    <script src="/static/admin/vendors/chart.js/Chart.min.js"></script>
     <script src="/static/admin/vendors/progressbar.js/progressbar.min.js"></script>
     <script src="/static/admin/vendors/jvectormap/jquery-jvectormap.min.js"></script>
     <script src="/static/admin/vendors/jvectormap/jquery-jvectormap-world-mill-en.js"></script>
@@ -204,6 +335,103 @@
     <!-- endinject -->
     <!-- Custom js for this page -->
     <script src="/static/admin/js/dashboard.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Initialize Line Chart
+    const lineCtx = document.getElementById('lineChart').getContext('2d');
+    const lineChart = new Chart(lineCtx, {
+        type: 'line',
+        data: {
+            labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+            datasets: [{
+                label: 'Growth',
+                data: [65, 59, 80, 81, 56, 55, 40],
+                fill: false,
+                borderColor: 'rgba(75, 192, 192, 1)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Initialize Bar Chart
+    const barCtx = document.getElementById('barChart').getContext('2d');
+    const barChart = new Chart(barCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+            datasets: [{
+                label: '# of Votes',
+                data: [12, 19, 3, 5, 2, 3],
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Initialize Pie Chart
+    const pieCtx = document.getElementById('pieChart').getContext('2d');
+    const pieChart = new Chart(pieCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Red', 'Blue', 'Yellow'],
+            datasets: [{
+                label: 'My First Dataset',
+                data: [300, 50, 100],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)'
+                ],
+                borderWidth: 1
+            }]
+        }
+    });
+
+    // Initialize Doughnut Chart
+    const doughnutCtx = document.getElementById('doughnutChart').getContext('2d');
+    const doughnutChart = new Chart(doughnutCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Red', 'Blue', 'Yellow'],
+            datasets: [{
+                label: 'My Second Dataset',
+                data: [300, 50, 100],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)'
+                ],
+                borderWidth: 1
+            }]
+        }
+    });
+</script>
     <!-- End custom js for this page -->
   </body>
 </html>

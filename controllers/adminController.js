@@ -45,15 +45,6 @@ const varifyLogin = async(req,res)=>{
     }
 }
 
-const loadAdminHome = async(req,res)=>{
-    try {
-        const userData = await User.findById({_id:req.session.user_id});
-        res.render('index',{admin:userData})
-    } catch (error) {
-        console.log(error.message);
-    }
-}
-
 const logout = async(req,res)=>{
     try {
         req.session.destroy();
@@ -70,7 +61,7 @@ const adminUsers = async (req, res) => {
         const admin = await User.findById(req.session.user_id);
         const query = req.query.query || '';
         const currentPage = parseInt(req.query.page) || 1;
-        const itemsPerPage = 5;
+        const itemsPerPage = 10;
         
         let usersData, totalUsers;
 
@@ -151,7 +142,7 @@ const productsLoad = async (req, res) => {
         
         // Get current page, default to 1
         const currentPage = parseInt(req.query.page) || 1;
-        const itemsPerPage = 5; // Number of items per page
+        const itemsPerPage = 10; // Number of items per page
 
         // Fetch the search query
         const query = req.query.query ? req.query.query.trim() : '';
@@ -377,7 +368,7 @@ const categoriesLoad = async (req, res) => {
 
         // Pagination variables
         const currentPage = parseInt(req.query.page) || 1; // Get current page, default to 1
-        const itemsPerPage = 5; // Number of items per page
+        const itemsPerPage = 10; // Number of items per page
 
         // Fetch the search query
         const query = req.query.query ? req.query.query.trim() : '';
@@ -638,7 +629,6 @@ const statusChangeOrder = async (req,res)=>{
 module.exports = {
     loadLogin,
     varifyLogin,
-    loadAdminHome,
     logout,
     adminUsers,
     unblockUser,

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coza Store Checkout</title>
+    <title>MAZE BOOKS</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
         <!-- jQuery -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -208,6 +208,54 @@
             font-size: 12px; /* Smaller font size */
             margin-top: 5px; /* Space above the error message */
         }
+        .coupon-section {
+    position: relative; /* Make the section relative for absolute positioning of tooltip */
+}
+
+.coupons-link {
+    text-decoration: underline;
+    cursor: pointer;
+    color: #007BFF; /* Bootstrap primary color */
+    margin-right: 10px;
+}
+
+.coupon-tooltip {
+    position: absolute;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 10px;
+    z-index: 1000;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Adding a shadow for depth */
+    border-radius: 5px; /* Rounded corners */
+}
+
+.coupon-code {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.coupon-details {
+    margin-left: 10px;
+    font-size: 0.9em; /* Smaller text for details */
+    color: #666; /* Lighter color for details */
+}
+
+.copy-icon {
+    margin-left: 5px;
+    cursor: pointer;
+    color: #4F2F2D; /* Bootstrap primary color for the icon */
+}
+.coupon-code.disabled {
+    color: #ccc; /* Greyed out text */
+    cursor: not-allowed; /* Indicate it’s not clickable */
+    text-decoration: line-through; /* Optional: strike-through text */
+}
+
+.copy-icon.disabled {
+    color: #ccc; /* Greyed out icon */
+    pointer-events: none; /* Prevent click event */
+}
     </style>
 </head>
 <body>
@@ -373,11 +421,49 @@
                     <div class="total-row">
                         <strong>Total</strong>
                         <strong>₹ <span id="cart-total"><%= cartTotal.toFixed(2) %></span></strong>
+                        <input type="hidden" id="the-actual-cart-total" value="<%= cartTotal.toFixed(2) %>">
                     </div>
+                    <!-- Tooltip Container for Valid Coupons -->
+                     <!-- Tooltip Container for Valid Coupons -->
+                     <div class="coupon-tooltip" style="display:none;">
+                        <h4>Coupons</h4>
+                        <ul id="coupon-list">
+                            <% if (validCoupons.length < 1) { %>
+                                <span class="coupon-code"> 
+                                    No Coupon Available
+                                </span>
+                            <% } else { %>    
+                                <% validCoupons.forEach(coupon => { %>
+                                    <li>
+                                        <span class="coupon-code <%= cartTotal < coupon.MaxAmount ? 'disabled' : '' %>" 
+                                            data-clipboard-text="<%= coupon.CouponCode %>">
+                                            <%= coupon.CouponCode %>
+                                            <span class="coupon-details">
+                                                (Min Purchase: <%= coupon.MaxAmount %>)
+                                                (<%= coupon.DiscountPercentage%>% off)
+                                            </span>&nbsp;
+                                            <i class="fas fa-copy copy-icon <%= cartTotal < coupon.MaxAmount ? 'disabled' : '' %>" 
+                                                onclick="copyToClipboard('<%= coupon.CouponCode %>')" aria-hidden="true"></i>
+                                        </span>
+                                    </li>
+                                <% }) %>
+                            <% } %>
+                        </ul>
+                    </div>
+                    
                     <div class="coupon-section">
+                        <!-- Coupons Link -->
+                        <span class="coupons-link" id="coupons-link">Coupons</span>
+                    
                         <input type="text" class="coupon-input" placeholder="Enter coupon code">
                         <button class="button secondary-btn">Apply Coupon</button>
+                    
+                        <!-- This will hold the Remove Coupon button and X cross mark -->
+                        <div class="remove-coupon-section" style="display:none;">
+                            <button class="button remove-coupon-btn remove-coupon-cross"></button>
+                        </div>
                     </div>
+            
                     <a href="/cart" style="text-decoration: none;"><button class="button secondary-btn">Update Cart</button></a>
                     <!-- Form to Place Order -->
                     <form id="checkout-form" action="/place-order" method="POST">
@@ -392,6 +478,9 @@
                     
                         <!-- Total Price -->
                         <input type="hidden" name="TotalPrice" value="<%= cartTotal.toFixed(2) %>">
+                        <input type="hidden" name="appliedCouponCode" Value="" id="appliedCoupon">
+                        <input type="hidden" name="actualTotalPrice" value="<%= cartTotal.toFixed(2) %>">
+                        <input type="hidden" name="priceWithoutDedection" value="<%= actualPriceTotal.toFixed(2) %>">
                     
                         <!-- Address Fields -->
                         <input type="hidden" name="Address[FullName]" value="">
@@ -418,9 +507,174 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-
-<script>
+    <script>
+        const couponTooltip = document.querySelector('.coupon-tooltip');
+        const couponsLink = document.getElementById('coupons-link');
+        const applyCouponButton = document.querySelector('.secondary-btn');
+        const couponInput = document.querySelector('.coupon-input');
+        const cartTotalElement = document.getElementById('cart-total');
+        const theActualCartTotal = document.getElementById('the-actual-cart-total').value;
+        const totalPriceInput = document.querySelector('input[name="TotalPrice"]');
+        const removeCouponSection = document.querySelector('.remove-coupon-section');
+        const removeCouponButton = document.querySelector('.remove-coupon-btn');
+        const removeCouponCross = document.querySelector('.remove-coupon-cross');
     
+        // Show the tooltip when clicking the Coupons link
+        couponsLink.addEventListener('click', () => {
+            couponTooltip.style.display = couponTooltip.style.display === 'block' ? 'none' : 'block';
+        });
+    
+        // Hide tooltip when clicking outside
+        document.addEventListener('click', (event) => {
+            if (!event.target.closest('.coupon-section')) {
+                couponTooltip.style.display = 'none';
+            }
+        });
+    
+        // Function to copy coupon code to clipboard
+        function copyToClipboard(couponCode) {
+            navigator.clipboard.writeText(couponCode).then(() => {
+                Swal.fire({
+                    text: 'Coupon copied to clipboard!',
+                    icon: 'success',
+                    timer: 3000, // Auto close after 3 seconds
+                    showConfirmButton: false,
+                    position: 'top', // Position at the top
+                    toast: true, // Make it small and non-intrusive
+                    customClass: {
+                        popup: 'small-swal' // Custom class for styling
+                    }
+                });
+            }).catch(err => {
+                Swal.fire({
+                    text: 'Could not copy text',
+                    icon: 'error',
+                    timer: 3000,
+                    showConfirmButton: false,
+                    position: 'top',
+                    toast: true,
+                    customClass: {
+                        popup: 'small-swal'
+                    }
+                });
+            });
+        }
+    
+        // Apply coupon functionality
+        applyCouponButton.addEventListener('click', async () => {
+            const couponCode = couponInput.value;
+    
+            // Make an API call to apply the coupon
+            const response = await fetch('/checkout/apply-coupon', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    couponCode,
+                    cartTotal: parseFloat(theActualCartTotal),
+                }),
+            });
+    
+            const data = await response.json();
+    
+            if (response.ok) {
+                // Hide the input and "Apply" button, show "Remove" button instead
+                applyCouponButton.style.display = 'none';
+                couponInput.style.display = 'none';
+                document.getElementById("appliedCoupon").value=couponCode;
+    
+                // Set the Remove button and X mark
+                removeCouponButton.innerText = `X  Remove ${couponCode}`;
+                removeCouponSection.style.display = 'block';
+                removeCouponButton.style.color = 'red'; // Set text color to red
+    
+                // Update the total price displayed
+                cartTotalElement.innerText = data.totalPrice;
+                totalPriceInput.value = data.totalPrice; // Update hidden input value
+    
+                Swal.fire({
+                    text: data.message,
+                    icon: 'success',
+                    timer: 3000,
+                    showConfirmButton: false,
+                    position: 'top',
+                    toast: true,
+                    customClass: {
+                        popup: 'small-swal'
+                    }
+                });
+            } else {
+                Swal.fire({
+                    text: data.message,
+                    icon: 'error',
+                    timer: 3000,
+                    showConfirmButton: false,
+                    position: 'top',
+                    toast: true,
+                    customClass: {
+                        popup: 'small-swal'
+                    }
+                });
+            }
+        });
+    
+        // Remove coupon functionality
+        removeCouponCross.addEventListener('click', async () => {
+            const couponCode = couponInput.value;
+    
+            // Make an API call to remove the coupon
+            const response = await fetch('/checkout/remove-coupon', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    couponCode,
+                    cartTotal: theActualCartTotal
+                }),
+            });
+    
+            const data = await response.json();
+    
+            if (response.ok) {
+                // Revert the UI back to original state
+                removeCouponSection.style.display = 'none';
+                applyCouponButton.style.display = 'inline-block';
+                couponInput.style.display = 'inline-block';
+                couponInput.value = ''; // Clear the input field
+                document.getElementById("appliedCoupon").value=''
+                // Update the total price displayed after removing the coupon
+                cartTotalElement.innerText = data.totalPrice;
+                totalPriceInput.value = data.totalPrice;
+    
+                Swal.fire({
+                    text: data.message,
+                    icon: 'success',
+                    timer: 3000,
+                    showConfirmButton: false,
+                    position: 'top',
+                    toast: true,
+                    customClass: {
+                        popup: 'small-swal'
+                    }
+                });
+            } else {
+                Swal.fire({
+                    text: data.message,
+                    icon: 'error',
+                    timer: 3000,
+                    showConfirmButton: false,
+                    position: 'top',
+                    toast: true,
+                    customClass: {
+                        popup: 'small-swal'
+                    }
+                });
+            }
+        });
+    </script>  
+<script>
     function handleAddressChange(selectElement) {
     const selectedOption = selectElement.options[selectElement.selectedIndex];
 
@@ -669,6 +923,9 @@ document.getElementById('checkout-form').onsubmit = async function (e) {
                     };
                 }),
                 TotalPrice: document.querySelector('input[name="TotalPrice"]').value,
+                appliedCouponCode: document.getElementById("appliedCoupon").value,
+                actualTotalPrice: document.querySelector('input[name="actualTotalPrice"]').value,
+                priceWithoutDedection: document.querySelector('input[name="priceWithoutDedection"]').value,
                 Address: {
                     FullName: document.querySelector('input[name="Address[FullName]"]').value,
                     Address: document.querySelector('input[name="Address[Address]"]').value,
