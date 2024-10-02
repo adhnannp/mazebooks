@@ -819,6 +819,19 @@ $(document).ready(function () {
 });
 
 // Function to validate address selection
+const regexPatterns = {
+    fullName: /^[A-Za-z]{1,}[A-Za-z\s]{0,}$/,   // Full name should have at least one letter
+    mobileNo: /^(?!([0-9])\1{9})[6-9][0-9]{9}$/, // Mobile number should start with 6-9 and not have repeated digits
+    address: /^[A-Za-z0-9\s,.-]{5,}$/,          // Address must be at least 5 characters long
+    landmark: /^[A-Za-z0-9\s,.-]{3,}$/,         // Landmark must be at least 3 characters long
+    pincode: /^[0-9]{6}$/,                      // Pincode should be exactly 6 digits
+    flatNo: /^[A-Za-z0-9\s-]{1,}$/,             // Flat number should be at least 1 character
+    district: /^[A-Za-z\s]{2,}$/,               // District must be at least 2 characters
+    state: /^[A-Za-z\s]{2,}$/,                  // State must be at least 2 characters
+    country: /^[A-Za-z\s]{2,}$/,                // Country must be at least 2 characters
+    city: /^[A-Za-z\s]{2,}$/                    // City must be at least 2 characters
+};
+
 function validateAddressSelection() {
     const fullName = document.querySelector('input[name="Address[FullName]"]').value;
     const address = document.querySelector('input[name="Address[Address]"]').value;
@@ -837,6 +850,69 @@ function validateAddressSelection() {
         });
         return false;
     }
+
+    // Validate each field against its regex pattern
+    if (!regexPatterns.fullName.test(fullName)) {
+        Swal.fire({
+            title: 'Invalid Full Name',
+            text: 'Please enter a valid full name.',
+            icon: 'error',
+            confirmButtonText: 'Okay'
+        });
+        return false;
+    }
+
+    if (!regexPatterns.mobileNo.test(mobileNo)) {
+        Swal.fire({
+            title: 'Invalid Mobile Number',
+            text: 'Please enter a valid mobile number.',
+            icon: 'error',
+            confirmButtonText: 'Okay'
+        });
+        return false;
+    }
+
+    if (!regexPatterns.address.test(address)) {
+        Swal.fire({
+            title: 'Invalid Address',
+            text: 'Please enter a valid address with at least 5 characters.',
+            icon: 'error',
+            confirmButtonText: 'Okay'
+        });
+        return false;
+    }
+
+    if (!regexPatterns.pincode.test(pincode)) {
+        Swal.fire({
+            title: 'Invalid Pincode',
+            text: 'Please enter a valid 6-digit pincode.',
+            icon: 'error',
+            confirmButtonText: 'Okay'
+        });
+        return false;
+    }
+
+    if (!regexPatterns.city.test(city)) {
+        Swal.fire({
+            title: 'Invalid City',
+            text: 'Please enter a valid city name.',
+            icon: 'error',
+            confirmButtonText: 'Okay'
+        });
+        return false;
+    }
+
+    if (!regexPatterns.state.test(state)) {
+        Swal.fire({
+            title: 'Invalid State',
+            text: 'Please enter a valid state name.',
+            icon: 'error',
+            confirmButtonText: 'Okay'
+        });
+        return false;
+    }
+
+    // If all validations pass
     return true;
 }
 
@@ -1016,7 +1092,7 @@ function initiateRazorpayPayment(data) {
                             razorpaySignature: response.razorpay_signature
                         })
                     });
-
+                    paymentSuccess = true;
                     const verificationData = await verifyResponse.json();
                     if (verificationData.success) {
                         // Redirect or show success message

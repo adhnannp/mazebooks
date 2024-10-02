@@ -490,36 +490,36 @@ const generatePdf = async (req, res) => {
         size: 'A4',
         margins: { top: 50, bottom: 50, left: 50, right: 50 }
     });
-
+    
     // Set the response headers to download the PDF
     res.setHeader('Content-disposition', 'attachment; filename=sales_report.pdf');
     res.setHeader('Content-type', 'application/pdf');
-
+    
     doc.pipe(res);
-
-    // Add a colored header
+    
+    // Add a colored header (you can keep the background blue, but ensure the text is black)
     doc.rect(0, 0, doc.page.width, 100).fill('#4A90E2');
-    doc.fontSize(28).font('Helvetica-Bold').fillColor('white').text('Sales Report', 50, 40);
-
+    doc.fontSize(28).font('Helvetica-Bold').fillColor('black').text('Sales Report', 50, 40);
+    
     // Add sort option and date range
-    doc.fontSize(12).font('Helvetica').fillColor('white')
+    doc.fontSize(12).font('Helvetica').fillColor('black')
        .text(`Sort Option: ${sortOption.charAt(0).toUpperCase() + sortOption.slice(1)}`, 50, 75);
     if (sortOption === 'custom') {
         doc.text(`Date Range: ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()}`, 50, 90);
     }
-
+    
     // Move to main content area
     doc.moveDown(4);
-
+    
     // Table Header
     const tableHeaders = ['Order ID', 'Billing Name', 'Date', 'Coupon Deduction', 'Offer Deduction', 'Total', 'Payment Method'];
     const tableTop = 150;
     const tableLeft = 50;
     const rowHeight = 30;
     const columnWidth = (doc.page.width - 100) / tableHeaders.length;
-
+    
     // Draw table headers
-    doc.font('Helvetica-Bold').fontSize(10).fillColor('#333333');
+    doc.font('Helvetica-Bold').fontSize(10).fillColor('black');
     tableHeaders.forEach((header, i) => {
         doc.rect(tableLeft + (i * columnWidth), tableTop, columnWidth, rowHeight).fillAndStroke('#E0E0E0', '#CCCCCC');
         doc.text(header, tableLeft + (i * columnWidth) + 5, tableTop + 10, {
@@ -527,13 +527,13 @@ const generatePdf = async (req, res) => {
             align: 'center'
         });
     });
-
+    
     // Draw table rows
-    doc.font('Helvetica').fontSize(9).fillColor('#555555');
+    doc.font('Helvetica').fontSize(9);
     let yPosition = tableTop + rowHeight; // Start below the header
 
     if (orders.length === 0) {
-        doc.text('No orders found for the selected period.', tableLeft, yPosition + 10, {
+        doc.fillColor('black').text('No orders found for the selected period.', tableLeft, yPosition + 10, {
             width: doc.page.width - 100,
             align: 'center'
         });
@@ -548,6 +548,7 @@ const generatePdf = async (req, res) => {
             // Draw cell borders and content
             tableHeaders.forEach((header, i) => {
                 doc.rect(tableLeft + (i * columnWidth), yPosition, columnWidth, rowHeight).stroke('#CCCCCC');
+
                 let value = '';
                 switch (header) {
                     case 'Order ID':
@@ -572,7 +573,9 @@ const generatePdf = async (req, res) => {
                         value = order.PaymentMethod || 'N/A';
                         break;
                 }
-                doc.text(value, tableLeft + (i * columnWidth) + 5, yPosition + 10, {
+
+                // Ensure text color is black for each cell content
+                doc.fillColor('black').text(value, tableLeft + (i * columnWidth) + 5, yPosition + 10, {
                     width: columnWidth - 10,
                     align: 'center'
                 });
@@ -587,26 +590,26 @@ const generatePdf = async (req, res) => {
             }
         });
     }
-
+    
     // Total Summary
     doc.moveDown(2);
-    doc.fontSize(14).font('Helvetica-Bold').fillColor('#4A90E2').text('Summary', { align: 'center' });
-    doc.fontSize(12).font('Helvetica').fillColor('#555555');
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('black').text('Summary', { align: 'center' });
+    doc.fontSize(12).font('Helvetica').fillColor('black');
     doc.text(`Total Orders: ${totalOrders}`, { align: 'center' });
     doc.text(`Total Sales: $${totalSales.toFixed(2)}`, { align: 'center' });
     doc.text(`Total Discounts: $${totalDiscounts.toFixed(2)}`, { align: 'center' });
-
+    
     // Add a footer
     const pageCount = doc.bufferedPageRange().count;
     for (let i = 0; i < pageCount; i++) {
         doc.switchToPage(i);
-        doc.fontSize(8).fillColor('#888888')
+        doc.fontSize(8).fillColor('black')
            .text(`Page ${i + 1} of ${pageCount}`, 
                  50, 
                  doc.page.height - 50, 
                  { align: 'center', width: doc.page.width - 100 });
     }
-
+    
     // Finalize the PDF and end the stream
     doc.end();
 };
