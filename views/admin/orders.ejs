@@ -31,57 +31,18 @@
       <!-- partial:partials/_sidebar.html -->
       <nav class="sidebar sidebar-offcanvas" id="sidebar">
         <div class="sidebar-brand-wrapper d-none d-lg-flex align-items-center justify-content-center fixed-top">
-          <a class="sidebar-brand brand-logo" href="index.html"><img src="/static/admin/images/logo.svg" alt="logo" /></a>
-          <a class="sidebar-brand brand-logo-mini" href="index.html"><img src="/static/admin/images/logo-mini.svg" alt="logo" /></a>
+          <a class="sidebar-brand brand-logo" href="/admin/home" style="text-decoration: none;"><span style="color: white;">MAZE BOOKS</span></a>
+          <a class="sidebar-brand brand-logo-mini" href="/admin/home" style="text-decoration: none;"><span style="color: white;">M</span></a>
         </div>
         <ul class="nav">
           <li class="nav-item profile">
             <div class="profile-desc">
               <div class="profile-pic">
-                <div class="count-indicator">
-                  <img class="img-xs rounded-circle " src="/static/admin/images/faces/face15.jpg" alt="">
-                  <span class="count bg-success"></span>
-                </div>
                 <% if (admin) { %>
                   <div class="profile-name">
-                    <h5 class="mb-0 font-weight-normal"><%= admin.FirstName+' '+admin.LastName %> </h5>
+                    <h5 class="mb-0 font-weight-normal"><span class="text-success">&#9673; </span><%= admin.LastName+' '+admin.FirstName %> </h5>
                   </div>
                 <% } %>
-              </div>
-              <a href="#" id="profile-dropdown" data-toggle="dropdown"><i class="mdi mdi-dots-vertical"></i></a>
-              <div class="dropdown-menu dropdown-menu-right sidebar-dropdown preview-list" aria-labelledby="profile-dropdown">
-                <a href="#" class="dropdown-item preview-item">
-                  <div class="preview-thumbnail">
-                    <div class="preview-icon bg-dark rounded-circle">
-                      <i class="mdi mdi-settings text-primary"></i>
-                    </div>
-                  </div>
-                  <div class="preview-item-content">
-                    <p class="preview-subject ellipsis mb-1 text-small">Account settings</p>
-                  </div>
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item preview-item">
-                  <div class="preview-thumbnail">
-                    <div class="preview-icon bg-dark rounded-circle">
-                      <i class="mdi mdi-onepassword  text-info"></i>
-                    </div>
-                  </div>
-                  <div class="preview-item-content">
-                    <p class="preview-subject ellipsis mb-1 text-small">Change Password</p>
-                  </div>
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item preview-item">
-                  <div class="preview-thumbnail">
-                    <div class="preview-icon bg-dark rounded-circle">
-                      <i class="mdi mdi-calendar-today text-success"></i>
-                    </div>
-                  </div>
-                  <div class="preview-item-content">
-                    <p class="preview-subject ellipsis mb-1 text-small">To-do list</p>
-                  </div>
-                </a>
               </div>
             </div>
           </li>
@@ -160,7 +121,7 @@
             <ul class="navbar-nav w-100 d-flex justify-content-between">
               <!-- Logout Button on the Left -->
               <li class="nav-item">
-                <button class="btn btn-primary">Generate Sales Report</button>
+                <a href="/admin/home#salesReportSection" class="btn btn-primary">Generate Sales Report</a>
               </li>
             
               <!-- Generate Sales Report Button on the Right -->
@@ -207,8 +168,8 @@
                                 <option value="New" <%= filterOption === "New" ? "selected" : "" %>>New Orders</option>
                                 <option value="Pending" <%= filterOption === "Pending" ? "selected" : "" %>>Pending</option>
                                 <option value="Shipped" <%= filterOption === "Shipped" ? "selected" : "" %>>Shipped</option>
-                                <option value="Delivered" <%= filterOption === "Delivered" ? "selected" : "" %>>Delivered</option>
-                                <option value="Placed" <%= filterOption === "Placed" ? "selected" : "" %>>Placed</option>
+                                <option value="Delivered" <%= filterOption === "Delivered" ? "selected" : "" %>>Out for Delivery</option>
+                                <option value="Placed" <%= filterOption === "Placed" ? "selected" : "" %>>Delivered</option>
                                 <option value="Returned" <%= filterOption === "Returned" ? "selected" : "" %>>Returned</option>
                                 <option value="Cancelled" <%= filterOption === "Cancelled" ? "selected" : "" %>>Cancelled</option>
                                 <option value="Requested" <%= filterOption === "Requested" ? "selected" : "" %>>Return Requests</option>
@@ -247,40 +208,40 @@
                                             <td>
                                                 <% if (order.Status === 'Pending') { %>
                                                     <div class="dropdown">
-                                                        <button class="btn btn-warning dropdown-toggle" type="button" id="dropdownMenuButton<%= order._id %>" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                        <button class="btn btn-sm btn-warning dropdown-toggle" type="button" id="dropdownMenuButton<%= order._id %>" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                             <%= order.Status %>
                                                         </button>
                                                         <div class="dropdown-menu" aria-labelledby="dropdownMenuButton<%= order._id %>">
                                                             <a class="dropdown-item" href="#" onclick="openChangeStatusModal('<%= order._id %>', 'Shipped')">Shipped</a>
-                                                            <a class="dropdown-item" href="#" onclick="openChangeStatusModal('<%= order._id %>', 'Delivered')">Delivered</a>
-                                                            <a class="dropdown-item" href="#" onclick="openChangeStatusModal('<%= order._id %>', 'Placed')">Placed</a>
+                                                            <a class="dropdown-item" href="#" onclick="openChangeStatusModal('<%= order._id %>', 'Delivered')">Out For Delivery</a>
+                                                            <a class="dropdown-item" href="#" onclick="openChangeStatusModal('<%= order._id %>', 'Placed')">Delivered</a>
                                                         </div>
                                                     </div>
                                                 <% } else if (order.Status === 'Shipped') { %>
                                                     <div class="dropdown"></div>
-                                                        <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton<%= order._id %>" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                        <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton<%= order._id %>" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                             <%= order.Status %>
                                                         </button>
                                                         <div class="dropdown-menu" aria-labelledby="dropdownMenuButton<%= order._id %>">
-                                                            <a class="dropdown-item" href="#" onclick="openChangeStatusModal('<%= order._id %>', 'Delivered')">Delivered</a>
-                                                            <a class="dropdown-item" href="#" onclick="openChangeStatusModal('<%= order._id %>', 'Placed')">Placed</a>
+                                                            <a class="dropdown-item" href="#" onclick="openChangeStatusModal('<%= order._id %>', 'Delivered')">Out For Delivery</a>
+                                                            <a class="dropdown-item" href="#" onclick="openChangeStatusModal('<%= order._id %>', 'Placed')">Delivered</a>
                                                         </div>
                                                     </div>
                                                 <% } else if (order.Status === 'Delivered') { %>
                                                     <div class="dropdown"></div>
-                                                        <button class="btn btn-info dropdown-toggle" type="button" id="dropdownMenuButton<%= order._id %>" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                                            <%= order.Status %>
+                                                        <button class="btn btn-sm btn-info dropdown-toggle" type="button" id="dropdownMenuButton<%= order._id %>" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                            Out For Delivery
                                                         </button>
                                                         <div class="dropdown-menu" aria-labelledby="dropdownMenuButton<%= order._id %>">
-                                                            <a class="dropdown-item" href="#" onclick="openChangeStatusModal('<%= order._id %>', 'Placed')">Placed</a>
+                                                            <a class="dropdown-item" href="#" onclick="openChangeStatusModal('<%= order._id %>', 'Placed')">Delivered</a>
                                                         </div>
                                                     </div>
                                                 <% } else if (order.Status === 'Placed') { %>
-                                                    <button class="btn btn-success" disabled>Placed</button>
+                                                    <button class="btn btn-sm btn-success" disabled>Delivered</button>
                                                 <% } else if (order.Status === 'Cancelled') { %>
-                                                    <button class="btn btn-danger" disabled>Cancelled</button>
+                                                    <button class="btn btn-sm btn-danger" disabled>Cancelled</button>
                                                 <% } else if (order.Status === 'Returned') { %>
-                                                  <button class="btn btn-danger" disabled>Returned</button>
+                                                  <button class="btn btn-sm btn-danger" disabled>Returned</button>
                                               <% } %>
                                                 
                                                 <!-- Confirmation Modal for Status Change -->

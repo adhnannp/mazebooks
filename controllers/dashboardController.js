@@ -314,21 +314,20 @@ const generateExcel = async (req, res) => {
     });
 
     // Add summary rows
-    worksheet.addRow({});
+    worksheet.addRow({}); // Empty row for spacing
+    worksheet.addRow({OrderId: 'SUMMARY-'}); // Empty row for spacing
+    // Add summary information aligned to the left
     worksheet.addRow({
         OrderId: 'Total Orders:',
         BillingName: totalOrders,
     });
-    worksheet.addRow({});
     worksheet.addRow({
-        PlacedAt: 'Total Sales:',
-        CouponDeduction: totalSales.toFixed(2),
-        
+        OrderId: 'Total Sales:',
+        BillingName: `₹ ${totalSales.toFixed(2)}`,
     });
-    worksheet.addRow({});
     worksheet.addRow({
-        OfferDeduction: 'Total Discounts:',
-        FinalPrice: totalDiscounts.toFixed(2),
+        OrderId: 'Total Discounts:',
+        BillingName: `₹ ${totalDiscounts.toFixed(2)}`,
     });
 
     // Set response headers for Excel file download
@@ -490,46 +489,53 @@ const generatePdf = async (req, res) => {
         size: 'A4',
         margins: { top: 50, bottom: 50, left: 50, right: 50 }
     });
-    
+
     // Set the response headers to download the PDF
     res.setHeader('Content-disposition', 'attachment; filename=sales_report.pdf');
     res.setHeader('Content-type', 'application/pdf');
-    
+
     doc.pipe(res);
-    
+
     // Add a colored header (you can keep the background blue, but ensure the text is black)
     doc.rect(0, 0, doc.page.width, 100).fill('#4A90E2');
     doc.fontSize(28).font('Helvetica-Bold').fillColor('black').text('Sales Report', 50, 40);
-    
+
     // Add sort option and date range
     doc.fontSize(12).font('Helvetica').fillColor('black')
-       .text(`Sort Option: ${sortOption.charAt(0).toUpperCase() + sortOption.slice(1)}`, 50, 75);
+    .text(`Sort Option: ${sortOption.charAt(0).toUpperCase() + sortOption.slice(1)}`, 50, 75);
     if (sortOption === 'custom') {
         doc.text(`Date Range: ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()}`, 50, 90);
     }
-    
+
     // Move to main content area
     doc.moveDown(4);
-    
+
     // Table Header
     const tableHeaders = ['Order ID', 'Billing Name', 'Date', 'Coupon Deduction', 'Offer Deduction', 'Total', 'Payment Method'];
     const tableTop = 150;
-    const tableLeft = 50;
-    const rowHeight = 30;
+    const tableLeft = 55;
+    const rowHeight = 40;
     const columnWidth = (doc.page.width - 100) / tableHeaders.length;
-    
-    // Draw table headers
-    doc.font('Helvetica-Bold').fontSize(10).fillColor('black');
+
+    // Draw table headers (background and border)
     tableHeaders.forEach((header, i) => {
+        // Draw header background and border
         doc.rect(tableLeft + (i * columnWidth), tableTop, columnWidth, rowHeight).fillAndStroke('#E0E0E0', '#CCCCCC');
+    });
+
+    // Set text properties after drawing the table cells
+    doc.font('Helvetica-Bold').fontSize(10).fillColor('black');
+
+    // Add header text
+    tableHeaders.forEach((header, i) => {
         doc.text(header, tableLeft + (i * columnWidth) + 5, tableTop + 10, {
             width: columnWidth - 10,
             align: 'center'
         });
     });
-    
+
     // Draw table rows
-    doc.font('Helvetica').fontSize(9);
+    doc.font('Helvetica').fontSize(9).fillColor('black');
     let yPosition = tableTop + rowHeight; // Start below the header
 
     if (orders.length === 0) {
@@ -590,180 +596,238 @@ const generatePdf = async (req, res) => {
             }
         });
     }
-    
+
     // Total Summary
     doc.moveDown(2);
-    doc.fontSize(14).font('Helvetica-Bold').fillColor('black').text('Summary', { align: 'center' });
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('black').text('Summary', 50);
     doc.fontSize(12).font('Helvetica').fillColor('black');
-    doc.text(`Total Orders: ${totalOrders}`, { align: 'center' });
-    doc.text(`Total Sales: $${totalSales.toFixed(2)}`, { align: 'center' });
-    doc.text(`Total Discounts: $${totalDiscounts.toFixed(2)}`, { align: 'center' });
-    
+    doc.text(`Total Orders: ${totalOrders}`, 50);
+    doc.text(`Total Sales: $${totalSales.toFixed(2)}`, 50);
+    doc.text(`Total Discounts: $${totalDiscounts.toFixed(2)}`, 50);
+
     // Add a footer
     const pageCount = doc.bufferedPageRange().count;
     for (let i = 0; i < pageCount; i++) {
         doc.switchToPage(i);
         doc.fontSize(8).fillColor('black')
-           .text(`Page ${i + 1} of ${pageCount}`, 
-                 50, 
-                 doc.page.height - 50, 
-                 { align: 'center', width: doc.page.width - 100 });
+        .text(`Page ${i + 1} of ${pageCount}`, 
+                50, 
+                doc.page.height - 50, 
+                { align: 'center', width: doc.page.width - 100 });
     }
-    
+
     // Finalize the PDF and end the stream
     doc.end();
 };
 
 
+// Get total sales by month
+const getSalesData = async () => {
+    const salesData = await Order.aggregate([
+        {
+            $group: {
+                _id: { $month: '$createdAt' },
+                totalSales: { $sum: '$TotalPrice' }
+            }
+        },
+        { $sort: { _id: 1 } } // sort by month
+    ]);
 
+    return salesData; // array of total sales per month
+};
+
+const getYearlySalesData = async () => {
+    const yearlySalesData = await Order.aggregate([
+        {
+            $group: {
+                _id: { $year: '$createdAt' },
+                totalSales: { $sum: '$TotalPrice' }
+            }
+        },
+        { $sort: { _id: 1 } } // Sort by year
+    ]);
+
+    return yearlySalesData; // Array of total sales per year
+};
+
+const getWeeklySalesData = async () => {
+    const weeklySalesData = await Order.aggregate([
+        {
+            $group: {
+                _id: { $week: '$createdAt' },
+                totalSales: { $sum: '$TotalPrice' }
+            }
+        },
+        { $sort: { _id: 1 } } // Sort by week
+    ]);
+
+    return weeklySalesData; // Array of total sales per week
+};
+
+const getDailySalesData = async () => {
+    const dailySalesData = await Order.aggregate([
+        {
+            $group: {
+                _id: { $dayOfYear: '$createdAt' }, // Group by day of the year
+                totalSales: { $sum: '$TotalPrice' }
+            }
+        },
+        { $sort: { _id: 1 } } // Sort by day of the year
+    ]);
+
+    return dailySalesData; // Array of total sales per day
+};
+
+// Get top-selling products
+const getTopSellingProducts = async () => {
+    const productData = await Order.aggregate([
+        { $unwind: '$Products' }, // Unwind the Products array to access individual products
+        {
+            $group: {
+                _id: '$Products.ProductId',
+                totalSold: { $sum: '$Products.Quantity' } // Calculate total sold quantity for each product
+            }
+        },
+        {
+            $lookup: {
+                from: 'products', // Reference the products collection
+                localField: '_id', // Match ProductId from Orders
+                foreignField: '_id', // Match with _id field in the products collection
+                as: 'productDetails' // Store product details in a new field
+            }
+        },
+        { $unwind: '$productDetails' }, // Unwind product details to get the product name
+        { $sort: { totalSold: -1 } }, // Sort by most sold products
+        { $limit: 5 }, // Limit to top 5 products
+        {
+            $project: {
+                _id: 0, // Hide the product ID
+                productName: '$productDetails.Name', // Fetch the product name
+                totalSold: 1, // Include totalSold count
+                imageUrl: '$productDetails.Images' // Fetch the product image URL
+            }
+        }
+    ]);
+    return productData; // Returns top 5 products with their names, total sold quantity, and image URL
+};
+
+// Get top-selling categories (genres)
+const getTopCategoriesData = async () => {
+    const categoriesData = await Order.aggregate([
+        { $unwind: '$Products' }, // Unwind products array to access individual products
+        {
+            $lookup: {
+                from: 'products', // Reference the products collection
+                localField: 'Products.ProductId',
+                foreignField: '_id',
+                as: 'productDetails'
+            }
+        },
+        { $unwind: '$productDetails' }, // Unwind the product details
+        {
+            $lookup: {
+                from: 'categories', // Reference the categories collection
+                localField: 'productDetails.CategoryId', // Join based on CategoryId in product details
+                foreignField: '_id',
+                as: 'categoryDetails'
+            }
+        },
+        { $unwind: '$categoryDetails' }, // Unwind the category details to access category name
+        {
+            $group: {
+                _id: '$categoryDetails.CategoryName', // Group by category name
+                totalSold: { $sum: '$Products.Quantity' } // Sum the quantities sold in each category
+            }
+        },
+        { $sort: { totalSold: -1 } }, // Sort by the total number of products sold
+        { $limit: 5 }  
+    ]);
+
+    return categoriesData; // Returns best-selling categories with names and total sold
+};
+
+// Get payment method distribution
+const getPaymentMethodData = async () => {
+    const paymentMethods = await Order.aggregate([
+        {
+            $group: {
+                _id: '$PaymentMethod',
+                count: { $sum: 1 }
+            }
+        }
+    ]);
+
+    return paymentMethods;
+};
+
+// Get return requests status (Top 3 products with highest returns)
+const getReturnRequestData = async () => {
+    const returnRequests = await Order.aggregate([
+        { $unwind: '$Products' }, // Unwind products array to access individual products
+        { $match: { 'ReturnRequest.status': { $ne: null } } }, // Only match orders with return requests
+        {
+            $lookup: {
+                from: 'products', // Join with products collection
+                localField: 'Products.ProductId',
+                foreignField: '_id',
+                as: 'productDetails'
+            }
+        },
+        { $unwind: '$productDetails' }, // Unwind product details to access product name
+        {
+            $group: {
+                _id: '$Products.ProductId',
+                productName: { $first: '$productDetails.Name' }, // Fetch the product name
+                totalReturns: { $sum: 1 } // Sum the return requests
+            }
+        },
+        { $sort: { totalReturns: -1 } }, // Sort by total returns (highest first)
+        { $limit: 3 } // Limit to top 3 returned products
+    ]);
+
+    return returnRequests; // Returns top 3 products with the highest returns
+};
+
+// Controller to get chart data
+const chartData = async (req, res) => {
+    const { timeFrame } = req.query; // Get the time frame from the request query
+    try {
+        let salesData;
+        
+        // Fetch sales data based on the time frame
+        if (timeFrame === 'monthly') {
+            salesData = await getSalesData();
+        } else if (timeFrame === 'yearly') {
+            salesData = await getYearlySalesData();
+        } else if (timeFrame === 'weekly') {
+            salesData = await getWeeklySalesData();
+        } else if (timeFrame === 'daily') { // Handle daily sales data
+            salesData = await getDailySalesData();
+        } else {
+            return res.status(400).json({ error: 'Invalid time frame' });
+        }
+
+        const productData = await getTopSellingProducts();
+        const categoriesData = await getTopCategoriesData();
+        const paymentMethods = await getPaymentMethodData();
+        const returnRequests = await getReturnRequestData();
+
+        res.json({
+            salesData,
+            productData,
+            categoriesData,
+            paymentMethods,
+            returnRequests
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to load data' });
+    }
+};
 
 module.exports={
     loadAdminHome,
     generateExcel,
     generatePdf,
+    chartData,
 }
-
-
-
-// const generateExcel = async (req, res) => {
-//     const { sortOption = "yearly", startDate, endDate } = req.query;
-
-    
-//     const startDateValue = startDate || ''; 
-//     const endDateValue = endDate || ''; 
-
-    
-//     let matchCondition = { Status: "Placed" }; /
-
-    
-//     if (sortOption === 'daily') {
-//         matchCondition.PlacedAt = {
-//             $gte: moment().startOf('day').toDate(),
-//             $lt: moment().endOf('day').toDate()
-//         };
-//     } else if (sortOption === 'weekly') {
-//         matchCondition.PlacedAt = {
-//             $gte: moment().startOf('week').toDate(),
-//             $lt: moment().endOf('week').toDate()
-//         };
-//     } else if (sortOption === 'monthly') {
-//         matchCondition.PlacedAt = {
-//             $gte: moment().startOf('month').toDate(),
-//             $lt: moment().endOf('month').toDate()
-//         };
-//     } else if (sortOption === 'yearly') {
-//         matchCondition.PlacedAt = {
-//             $gte: moment().startOf('year').toDate(),
-//             $lt: moment().endOf('year').toDate()
-//         };
-//     } else if (sortOption === 'custom' && startDate && endDate) {
-//         matchCondition.PlacedAt = {
-//             $gte: new Date(startDate),
-//             $lt: new Date(endDate)
-//         };
-//     }
-
-//     let orders;
-//     try {
-        
-//         orders = await Order.aggregate([
-//             { 
-//                 $match: matchCondition  
-//             },
-//             {
-//                 $lookup: {
-//                     from: "coupons",  
-//                     localField: "AppliedCoupon",
-//                     foreignField: "CouponCode",  
-//                     as: "CouponDetails"
-//                 }
-//             },
-//             {
-//                 $project: {
-//                     OrderId: 1,
-//                     "BillingName": "$Address.FullName",
-//                     PlacedAt: 1,
-//                     AppliedCoupon: 1,
-//                     ActualTotalPrice: 1,  
-//                     TotalPrice: 1,  
-//                     PriceWithoutDedection: 1,  
-//                     PaymentMethod: 1,
-        
-//                     CouponDeduction: {
-//                         $cond: {
-//                             if: { $gt: ["$ActualTotalPrice", "$TotalPrice"] },
-//                             then: { $subtract: ["$ActualTotalPrice", "$TotalPrice"] },
-//                             else: 0
-//                         }
-//                     },
-        
-//                     OfferDeduction: {
-//                         $cond: {
-//                             if: { $gt: ["$PriceWithoutDedection", "$ActualTotalPrice"] },
-//                             then: { $subtract: ["$PriceWithoutDedection", "$ActualTotalPrice"] },
-//                             else: 0
-//                         }
-//                     },
-        
-//                     FinalPrice: {
-//                         $subtract: [
-//                             "$TotalPrice",
-//                             {
-//                                 $add: [
-//                                     {
-//                                         $cond: {
-//                                             if: { $gt: ["$PriceWithoutDedection", "$ActualTotalPrice"] },
-//                                             then: { $subtract: ["$PriceWithoutDedection", "$ActualTotalPrice"] },
-//                                             else: 0
-//                                         }
-//                                     },
-//                                     {
-//                                         $cond: {
-//                                             if: { $gt: ["$ActualTotalPrice", "$TotalPrice"] },
-//                                             then: { $subtract: ["$ActualTotalPrice", "$TotalPrice"] },
-//                                             else: 0
-//                                         }
-//                                     }
-//                                 ]
-//                             }
-//                         ]
-//                     }
-//                 }
-//             }
-//         ]);
-//     } catch (error) {
-//         return res.status(500).send('Error fetching orders');
-//     }
-
-//     const workbook = new ExcelJS.Workbook();
-//     const worksheet = workbook.addWorksheet('Sales Report');
-
-
-//     worksheet.columns = [
-//         { header: 'Order ID', key: 'OrderId', width: 15 },
-//         { header: 'Billing Name', key: 'BillingName', width: 30 },
-//         { header: 'Date', key: 'PlacedAt', width: 15 },
-//         { header: 'Coupon Deduction', key: 'CouponDeduction', width: 20 },
-//         { header: 'Offer Deduction', key: 'OfferDeduction', width: 20 },
-//         { header: 'Total', key: 'FinalPrice', width: 20 },
-//         { header: 'Payment Method', key: 'PaymentMethod', width: 20 },
-//     ];
-
-
-//     orders.forEach(order => {
-//         worksheet.addRow({
-//             OrderId: order.OrderId,
-//             BillingName: order.BillingName,
-//             PlacedAt: new Date(order.PlacedAt).toLocaleDateString(),
-//             CouponDeduction: order.CouponDeduction ? order.CouponDeduction.toFixed(2) : '0.00',
-//             OfferDeduction: order.OfferDeduction.toFixed(2),
-//             FinalPrice: order.FinalPrice.toFixed(2),
-//             PaymentMethod: order.PaymentMethod,
-//         });
-//     });
-//     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-//     res.setHeader('Content-Disposition', 'inline; filename=sales_report.xlsx'); 
-
-//     await workbook.xlsx.write(res);
-//     res.end();
-// };

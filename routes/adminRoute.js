@@ -93,6 +93,7 @@ admin_route.get('/home/excel',auth.isLogin,dashboardController.generateExcel);
 
 admin_route.get('/home/pdf',auth.isLogin,dashboardController.generatePdf);
 
+admin_route.get('/home/dashboard-data',auth.isLogin,dashboardController.chartData)
 
 admin_route.get('*', function (req, res) {
     res.render('error-404');

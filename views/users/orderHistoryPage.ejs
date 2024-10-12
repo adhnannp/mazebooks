@@ -71,57 +71,7 @@
         background-color: #4F2F2D;
         color: white;
     }
-    .order-history {
-        padding: 20px;
-        flex: 1; /* Make main content take the remaining space */
-    }
-    .order-cards {
-        display: flex;
-        flex-direction: column; /* Stack order cards vertically */
-        gap: 20px; /* Space between cards */
-    }
-    .order-card {
-        background-color: #fff;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        padding: 20px;
-        box-sizing: border-box;
-    }
-    .order-header {
-        margin-bottom: 15px;
-    }
-    .order-items-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px; /* Space above the table */
-    }
-    .order-items-table th, .order-items-table td {
-        padding: 10px;
-        text-align: left;
-        border-bottom: 1px solid #ddd; /* Add border for clarity */
-    }
-    .product-image {
-        max-width: 50px; /* Limit the image size */
-        height: auto; /* Keep aspect ratio */
-    }
-    .cancel-order-button {
-        background-color: #ff4d4d;
-        color: #fff;
-        border: none;
-        border-radius: 5px;
-        padding: 10px 15px;
-        cursor: pointer;
-        margin-top: 10px;
-    }
-    .cancel-order-button:hover {
-        background-color: #e60000;
-    }
-    @media (max-width: 600px) {
-        .order-card {
-            width: 100%;
-        }
-    }
+    
     .empty-order-message {
         text-align: center;
         margin: 40px 0;
@@ -178,6 +128,12 @@
     .selected-7{
         color: blue;
     }
+    .order-history{
+        margin-left: 20px;
+    }
+    .account-main-content{
+        width: 75%;
+    }
 </style>
 
 <div class="account-container">
@@ -218,121 +174,211 @@
                     <div class="order-cards">
                         <% orders.forEach(order => { %>
                             <div class="order-card">
-                                <table class="order-items-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Status</th>
-                                            <th>Image</th>
-                                            <th>Name</th>
-                                            <th>Quantity</th>
-                                            <th>Total</th>
-                                            <% if (order.Status !== 'Placed' && order.Status !== 'Cancelled'&& order.ReturnRequest.status !== 'Returned' && order.ReturnRequest.status !== 'Rejected' ) { %>
-                                                <th>Payment Status</th>
-                                                <th>Action</th>
+                                <div class="order-header">
+                                    <div class="status-cell">
+                                        <% if (order.Status === 'Pending') { %>
+                                            <span class="status-indicator pending">&#9673; <%= order.Status %></span>
+                                        <% } else if (order.Status === 'Shipped') { %>
+                                            <span class="status-indicator shipped">&#9673; <%= order.Status %></span>
+                                        <% } else if (order.Status === 'Delivered') { %>
+                                            <span class="status-indicator delivered">&#9673; Out For Delivery</span>
+                                        <% } else if (order.Status === 'Placed') { %>
+                                            <span class="status-indicator placed">&#9673; Delivered</span>
+                                        <% } else if (order.Status === 'Cancelled' || order.Status === 'Returned') { %>
+                                            <span class="status-indicator cancelled">&#9673; <%= order.Status %></span>
+                                        <% } %>
+                                    </div>
+                                    <div class="date-cell">
+                                        <p>Ordered Date: <%= new Date(order.createdAt).toLocaleDateString('en-GB') %></p>
+                                    </div>
+                                </div>
+                                <div class="order-details">
+                                    <% order.Products.forEach(item => { %>
+                                        <div class="order-item">
+                                            <img src="/static/uploads/<%= item.ProductId.Images[0] %>" alt="<%= item.ProductId.Name %>" class="product-image">
+                                            <div class="item-info">
+                                                <p class="item-name"><%= item.ProductId.Name %></p>
+                                                <p class="item-quantity">Quantity: <%= item.Quantity %></p>
+                                            </div>
+                                        </div>
+                                    <% }) %>
+                                    <div class="total-cell">
+                                        <p>Total: ₹ <%= order.TotalPrice.toFixed(2) %></p>
+                                    </div>
+                                </div>
+                                <% if (order.Status !== 'Placed' && order.Status !== 'Cancelled' && order.ReturnRequest.status !== 'Returned' && order.ReturnRequest.status !== 'Rejected') { %>
+                                    <div class="payment-action">
+                                        <div class="payment-status-cell">
+                                            <% if (order.PaymentStatus !== 'Paid' && order.PaymentMethod !== 'Cash On Delivery') { %>
+                                                <form action="/myaccount/retry-payment/<%= order._id %>" method="POST">
+                                                    <span>Payment: <button type="submit" class="btn btn-primary btn-sm">Retry Payment</button></span>
+                                                </form>
+                                            <% } else { %>
+                                                <p>Payment: <%= order.PaymentMethod === 'Cash On Delivery' ? 'Cash On Delivery' : 'Paid' %></p>
                                             <% } %>
-                                            <th>Order Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <!-- Order status -->
-                                            <td>
-                                                <% if (order.Status === 'Pending') { %>
-                                                    <span class="text-warning">&#9673;<%= order.Status %></span>
-                                                <% } else if (order.Status === 'Shipped') { %>
-                                                    <span class="text-secondary">&#9673;<%= order.Status %></span>
-                                                <% } else if (order.Status === 'Delivered') { %>
-                                                    <span class="text-info">&#9673;<%= order.Status %></span>
-                                                <% } else if (order.Status === 'Placed') { %>
-                                                    <span class="text-success">&#9673;<%= order.Status %></span>
-                                                <% } else if (order.Status === 'Cancelled') { %>
-                                                    <span class="text-danger">&#9673;<%= order.Status %></span>
-                                                <% } else if (order.Status === 'Returned') { %>
-                                                    <span class="text-danger">&#9673;<%= order.Status %></span>
-                                                <% } %>
-                                            </td>
-                                
-                                            <!-- Combine product images, names, quantities, and prices into a single row for all products -->
-                                            <td>
-                                                <% order.Products.forEach(item => { %>
-                                                    <img src="/static/uploads/<%= item.ProductId.Images[0] %>" alt="<%= item.ProductId.Name %>" class="product-image" style="display:block; margin-bottom: 5px;">
-                                                <% }) %>
-                                            </td>
-                                            <td>
-                                                <% order.Products.forEach(item => { %>
-                                                    <p style="margin-bottom: 5px;"><%= item.ProductId.Name %></p>
-                                                <% }) %>
-                                            </td>
-                                            <td>
-                                                <% order.Products.forEach(item => { %>
-                                                    <p style="margin-bottom: 5px;"><%= item.Quantity %></p>
-                                                <% }) %>
-                                            </td>
-                                            <td>
-                                                <p style="margin-bottom: 5px;">₹ <%= order.TotalPrice.toFixed(2) %></p>
-                                            </td>
-                                
-                                            <!-- Payment Status -->
-                                            <% if (order.PaymentStatus !== 'Paid' && order.Status !== 'Placed' && order.Status !== 'Cancelled' && order.PaymentMethod !== 'Cash On Delivery') { %>
-                                                <td>
-                                                    <form action="/myaccount/retry-payment/<%= order._id %>" method="POST">
-                                                        <button type="submit" class="btn btn-sm btn-primary">Retry Payment</button>
-                                                    </form>
-                                                </td>
-                                            <% } else if (order.Status !== 'Placed' && order.Status !== 'Cancelled' && order.ReturnRequest.status !== 'Returned' && order.ReturnRequest.status !== 'Rejected' && order.PaymentMethod !== 'Cash On Delivery') { %>
-                                                <td>
-                                                    <p style="margin-bottom: 5px;margin-left: 5px;">Paid</p>
-                                                </td>
-                                            <% } else if (order.Status !== 'Placed' && order.Status !== 'Cancelled' && order.ReturnRequest.status !== 'Returned' && order.ReturnRequest.status !== 'Rejected' && order.PaymentMethod == 'Cash On Delivery') { %>
-                                                <td>
-                                                    <p style="margin-bottom: 5px;margin-left: 5px;">COD</p>
-                                                </td>
-                                            <% } %>
-                                
-                                            <!-- Cancel button for the entire order -->
-                                            <% if (order.Status !== 'Placed' && order.Status !== 'Cancelled' && order.ReturnRequest.status !== 'Returned' && order.ReturnRequest.status !== 'Rejected' ) { %>
-                                                <td>
-                                                    <form action="/myaccount/cancel-order/<%= order._id %>" method="POST" class="cancel-order-form">
-                                                        <button type="button" class=" btn btn-sm btn-danger" onclick="openConfirmModal(this)">Cancel Order</button>
-                                                    </form>
-                                                </td>
-                                            <% } %>
-                                            <!-- Order creation date -->
-                                            <td>
-                                                <p style="margin-bottom: 5px;"><%= new Date(order.createdAt).toLocaleDateString('en-GB') %></p>
-                                            </td>
-                                            <!-- Display 'Return Order' button if payment is 'Paid' and status is 'Placed' within 7 days -->
-                                            <% if (order.Status === 'Placed' && order.PaymentStatus === 'Paid') { %>
-                                                <% 
-                                                    const placedAt = new Date(order.PlacedAt);
-                                                    const currentDate = new Date();
-                                                    const timeDifference = Math.floor((currentDate - placedAt) / (1000 * 60 * 60 * 24)); // Difference in days
-                                                %>
-                                                
-                                                <% if (order.ReturnRequest && order.ReturnRequest.status === 'Requested') { %>
-                                                    <td>
-                                                        <button type="button" class="btn btn-sm btn-secondary" disabled>Return Requested</button>
-                                                    </td>
-                                                <% } else if (order.ReturnRequest && order.ReturnRequest.status === 'Returned') { %>
-                                                    <td>
-                                                        <button type="button" class="btn btn-sm btn-secondary" disabled>Returned</button>
-                                                    </td>
-                                                <% } else if (order.ReturnRequest && order.ReturnRequest.status === 'Rejected') { %>
-                                                    <td>
-                                                        <button type="button" class="btn btn-sm btn-warning" disabled>Return Request Rejected</button>
-                                                    </td>
-                                                <% } else if (timeDifference <= 7) { %> <!-- Show return option only within 7 days -->
-                                                    <td>
-                                                        <button type="button" class="btn btn-sm btn-warning" onclick="openReturnModal('<%= order._id %>')">Return Order</button>
-                                                    </td>
-                                                <% } %> 
-                                            <% } %>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                        </div>
+                                        <div class="action-cell">
+                                            <form action="/myaccount/cancel-order/<%= order._id %>" method="POST" class="cancel-order-form">
+                                                <button type="button" class="btn btn-danger btn-sm" onclick="openConfirmModal(this)">Cancel Order</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                <% } %>
+                                <% if (order.Status === 'Placed' && order.PaymentStatus === 'Paid') { %>
+                                    <div class="return-action">
+                                        <% 
+                                            const placedAt = new Date(order.PlacedAt);
+                                            const currentDate = new Date();
+                                            const timeDifference = Math.floor((currentDate - placedAt) / (1000 * 60 * 60 * 24));
+                                        %>
+                                        <% if (order.ReturnRequest && order.ReturnRequest.status === 'Requested') { %>
+                                            <button type="button" class="btn btn-secondary btn-sm" disabled>Return Requested</button>
+                                        <% } else if (order.ReturnRequest && order.ReturnRequest.status === 'Returned') { %>
+                                            <button type="button" class="btn btn-secondary btn-sm" disabled>Returned</button>
+                                        <% } else if (order.ReturnRequest && order.ReturnRequest.status === 'Rejected') { %>
+                                            <button type="button" class="btn btn-warning btn-sm" disabled>Return Request Rejected</button>
+                                        <% } else if (timeDifference <= 7) { %>
+                                            <button type="button" class="btn btn-warning btn-sm" onclick="openReturnModal('<%= order._id %>')">Return Order</button>
+                                        <% } %>
+                                    </div>
+                                <% } %>
                             </div>
                         <% }) %>
                     </div>
+                    
+                    <style>
+                        .order-header {
+                            background-color: #f5f5f5; /* Change this color to whatever you prefer */
+                            padding: 10px;
+                            border-radius: 4px;
+                        }
+
+                        .status-indicator {
+                            padding: 3px 6px;
+                            border-radius: 4px;
+                            color: #fff; /* Text color for the indicators */
+                        }
+
+                        .pending {
+                            color: #ffc107; /* Yellow */
+                        }
+
+                        .shipped {
+                            color: #007bff; /* Blue */
+                        }
+
+                        .delivered {
+                            color: #6c757d; /* Green */
+                        }
+
+                        .placed {
+                            color: #28a745; /* Grey */
+                        }
+
+                        .cancelled {
+                            color: #dc3545; /* Red */
+                        }
+
+                        .returned {
+                            color: #dc3545; /* Red for Returned as well */
+                        }
+
+                        .order-cards {
+                            display: flex;
+                            flex-direction: column; /* Change to column to stack orders vertically */
+                            width: 100%;
+                            margin: 0 auto;
+                        }
+                    
+                        .order-card {
+                            background-color: #fff;
+                            border: 1px solid #e0e0e0;
+                            border-radius: 4px;
+                            margin-bottom: 20px;
+                            padding: 15px;
+                            width: 100%; /* Full width for each order card */
+                            box-sizing: border-box;
+                        }
+                    
+                        .order-header {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                        }
+                    
+                        .order-details {
+                            margin-top: 10px;
+                        }
+                    
+                        .order-item {
+                            display: flex;
+                            align-items: center;
+                            margin-bottom: 10px;
+                        }
+                    
+                        .product-image {
+                            width: 50px;
+                            height: 50px;
+                            object-fit: cover;
+                            margin-right: 10px;
+                            border-radius: 4px;
+                        }
+                        .item-info {
+                            flex-grow: 1;
+                        }
+                    
+                        .item-name {
+                            font-weight: bold;
+                        }
+                    
+                        .item-quantity {
+                            color: #666;
+                        }
+                    
+                        .total-cell {
+                            margin-top: 10px;
+                            font-weight: bold;
+                        }
+                    
+                        .payment-action {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-top: 10px;
+                        }
+                    
+                        .btn {
+                            display: inline-block;
+                            padding: 6px 12px;
+                            font-size: 14px;
+                            font-weight: 400;
+                            line-height: 1.42857143;
+                            text-align: center;
+                            white-space: nowrap;
+                            vertical-align: middle;
+                            cursor: pointer;
+                            border: 1px solid transparent;
+                            border-radius: 4px;
+                        }
+                    
+                        .btn-sm {
+                            padding: 5px 10px;
+                            font-size: 12px;
+                            line-height: 1.5;
+                            border-radius: 3px;
+                        }
+                    
+                        .btn-primary { background-color: #007bff; color: #fff; }
+                        .btn-danger { background-color: #dc3545; color: #fff; }
+                        .btn-warning { background-color: #ffc107; color: #000; }
+                        .btn-secondary { background-color: #6c757d; color: #fff; }
+                    
+                        .return-action {
+                            margin-top: 10px;
+                            text-align: right;
+                        }
+                    </style>
+                    
+                    
                     <!-- Pagination -->
                     <div class="pagination">
                         <% if (totalPages > 1) { %>

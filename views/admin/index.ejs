@@ -27,57 +27,18 @@
       <!-- partial:partials/_sidebar.html -->
       <nav class="sidebar sidebar-offcanvas" id="sidebar">
         <div class="sidebar-brand-wrapper d-none d-lg-flex align-items-center justify-content-center fixed-top">
-          <a class="sidebar-brand brand-logo" href="index.html"><img src="/static/admin/images/logo.svg" alt="logo" /></a>
-          <a class="sidebar-brand brand-logo-mini" href="index.html"><img src="/static/admin/images/logo-mini.svg" alt="logo" /></a>
+          <a class="sidebar-brand brand-logo" href="/admin/home" style="text-decoration: none;"><span style="color: white;">MAZE BOOKS</span></a>
+          <a class="sidebar-brand brand-logo-mini" href="/admin/home" style="text-decoration: none;"><span style="color: white;">M</span></a>
         </div>
         <ul class="nav">
           <li class="nav-item profile">
             <div class="profile-desc">
               <div class="profile-pic">
-                <div class="count-indicator">
-                  <img class="img-xs rounded-circle " src="/static/admin/images/faces/face15.jpg" alt="">
-                  <span class="count bg-success"></span>
-                </div>
                 <% if (admin) { %>
                   <div class="profile-name">
-                    <h5 class="mb-0 font-weight-normal"><%= admin.FirstName+' '+admin.LastName %> </h5>
+                    <h5 class="mb-0 font-weight-normal"><span class="text-success">&#9673; </span><%= admin.LastName+' '+admin.FirstName %> </h5>
                   </div>
                 <% } %>
-              </div>
-              <a href="#" id="profile-dropdown" data-toggle="dropdown"><i class="mdi mdi-dots-vertical"></i></a>
-              <div class="dropdown-menu dropdown-menu-right sidebar-dropdown preview-list" aria-labelledby="profile-dropdown">
-                <a href="#" class="dropdown-item preview-item">
-                  <div class="preview-thumbnail">
-                    <div class="preview-icon bg-dark rounded-circle">
-                      <i class="mdi mdi-settings text-primary"></i>
-                    </div>
-                  </div>
-                  <div class="preview-item-content">
-                    <p class="preview-subject ellipsis mb-1 text-small">Account settings</p>
-                  </div>
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item preview-item">
-                  <div class="preview-thumbnail">
-                    <div class="preview-icon bg-dark rounded-circle">
-                      <i class="mdi mdi-onepassword  text-info"></i>
-                    </div>
-                  </div>
-                  <div class="preview-item-content">
-                    <p class="preview-subject ellipsis mb-1 text-small">Change Password</p>
-                  </div>
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item preview-item">
-                  <div class="preview-thumbnail">
-                    <div class="preview-icon bg-dark rounded-circle">
-                      <i class="mdi mdi-calendar-today text-success"></i>
-                    </div>
-                  </div>
-                  <div class="preview-item-content">
-                    <p class="preview-subject ellipsis mb-1 text-small">To-do list</p>
-                  </div>
-                </a>
               </div>
             </div>
           </li>
@@ -177,10 +138,17 @@
             <div class="row">
               <div class="col-lg-6 grid-margin stretch-card">
                 <div class="card">
-                  <div class="card-body">
-                    <h4 class="card-title">Growth</h4>
-                    <canvas id="lineChart" style="height:250px"></canvas>
-                  </div>
+                    <div class="card-body">
+                        <h4 class="card-title">Growth</h4>
+                        <div>
+                          <button class="btn btn-sm btn-outline-primary" data-timeframe="monthly" onclick="updateChart('monthly')">Monthly Growth</button>
+                          <button class="btn btn-sm btn-outline-success" data-timeframe="yearly" onclick="updateChart('yearly')">Yearly Growth</button>
+                          <button class="btn btn-sm btn-outline-info" data-timeframe="weekly" onclick="updateChart('weekly')">Weekly Growth</button>
+                          <button class="btn btn-sm btn-outline-secondary" data-timeframe="daily" onclick="updateChart('daily')">Daily Growth</button>
+
+                        </div>
+                        <canvas id="lineChart" style="height:250px"></canvas>
+                    </div>
                 </div>
               </div>
               <div class="col-lg-6 grid-margin stretch-card">
@@ -196,7 +164,7 @@
               <div class="col-lg-6 grid-margin stretch-card">
                 <div class="card">
                   <div class="card-body">
-                    <h4 class="card-title">Best Genre</h4>
+                    <h4 class="card-title">Best Category</h4>
                     <canvas id="pieChart" style="height:250px"></canvas>
                   </div>
                 </div>
@@ -210,9 +178,9 @@
                 </div>
               </div>
             </div>
-            <div class="row">
+            <div class="row" id="salesReportSection">
               <div class="col-lg-12 grid-margin stretch-card">
-                  <div class="card">
+                  <div class="card" > 
                       <div class="card-body">
                           <h4 class="card-title">Sales Report</h4>
                           <form method="GET" action="/admin/home">
@@ -236,8 +204,8 @@
                               </div>
                           </form>
                           <div class="d-flex justify-content-end mt-3">
-                              <a href="/admin/home/pdf?sortOption=<%= sortOption %>&startDate=<%= startDateValue %>&endDate=<%= endDateValue %>" class="btn btn-danger mr-2">PDF</a>
-                              <a href="/admin/home/excel?sortOption=<%= sortOption %>&startDate=<%= startDateValue %>&endDate=<%= endDateValue %>" class="btn btn-success">Excel</a>
+                              <a href="/admin/home/pdf?sortOption=<%= sortOption %>&startDate=<%= startDateValue %>&endDate=<%= endDateValue %>" class="btn btn-sm btn-danger mr-2">Download PDF</a>
+                              <a href="/admin/home/excel?sortOption=<%= sortOption %>&startDate=<%= startDateValue %>&endDate=<%= endDateValue %>" class="btn btn-sm btn-success">Download Excel</a>
                           </div>
                           <div class="table-responsive mt-4">
                               <table class="table">
@@ -284,6 +252,33 @@
       </div>
       <!-- page-body-wrapper ends -->
     </div>
+    <style>
+     #chartjs-tooltip {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        border-radius: 3px;
+        padding: 10px;
+        pointer-events: none; /* Prevents the tooltip from interfering with mouse events */
+        z-index: 1000; /* Ensures it's on top of other elements */
+        opacity: 0; /* Start as hidden */
+        transition: opacity 0.2s ease; /* Smooth transition for appearance */
+    }
+
+    #chartjs-tooltip::after {
+        content: '';
+        position: absolute;
+        bottom: 100%; /* Position above the tooltip */
+        left: 50%; /* Center it */
+        margin-left: -5px; /* Half the width of the arrow */
+        border-width: 5px; /* Size of the arrow */
+        border-style: solid;
+        border-color: transparent transparent rgba(0, 0, 0, 0.8) transparent; /* Triangle pointing down */
+    }
+    html {
+      scroll-behavior: smooth;
+    }
+    </style>
     <!-- container-scroller -->
     <!-- plugins:js -->
     <script src="/static/admin/vendors/js/vendor.bundle.base.js"></script>
@@ -342,7 +337,7 @@
     const lineChart = new Chart(lineCtx, {
         type: 'line',
         data: {
-            labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+            labels: [],
             datasets: [{
                 label: 'Growth',
                 data: [65, 59, 80, 81, 56, 55, 40],
@@ -361,27 +356,188 @@
         }
     });
 
+
+    // Initialize Bar Chart
+    // const barCtx = document.getElementById('barChart').getContext('2d');
+    // const barChart = new Chart(barCtx, {
+    //     type: 'bar',
+    //     data: {
+    //         labels: [],
+    //         datasets: [{
+    //             label: 'Sold Count',
+    //             data: [], 
+    //             backgroundColor: 'rgba(75, 192, 192, 0.2)',
+    //             borderColor: 'rgba(75, 192, 192, 1)',
+    //             borderWidth: 1
+    //         }]
+    //     },
+    //     options: {
+    //         plugins: {
+    //             tooltip: {
+    //                 enabled: false,
+    //                 external: function(context) {
+    //                     let tooltipEl = document.getElementById('chartjs-tooltip');
+
+    //                     if (!tooltipEl) {
+    //                         tooltipEl = document.createElement('div');
+    //                         tooltipEl.id = 'chartjs-tooltip';
+    //                         tooltipEl.innerHTML = '<table></table>';
+    //                         document.body.appendChild(tooltipEl);
+    //                     }
+
+    //                     const position = context.chart.canvas.getBoundingClientRect();
+    //                     tooltipEl.style.opacity = 1;
+    //                     tooltipEl.style.position = 'absolute';
+    //                     tooltipEl.style.left = ${position.left + context.tooltip.x}px;
+    //                     tooltipEl.style.top = ${position.top + context.tooltip.y}px;
+
+    //                     const productIndex = context.tooltip.dataPoints[0].dataIndex;
+    //                     const productImage = productData[productIndex].imageUrl; 
+    //                     const productName = productData[productIndex].productName; 
+    //                     const soldCount = context.tooltip.dataPoints[0].raw; 
+
+              
+    //                     const innerHtml = 
+    //                         <tr>
+    //                             <td>
+    //                                 <img src="/static/uploads/${productImage[0]}" style="width: 30px; height: 30px; margin-right: 5px; vertical-align: middle;" />
+    //                                 ${productName}
+    //                             </td>
+    //                         </tr>
+    //                         <tr>
+    //                             <td>Sold: ${soldCount}</td>
+    //                         </tr>
+    //                     ;
+    //                     tooltipEl.querySelector('table').innerHTML = innerHtml;
+    //                 },
+    //                 footerFont: {
+    //                     size: 10,
+    //                 },
+    //                 bodyFont: {
+    //                     size: 12,
+    //                 },
+    //                 titleFont: {
+    //                     weight: 'bold',
+    //                 },
+    //             }
+    //         },
+    //         scales: {
+    //             y: {
+    //                 beginAtZero: true
+    //             },
+    //             x: {
+    //                 title: {
+    //                     display: false,
+    //                     text: 'Products',
+    //                     font: {
+    //                         size: 16,
+    //                         weight: 'bold',
+    //                     }
+    //                 },
+    //                 ticks: {
+    //                     autoSkip: false, 
+    //                     maxRotation: 0, 
+    //                 }
+    //             }
+    //         }
+    //     }
+    // });
+
     // Initialize Bar Chart
     const barCtx = document.getElementById('barChart').getContext('2d');
     const barChart = new Chart(barCtx, {
         type: 'bar',
         data: {
-            labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+            labels: [], // Will be populated later
             datasets: [{
-                label: '# of Votes',
-                data: [12, 19, 3, 5, 2, 3],
+                label: 'Sold Count',
+                data: [], // Will be populated later
                 backgroundColor: 'rgba(75, 192, 192, 0.2)',
                 borderColor: 'rgba(75, 192, 192, 1)',
                 borderWidth: 1
             }]
         },
         options: {
+            plugins: {
+                tooltip: {
+                    enabled: false, // Disable default tooltips
+                    external: function(context) {
+                        // Get the tooltip element
+                        let tooltipEl = document.getElementById('chartjs-tooltip');
+
+                        // Create tooltip if it doesn't exist
+                        if (!tooltipEl) {
+                            tooltipEl = document.createElement('div');
+                            tooltipEl.id = 'chartjs-tooltip';
+                            tooltipEl.innerHTML = '<table></table>';
+                            document.body.appendChild(tooltipEl);
+                        }
+
+                        // Show the tooltip when hovered
+                        if (context.tooltip.dataPoints.length) {
+                            const position = context.chart.canvas.getBoundingClientRect();
+                            tooltipEl.style.opacity = 1; // Set opacity to 1
+                            tooltipEl.style.position = 'absolute';
+                            tooltipEl.style.left = `${position.left + context.tooltip.x}px`;
+                            tooltipEl.style.top = `${position.top + context.tooltip.y}px`;
+
+                            // Get the data for the tooltip
+                            const productIndex = context.tooltip.dataPoints[0].dataIndex;
+                            const productImage = productData[productIndex].imageUrl; // Ensure this returns the correct image URL
+                            const productName = productData[productIndex].productName; // Get the product name
+                            const soldCount = context.tooltip.dataPoints[0].raw; // Get the sold count
+
+                            // Update the tooltip content
+                            const innerHtml = `
+                                <tr>
+                                    <td>
+                                        <img src="/static/uploads/${productImage[0]}" style="width: 30px; height: 30px; margin-right: 5px; vertical-align: middle;" />
+                                        ${productName}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Sold: ${soldCount}</td>
+                                </tr>
+                            `;
+                            tooltipEl.querySelector('table').innerHTML = innerHtml;
+                        } else {
+                            tooltipEl.style.opacity = 0; // Hide tooltip when not hovered
+                        }
+                    }
+                }
+            },
             scales: {
                 y: {
                     beginAtZero: true
+                },
+                x: {
+                    title: {
+                        display: false,
+                        text: 'Products',
+                        font: {
+                            size: 16,
+                            weight: 'bold',
+                        }
+                    },
+                    ticks: {
+                        autoSkip: false, // Prevents skipping labels
+                        maxRotation: 0, // Prevent rotation of labels
+                    }
                 }
             }
         }
+    });
+
+    // Event listener to manage tooltip visibility on mouse leave
+    barCtx.canvas.addEventListener('mouseleave', () => {
+        const tooltipEl = document.getElementById('chartjs-tooltip');
+        tooltipEl.style.opacity = 0; // Hide tooltip on mouse leave
+    });
+
+    // Event listeners to manage tooltip visibility
+    barCtx.canvas.addEventListener('mouseleave', () => {
+        const tooltipEl = document.getElementById('chartjs-tooltip');
+        tooltipEl.style.opacity = 0; // Hide tooltip on mouse leave
     });
 
     // Initialize Pie Chart
@@ -389,19 +545,23 @@
     const pieChart = new Chart(pieCtx, {
         type: 'pie',
         data: {
-            labels: ['Red', 'Blue', 'Yellow'],
+            labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple'], // Added two more labels
             datasets: [{
-                label: 'My First Dataset',
-                data: [300, 50, 100],
+                label: 'Sold Count',
+                data: [300, 50, 100, 80, 120], // Added two more data points
                 backgroundColor: [
                     'rgba(255, 99, 132, 0.2)',
                     'rgba(54, 162, 235, 0.2)',
-                    'rgba(255, 206, 86, 0.2)'
+                    'rgba(255, 206, 86, 0.2)',
+                    'rgba(75, 192, 192, 0.2)', // New color
+                    'rgba(153, 102, 255, 0.2)' // New color
                 ],
                 borderColor: [
                     'rgba(255, 99, 132, 1)',
                     'rgba(54, 162, 235, 1)',
-                    'rgba(255, 206, 86, 1)'
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)', // New color border
+                    'rgba(153, 102, 255, 1)' // New color border
                 ],
                 borderWidth: 1
             }]
@@ -415,7 +575,7 @@
         data: {
             labels: ['Red', 'Blue', 'Yellow'],
             datasets: [{
-                label: 'My Second Dataset',
+                label: 'Retuned Count',
                 data: [300, 50, 100],
                 backgroundColor: [
                     'rgba(255, 99, 132, 0.2)',
@@ -431,6 +591,123 @@
             }]
         }
     });
+</script>
+<script>
+  
+// Function to clean product names
+const cleanProductName = (name) => {
+    const maxLength = 12; // Set maximum length for product names
+    if (!name) return 'Unknown Product'; // Replace empty names with placeholder
+    return name.length > maxLength ? name.substring(0, maxLength) + '...' : name; // Truncate if too long
+};
+
+let productData = []; // Declare this globally to access in tooltip
+
+fetch(`/admin/home/dashboard-data?timeFrame=monthly`)
+    .then(response => response.json())
+    .then(data => {
+        const { salesData, productData: fetchedProductData, categoriesData, returnRequests } = data;
+        productData = fetchedProductData; // Assign fetched data to global variable
+
+
+        document.querySelector(`button[data-timeframe=monthly]`).classList.remove('btn-outline-primary');
+        document.querySelector(`button[data-timeframe=monthly]`).classList.add(`btn-primary`);
+
+        // Line Chart (Growth)
+        const salesLabels = salesData.map(sale => `Month ${sale._id}`);
+        const salesValues = salesData.map(sale => sale.totalSales);
+        lineChart.data.labels = salesLabels;
+        lineChart.data.datasets[0].data = salesValues;
+        lineChart.update();
+
+        // Bar Chart (Best Sellers)
+        const productLabels = fetchedProductData.map(product => cleanProductName(product.productName)); // Use cleaned names
+        const productValues = fetchedProductData.map(product => product.totalSold);
+        barChart.data.labels = productLabels; // Set cleaned names as labels
+        barChart.data.datasets[0].data = productValues;
+        barChart.update();
+
+        // Pie Chart (Best Genre)
+        const categoryLabels = categoriesData.map(category => category._id);
+        const categoryValues = categoriesData.map(category => category.totalSold);
+        pieChart.data.labels = categoryLabels;
+        pieChart.data.datasets[0].data = categoryValues;
+        pieChart.update();
+
+        // Doughnut Chart (Highest Returns)
+        const returnLabels = returnRequests.map(request => request.productName || 'No Name');
+        const returnValues = returnRequests.map(request => request.totalReturns);
+        doughnutChart.data.labels = returnLabels;
+        doughnutChart.data.datasets[0].data = returnValues;
+        doughnutChart.update();
+    })
+    .catch(error => console.error('Error fetching dashboard data:', error));
+
+    // Update chart function to fetch data based on the selected time frame
+    const updateChart = async (timeFrame) => {
+      try {
+          // Make a fetch request to the backend to get updated chart data
+          const response = await fetch(`/admin/home/dashboard-data?timeFrame=${timeFrame}`);
+          const data = await response.json();
+
+          if (!response.ok) {
+              throw new Error(data.error || 'Failed to fetch chart data');
+          }
+
+          // Update chart data with fetched data
+          let salesData = data.salesData;
+
+          lineChart.data.labels = salesData.map(sale => {
+              if (timeFrame === 'monthly') {
+                  return `Month ${sale._id}`;
+              } else if (timeFrame === 'yearly') {
+                  return `Year ${sale._id}`;
+              } else if (timeFrame === 'weekly') {
+                  return `Week ${sale._id}`;
+              } else if (timeFrame === 'daily') {
+                  return `Day ${sale._id}`; // Label for daily data
+              }
+          });
+
+          lineChart.data.datasets[0].data = salesData.map(sale => sale.totalSales);
+          lineChart.update(); // Refresh the chart
+
+          // Update button classes based on selected time frame
+          const timeFrames = ['monthly', 'yearly', 'weekly', 'daily'];
+
+          // Loop through all time frames and update the button classes
+          timeFrames.forEach(frame => {
+              const button = document.querySelector(`button[data-timeframe="${frame}"]`);
+              if (frame === timeFrame) {
+                  button.classList.remove('btn-outline-primary', 'btn-outline-success', 'btn-outline-info', 'btn-outline-secondary');
+                  button.classList.add(`btn-${frame === 'monthly' ? 'primary' : frame === 'yearly' ? 'success' : frame === 'weekly' ? 'info' : 'secondary'}`);
+              } else {
+                  button.classList.remove(`btn-${frame === 'monthly' ? 'primary' : frame === 'yearly' ? 'success' : frame === 'weekly' ? 'info' : 'secondary'}`);
+                  button.classList.add(`btn-outline-${frame === 'monthly' ? 'primary' : frame === 'yearly' ? 'success' : frame === 'weekly' ? 'info' : 'secondary'}`);
+              }
+          });
+      } catch (error) {
+          console.error('Error updating chart:', error);
+      }
+    };
+
+// Button click event listeners
+document.querySelector('.btn-outline-primary').addEventListener('click', () => updateChart('monthly'));
+document.querySelector('.btn-outline-success').addEventListener('click', () => updateChart('yearly'));
+document.querySelector('.btn-outline-info').addEventListener('click', () => updateChart('weekly'));
+document.querySelector('.btn-outline-secondary').addEventListener('click', () => updateChart('daily'));
+
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+      // Check if the URL has a hash and scroll to the section
+      if (window.location.hash) {
+          const section = document.querySelector(window.location.hash);
+          if (section) {
+              section.scrollIntoView({ behavior: 'smooth' });
+          }
+      }
+  });
 </script>
     <!-- End custom js for this page -->
   </body>

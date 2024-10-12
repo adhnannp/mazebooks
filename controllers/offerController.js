@@ -175,6 +175,7 @@ const activateOffer = async (req, res) => {
     try {
         const offerId = req.params.id; // Get the offer ID from the URL
         const offer = await Offer.findById(offerId); // Fetch the offer from the database
+        const admin = await User.findById(req.session.user_id);
 
         if (!offer) {
             // Redirect to the offers page with an error message if the offer is not found
@@ -183,7 +184,7 @@ const activateOffer = async (req, res) => {
 
         // Pass the offer data to the edit offer page
         res.render('editOffer', { 
-            admin:req.session.user_id,
+            admin,
             offer: offer,
             products: await Product.find(), // Fetch products to populate checkboxes
             categories: await Category.find() // Fetch categories to populate checkboxes
