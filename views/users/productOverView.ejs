@@ -142,14 +142,12 @@
                             <button class="btn btn-add-to-cart" onclick="addToCart('<%= book._id %>')">
                                 <i class="fas fa-cart-plus"></i> Add to Cart
                             </button>
-                            <button class="btn btn-primary" onclick="buyNow('<%= book._id %>')">Buy Now</button>
                         </div>
                     <% } else { %>
                         <div class="product-actions">
                             <button class="btn btn-add-to-cart" onclick="showLoginModal()">
                                 <i class="fas fa-cart-plus"></i> Add to Cart
                             </button>
-                            <button class="btn btn-primary" onclick="showLoginModal()">Buy Now</button>
                         </div>
                     <% } %>
                 <% } else if (book.Quantity === 0) { %>
@@ -171,14 +169,12 @@
                             <button class="btn btn-add-to-cart" onclick="addToCart('<%= book._id %>')">
                                 <i class="fas fa-cart-plus"></i> Add to Cart
                             </button>
-                            <button class="btn btn-primary" onclick="buyNow('<%= book._id %>')">Buy Now</button>
                         </div>
                     <% } else { %>
                         <div class="product-actions">
                             <button class="btn btn-add-to-cart" onclick="showLoginModal()">
                                 <i class="fas fa-cart-plus"></i> Add to Cart
                             </button>
-                            <button class="btn btn-primary" onclick="showLoginModal()">Buy Now</button>
                         </div>
                     <% } %>
                 <% } %>
@@ -614,10 +610,6 @@ function addToCart(productId) {
     console.error('Error:', error);
     showErrorModal('An unexpected error occurred.');
   });
-}
-
-function buyNow(productId) {
-  window.location.href = `/checkout?product=${productId}`;
 }
 </script>
 <script>

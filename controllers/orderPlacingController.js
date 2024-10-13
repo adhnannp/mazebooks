@@ -345,6 +345,36 @@ const verifyPayment = async (req, res) => {
     }
 };
 
+const retryPayment = async (req, res) => {
+    try {
+        const OrderId = req.params.orderId;
+        const order = await Order.findOne({OrderId});
+        console.log("reeach here")
+        console.log(order)
+        if (!order) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
+        }
+
+        // Check if the payment is already completed
+        if (order.PaymentStatus === 'Paid') {
+            return res.status(400).json({ success: false, message: 'Payment already completed' });
+        }
+
+        // If the order is still pending, send the order details for payment
+        req.session.order_id = order.OrderId;
+        return res.json({
+            success: true,
+            razorpayOrderId: order.RazorpayOrderId,
+            amount: order.TotalPrice * 100, // Convert to paise
+            currency: 'INR',
+            key: process.env.YOUR_RAZORPAY_KEY_ID
+        });
+    } catch (error) {
+        console.error('Error retrying payment:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+};
+
 //load order history
 const loadOrderHistory = async (req,res)=>{
     try {
@@ -456,4 +486,5 @@ module.exports = {
     loadOrderHistory,
     cancelOrder,
     verifyPayment,
+    retryPayment,
 }

@@ -210,9 +210,10 @@
                                     <div class="payment-action">
                                         <div class="payment-status-cell">
                                             <% if (order.PaymentStatus !== 'Paid' && order.PaymentMethod !== 'Cash On Delivery') { %>
-                                                <form action="/myaccount/retry-payment/<%= order._id %>" method="POST">
-                                                    <span>Payment: <button type="submit" class="btn btn-primary btn-sm">Retry Payment</button></span>
-                                                </form>
+                                                
+                                                <span>Payment: <button id="retry-payment" data-order-id="<%= order.OrderId%>" class="btn btn-primary btn-sm retry-payment">Retry Payment</button></span>
+                                                
+                                                
                                             <% } else { %>
                                                 <p>Payment: <%= order.PaymentMethod === 'Cash On Delivery' ? 'Cash On Delivery' : 'Paid' %></p>
                                             <% } %>
@@ -435,6 +436,106 @@
 <!-- Bootstrap JS and dependencies -->
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    document.querySelectorAll('.retry-payment').forEach(button => {
+        button.addEventListener('click', async function() {
+            const orderId = this.dataset.orderId;
+        
+            // Fetch Razorpay order details from the server and initiate payment
+            const response = await fetch(`/myaccount/retry-payment/${orderId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+        
+            const data = await response.json();
+            if (data.success) {
+                initiateRazorpayPayment(data); // Reuse the existing initiateRazorpayPayment function
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to retry payment. Please try again later.',
+                });
+            }
+        });
+    });
+    function initiateRazorpayPayment(data) {
+        let paymentSuccess = false; // Flag to check payment status
+        var options = {
+            key: data.key, // Your Razorpay key
+            amount: data.amount, // Amount in paise
+            currency: data.currency,
+            name: "MAZE BOOKS",
+            description: "Test Transaction",
+            order_id: data.razorpayOrderId, // Order ID created in backend
+            handler: async function (response) {
+                paymentSuccess = true; // Payment was successful
+                // Send payment verification request to server
+                const verifyResponse = await fetch('/verify-payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        razorpayPaymentId: response.razorpay_payment_id,
+                        razorpayOrderId: data.razorpayOrderId,
+                        razorpaySignature: response.razorpay_signature
+                    })
+                });
+                paymentSuccess = true;
+                const verificationData = await verifyResponse.json();
+                if (verificationData.success) {
+                    // Redirect or show success message
+                    paymentSuccess = true;
+                    window.location.href = `/order-success?orderId=${verificationData.orderId}`;
+                } else {
+                    Swal.fire({
+                        title: 'Payment Verification Failed',
+                        text: 'There was an issue verifying your payment. Please try again.',
+                        icon: 'error',
+                        confirmButtonText: 'Okay'
+                    });
+                }
+            },
+            prefill: {
+                name: "",
+                email: '',
+                contact: ""
+            },
+            theme: {
+                color: "#333"
+            }
+        };
+        const razorpay = new Razorpay(options);
+        // Open the Razorpay payment modal
+        razorpay.open();
+        // Check if the modal was closed without payment
+        razorpay.on('payment.failed', function(response) {
+            // Handle the payment failure case if needed
+        });
+        // Use a simple setTimeout to check if the payment was completed after a few seconds
+        const checkPaymentStatus = setInterval(() => {
+            if (paymentSuccess) {
+                clearInterval(checkPaymentStatus); // Clear interval if payment is successful
+            } else if (!razorpay.isOpen) {
+                clearInterval(checkPaymentStatus); // Clear interval if modal is closed
+                // Show a sweet alert for order failure
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Order Failed',
+                    text: 'Your order was not completed. Please try again.',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    // Redirect to order history after alert is acknowledged
+                    window.location.href = "/myaccount/order-history";
+                });
+            }
+        }, 1000); // Check every second
+    }
+</script>
 <script>
 function openConfirmModal(buttonElement) {
     const confirmModal = document.getElementById('confirmCancelModal');
