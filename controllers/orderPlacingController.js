@@ -379,21 +379,37 @@ const retryPayment = async (req, res) => {
 };
 
 //load order history
-const loadOrderHistory = async (req,res)=>{
+const loadOrderHistory = async (req, res) => {
     try {
         const error = req.query.error; 
         const userId = req.session.user_id; // Assuming user ID is stored in session
+
+        // Get selected category from query string
+        const category = req.query.category || 'live'; // Default to 'live' orders if no category is selected
 
         // Pagination variables
         const currentPage = parseInt(req.query.page) || 1; // Get current page, default to 1
         const itemsPerPage = 5; // Number of items per page
 
-        // Calculate total orders and pages for this user
-        const totalOrders = await Order.countDocuments({ UserId: userId });
+        // Define the query to filter orders based on category
+        let orderQuery = { UserId: userId };
+        if (category === 'cancelled') {
+            orderQuery.Status = 'Cancelled';
+        } else if (category === 'returned') {
+            orderQuery.Status = 'Returned';
+        } else if (category === 'delivered') {
+            orderQuery.Status = 'Placed';
+        } else {
+            // Default to live orders (Pending, Shipped, or Placed)
+            orderQuery.Status = { $in: ['Pending', 'Shipped', 'Delivered'] };
+        }
+
+        // Calculate total orders and pages for this category and user
+        const totalOrders = await Order.countDocuments(orderQuery);
         const totalPages = Math.ceil(totalOrders / itemsPerPage);
 
-        // Fetch paginated orders
-        const orders = await Order.find({ UserId: userId })
+        // Fetch paginated orders based on the selected category
+        const orders = await Order.find(orderQuery)
             .skip((currentPage - 1) * itemsPerPage)
             .limit(itemsPerPage)
             .populate('Products.ProductId')
@@ -404,16 +420,18 @@ const loadOrderHistory = async (req,res)=>{
             orders,
             currentPage,
             totalPages,
+            currentCategory: category, // Pass the selected category to the view
             error,
             cartItemCount: req.session.cartItemCount,
             wishlistItemCount: req.session.wishlistItemCount,
-            user:req.session.user_id
+            user: req.session.user_id
         });
     } catch (error) {
         console.error('Error fetching orders:', error);
         res.status(500).send('Error fetching orders');
     }
-}
+};
+
 
 // Controller for cancelling the order and updating product stock
 const cancelOrder = async (req, res) => {

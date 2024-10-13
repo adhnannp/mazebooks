@@ -71,10 +71,9 @@
         background-color: #4F2F2D;
         color: white;
     }
-    
     .empty-order-message {
         text-align: center;
-        margin: 40px 0;
+        margin-top: 20px; /* Space below the tabs */
     }
     .empty-order-message h2 {
         font-size: 24px;
@@ -134,6 +133,29 @@
     .account-main-content{
         width: 75%;
     }
+    .order-category-tabs {
+        display: flex;
+        justify-content: space-around;
+        margin-bottom: 20px;
+        padding: 10px 0; /* Add padding to ensure spacing */
+        border-bottom: 1px solid #e0e0e0; /* Optional: Add a border for separation */
+    }
+    .order-category-tabs a {
+        text-decoration: none;
+        padding: 10px 20px;
+        font-weight: bold;
+        color: #333;
+        border-bottom: 3px solid transparent;
+        transition: border-bottom 0.3s;
+    }
+    .order-category-tabs a.active {
+        border-bottom: 3px solid#4F2F2D; /* Underline color for active tab */
+        color:#4F2F2D; /* Active text color */
+    }
+    .order-category-tabs a:hover {
+        border-bottom: 3px solid #4F2F2D;
+        color: #4F2F2D;
+    }
 </style>
 
 <div class="account-container">
@@ -162,7 +184,13 @@
                         <p><%= error %></p>
                     </div>
                 <% } %>
-
+                <div class="order-category-tabs">
+                    <a href="?category=live" class="<%= currentCategory === 'live' ? 'active' : '' %>">Live Orders</a>
+                    <a href="?category=cancelled" class="<%= currentCategory === 'cancelled' ? 'active' : '' %>">Cancelled Orders</a>
+                    <a href="?category=returned" class="<%= currentCategory === 'returned' ? 'active' : '' %>">Returned Orders</a>
+                    <a href="?category=delivered" class="<%= currentCategory === 'delivered' ? 'active' : '' %>">Delivered Orders</a>
+                </div>
+                <!-- Horizontal Section for different order statuses -->
                 <% if (orders.length === 0) { %>
                     <!-- Display if no orders -->
                     <div class="empty-order-message">
@@ -251,6 +279,31 @@
                     </div>
                     
                     <style>
+                        .order-category-tabs {
+                            display: flex;
+                            justify-content: space-around;
+                            margin-bottom: 20px;
+                            padding: 10px 0; /* Add padding to ensure spacing */
+                            border-bottom: 1px solid #e0e0e0; /* Optional: Add a border for separation */
+                        }
+                        .order-category-tabs a {
+                            text-decoration: none;
+                            padding: 10px 20px;
+                            font-weight: bold;
+                            color: #333;
+                            border-bottom: 3px solid transparent;
+                            transition: border-bottom 0.3s;
+                        }
+
+                        .order-category-tabs a.active {
+                            border-bottom: 3px solid#4F2F2D; /* Underline color for active tab */
+                            color:#4F2F2D; /* Active text color */
+                        }
+
+                        .order-category-tabs a:hover {
+                            border-bottom: 3px solid #4F2F2D;
+                            color: #4F2F2D;
+                        }
                         .order-header {
                             background-color: #f5f5f5; /* Change this color to whatever you prefer */
                             padding: 10px;
@@ -389,17 +442,17 @@
                         <nav aria-label="Page navigation example">
                             <ul class="pagination justify-content-center">
                                 <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
-                                    <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
+                                    <a class="page-link" href="?category=<%= currentCategory %>&page=<%= currentPage - 1 %>" aria-label="Previous">
                                         <span aria-hidden="true">&laquo;</span>
                                     </a>
                                 </li>
                                 <% for (let i = 1; i <= totalPages; i++) { %>
                                 <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-                                    <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                                    <a class="page-link" href="?category=<%= currentCategory %>&page=<%= i %>"><%= i %></a>
                                 </li>
                                 <% } %>
                                 <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
-                                    <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
+                                    <a class="page-link" href="?category=<%= currentCategory %>&page=<%= currentPage + 1 %>" aria-label="Next">
                                         <span aria-hidden="true">&raquo;</span>
                                     </a>
                                 </li>
