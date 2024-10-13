@@ -147,5 +147,7 @@ user_route.post('/checkout/remove-coupon',auth.isAdminLogin, auth.isLogin,auth.i
 
 user_route.post('/myaccount/retry-payment/:orderId',auth.isAdminLogin,auth.ifNotVerified,orderPlacingController.retryPayment)
 
+user_route.get('/myaccount/download-invoice/:orderId', auth.isAdminLogin,auth.isLogin,auth.isblock,auth.ifNotVerified,orderPlacingController.downloadInvoice);
+
 
 module.exports = user_route;

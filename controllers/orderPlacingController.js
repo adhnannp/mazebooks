@@ -10,6 +10,9 @@ const Order = require("../models/orderModel");
 const Wallet = require("../models/walletModel");
 const Offer = require("../models/offerModel")
 const Coupon = require("../models/coupenModel")
+const PDFDocument = require('pdfkit');
+const QRCode = require('qrcode');
+const fs = require('fs');
 
 
 const getValidOffers = async () => {
@@ -479,6 +482,216 @@ const cancelOrder = async (req, res) => {
     }
 };
 
+const downloadInvoice = async (req, res) => {
+    try {
+        const orderId = req.params.orderId;
+        const order = await Order.findById(orderId).populate('Products.ProductId');
+
+        if (!order) {
+            return res.status(404).send('Order not found');
+        }
+
+        await generateInvoice(order, res);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Could not generate invoice.');
+    }
+};
+
+const generateInvoice = async (order, res) => {
+    try {
+        const doc = new PDFDocument({ margin: 50 });
+
+        // Set response headers for PDF download
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="invoice-${order.OrderId}.pdf"`);
+
+        // Pipe the PDF to the response
+        doc.pipe(res);
+
+        // Add company logo and header
+        doc.fontSize(20)
+           .text('MAZE BOOKS', 50, 57)
+           .moveDown();
+
+        // Invoice title
+        doc.fontSize(25)
+           .text('INVOICE', 50, 160);
+        
+        generateHr(doc, 185);
+
+        // Invoice details
+        const customerInformationTop = 200;
+        doc.fontSize(10)
+           .text('Invoice Number:', 50, customerInformationTop)
+           .font('Helvetica-Bold')
+           .text(order.OrderId, 150, customerInformationTop)
+           .font('Helvetica')
+           .text('Invoice Date:', 50, customerInformationTop + 15)
+           .text(formatDate(order.createdAt), 150, customerInformationTop + 15)
+           .text('Payment Method:', 50, customerInformationTop + 30)
+           .text(order.PaymentMethod || 'N/A', 150, customerInformationTop + 30) // Handle undefined Payment Method
+           .text('Total Amount:', 50, customerInformationTop + 45)
+           .text("Rs:" + (order.TotalPrice || 0), 150, customerInformationTop + 45) // Handle undefined Total Price
+           .font('Helvetica-Bold')
+           .text(order.Address.FullName || 'N/A', 300, customerInformationTop)
+           .font('Helvetica')
+           .text(order.Address.Address || 'N/A', 300, customerInformationTop + 15)
+           .text(`${order.Address.City || 'N/A'}, ${order.Address.State || 'N/A'} ${order.Address.Pincode || 'N/A'}`, 300, customerInformationTop + 30)
+           .moveDown();
+
+        generateHr(doc, 265);
+
+        // Product table
+        let position = 330; // Set initial position
+        let priceWithoutDeduction = 0;
+        if (order.Products && order.Products.length > 0) {
+            generateTableRow(
+                doc,
+                position,
+                'Item',
+                'Unit Cost',
+                'Quantity',
+                'Line Total'
+            );
+            generateHr(doc, position + 20);
+            position += 30; // Update position after header
+            for (let item of order.Products) {
+                if (item.ProductId) {
+                    priceWithoutDeduction+=(item.ProductId.Price || 0) * (item.Quantity || 0)
+                    position = generateTableRow(
+                        doc,
+                        position,
+                        item.ProductId.Name || 'N/A',
+                        "Rs:" + (item.ProductId.Price || 0),
+                        item.Quantity || 0,
+                        "Rs:" + ((item.ProductId.Price || 0) * (item.Quantity || 0))
+                    );
+
+                    // Check if position is valid before generating HR
+                    if (typeof position === 'number' && !isNaN(position)) {
+                        generateHr(doc, position + 20);
+                        position += 40; // Increase position for next item
+                    } else {
+                        console.error('Invalid position after generateTableRow:', position);
+                        position = doc.y + 40; // Reset to current y position plus some offset
+                    }
+                }
+            }
+        } else {
+            doc.fontSize(10).text('No products in this order.', 50, position);
+            position += 20;
+        }
+
+        // Return status if applicable
+        if (order.ReturnRequest && order.ReturnRequest.status) {
+            const returnStatusPosition = position + 30;
+            doc.fontSize(10).text('Return Status:', 50, returnStatusPosition);
+            doc.text(`Reason: ${order.ReturnRequest.reason || 'N/A'}`, 150, returnStatusPosition);
+            doc.text(`Requested At: ${order.ReturnRequest.requestedAt ? formatDate(order.ReturnRequest.requestedAt) : 'N/A'}`, 150, returnStatusPosition + 30);
+            doc.text('Status: Fund returned to wallet', 150, returnStatusPosition + 45);
+            generateHr(doc, returnStatusPosition + 60);
+        }
+
+        // Add totals and footer
+        const subtotalPosition = position + 60;
+
+        // Calculate discount amount
+        const discountAmount = priceWithoutDeduction - (order.TotalPrice || 0);
+        generateTableRow(
+            doc,
+            subtotalPosition,
+            '',
+            '',
+            'Sub Total:',
+            "Rs: "+priceWithoutDeduction, // Ensure the amount is formatted to 2 decimal places
+            ''
+        );
+        // Conditional display logic
+        if (discountAmount >= 0) {
+            // Display Discount Amount
+            generateTableRow(
+                doc,
+                subtotalPosition+30,
+                '',
+                '',
+                'Discount Amount:',
+                "Rs: -"+discountAmount, // Ensure the amount is formatted to 2 decimal places
+                ''
+            );
+        } else {
+            generateTableRow(
+                doc,
+                subtotalPosition+30,
+                '',
+                '',
+                'Shipping Charge: (After Discount)',
+                "Rs: +"+(discountAmount*-1),// Ensure the amount is formatted to 2 decimal places
+                ''
+            );
+        }
+        const paidToDatePosition = subtotalPosition + 60;
+        generateTableRow(
+            doc,
+            paidToDatePosition,
+            '',
+            '',
+            'Total:',
+            "Rs: " +(order.TotalPrice || 0),
+            ''
+        );
+
+        // Add QR code if needed
+        const qrCodeDataUrl = await QRCode.toDataURL('http://localhost:3000');
+        doc.image(qrCodeDataUrl, 50, doc.page.height - 100, { width: 50 });
+
+        // Footer
+        doc.fontSize(10)
+           .text('Thank you for your business!', 50, doc.page.height - 50, { align: 'center', width: 500 });
+
+        // Finalize the PDF and end the stream
+        doc.end();
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Could not generate invoice.');
+    }
+};
+
+
+function generateHr(doc, y) {
+    if (typeof y !== 'number' || isNaN(y)) {
+        console.error('Invalid y coordinate for HR:', y);
+        throw new Error('Invalid y coordinate for HR');
+    }
+    
+    doc.strokeColor("#aaaaaa")
+       .lineWidth(1)
+       .moveTo(50, y)
+       .lineTo(550, y)
+       .stroke();
+}
+
+function formatDate(date) {
+    const day = date.getDate();
+    const month = date.getMonth() + 1; // Adjust for zero-indexing
+    const year = date.getFullYear();
+    return `${year}/${month}/${day}`;
+}
+
+function generateTableRow(doc, y, item, unitCost, quantity, lineTotal) {
+    const productNameColumnWidth = 150; // Set a max width for the product name
+    const otherColumnWidth = 100; // Set a fixed width for other columns
+
+    // Wrap the product name to the next line if it exceeds the column width
+    doc.font('Helvetica')
+       .fontSize(10)
+       .text(item, 50, y, { width: productNameColumnWidth, align: 'left' }) // Wrap text in product name column
+       .text(unitCost, 200, y, { width: otherColumnWidth, align: 'right' }) // Adjust the position for unit cost
+       .text(quantity, 300, y, { width: otherColumnWidth, align: 'right' }) // Adjust the position for quantity
+       .text(lineTotal, 400, y, { width: otherColumnWidth, align: 'right' }); // Adjust the position for line total
+}
+
+
 module.exports = {
     loadCheckout,
     placeOrder,
@@ -487,4 +700,5 @@ module.exports = {
     cancelOrder,
     verifyPayment,
     retryPayment,
+    downloadInvoice,
 }

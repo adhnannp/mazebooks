@@ -206,14 +206,16 @@
                                         <p>Total: ₹ <%= order.TotalPrice.toFixed(2) %></p>
                                     </div>
                                 </div>
+                                <% if (order.Status === 'Placed' || order.Status === 'Returned') { %>
+                                    <div class="invoice-download">
+                                        <a href="/myaccount/download-invoice/<%= order._id %>">Download Invoice</a>
+                                    </div>
+                                <% } %>
                                 <% if (order.Status !== 'Placed' && order.Status !== 'Cancelled' && order.ReturnRequest.status !== 'Returned' && order.ReturnRequest.status !== 'Rejected') { %>
                                     <div class="payment-action">
                                         <div class="payment-status-cell">
                                             <% if (order.PaymentStatus !== 'Paid' && order.PaymentMethod !== 'Cash On Delivery') { %>
-                                                
                                                 <span>Payment: <button id="retry-payment" data-order-id="<%= order.OrderId%>" class="btn btn-primary btn-sm retry-payment">Retry Payment</button></span>
-                                                
-                                                
                                             <% } else { %>
                                                 <p>Payment: <%= order.PaymentMethod === 'Cash On Delivery' ? 'Cash On Delivery' : 'Paid' %></p>
                                             <% } %>
@@ -225,6 +227,7 @@
                                         </div>
                                     </div>
                                 <% } %>
+                    
                                 <% if (order.Status === 'Placed' && order.PaymentStatus === 'Paid') { %>
                                     <div class="return-action">
                                         <% 
