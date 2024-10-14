@@ -111,7 +111,15 @@
                         <% recentTransactions.forEach(transaction => { %>
                             <tr>
                                 <td><strong><%= transaction.Type %></strong></td>
-                                <td>&#8377;<%= transaction.Amount.toFixed(2) %></td>
+                                <%if(transaction.Type === 'Product Purchase') {%>
+                                    <td style="color:red;">
+                                        -&#8377;<%= transaction.Amount.toFixed(2) %>
+                                    </td>
+                                <%}else {%>
+                                    <td style="color:green;">
+                                        +&#8377;<%= transaction.Amount.toFixed(2) %>
+                                    </td>
+                                <%}%>
                                 <td><%= new Date(transaction.Date).toLocaleDateString() %></td>
                             </tr>
                         <% }); %>

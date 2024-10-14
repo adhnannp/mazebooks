@@ -1,0 +1,122 @@
+<%- include('../userLayouts/header') %>
+<style>
+    .selected-4 {
+        color: blue;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        background-color: #f5f5f5;
+    }
+
+    .about {
+        color: #333;
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    header {
+        background-image: url('/static/images/about main.jpg');
+        background-size: cover;
+        background-position: center;
+        color: white;
+        text-align: center;
+        padding: 80px 0;
+        margin-bottom: 40px;
+    }
+
+    h1 {
+        font-size: 48px;
+        margin: 0;
+        text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+    }
+
+    .content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .contact-info {
+        text-align: center;
+        background-color: #fff;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        max-width: 500px;
+        width: 100%;
+    }
+
+    h2 {
+        color: #555;
+        margin-bottom: 20px;
+        font-size: 32px;
+    }
+
+    p {
+        font-size: 16px;
+        line-height: 1.6;
+        margin-bottom: 20px;
+        color: #666;
+    }
+
+    .icon {
+        font-size: 18px;
+        margin-right: 10px;
+    }
+
+    a {
+        color: #007BFF;
+        text-decoration: none;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+    button {
+        background-color: #333;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background-color: #555;
+    }
+</style>
+
+
+    <header>
+        <h1>Contact</h1>
+    </header>
+<div class="about">
+    <div class="content">
+        <div class="contact-info">
+            <h2>Contact Information</h2>
+            <p>
+                <span class="icon">📍</span> Address<br>
+                MAZE BOOKS Center Kozhikode<br>
+                kinfra, Kakkanchery, State Kerala
+            </p>
+            <p>
+                <span class="icon">📞</span> Let's Talk<br>
+                <a href="tel:+917356875054">+91 7356975054</a>
+            </p>
+            <p>
+                <span class="icon">✉️</span> Sale Support<br>
+                <a href="mailto:mazebooks@gmail.com">contact@mazebooks.com</a>
+            </p>
+        </div>
+    </div>
+</div>
+<br><br>
+<%- include('../userLayouts/footer') %>
+</body>
+</html>

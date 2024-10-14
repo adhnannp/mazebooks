@@ -1,6 +1,8 @@
 const mongoose = require('mongoose')
 const User = require('../models/userModel');
 const bcrypt = require('bcrypt');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
@@ -1285,6 +1287,77 @@ const searchResult = async (req, res) => {
     }
 };
 
+const aboutLoad = async(req,res)=>{ 
+    try {
+        
+        const userId = req.session.user_id;
+        // Render the addressBook.ejs template with the addresses
+        res.render('about', { 
+            userId,
+            cartItemCount: req.session.cartItemCount,
+            wishlistItemCount: req.session.wishlistItemCount,
+            user:req.session.user_id
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Server error');
+    }
+};
+
+const contactLoad = async(req,res)=>{ 
+    try {
+        
+        const userId = req.session.user_id;
+        // Render the addressBook.ejs template with the addresses
+        res.render('contact', { 
+            userId,
+            cartItemCount: req.session.cartItemCount,
+            wishlistItemCount: req.session.wishlistItemCount,
+            user:req.session.user_id
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Server error');
+    }
+};
+
+const uploadProfileImage = async (req, res) => {
+    try {
+        // Check if a file was uploaded
+        if (!req.file) {
+            return res.status(400).send('No file uploaded.');
+        }
+
+        // Get the user from the session
+        const user = await User.findById(req.session.user_id);
+
+        // Check if the user already has a profile image
+        if (user && user.ProfileImage) {
+            const existingImagePath = path.join(__dirname, '../public/uploads/', user.ProfileImage);
+
+            // If the existing image is not the default image, delete it from the file system
+            if (fs.existsSync(existingImagePath)) {
+                fs.unlink(existingImagePath, (err) => {
+                    if (err) {
+                        console.error('Error deleting old profile image:', err);
+                    } else {
+                        console.log('Old profile image deleted successfully.');
+                    }
+                });
+            }
+        }
+        // Update the user's profile image in the database
+        user.ProfileImage = req.file.filename;
+        await user.save();
+
+        // Redirect to account page after success
+        res.redirect('/myaccount');
+    } catch (err) {
+        console.error('Error uploading profile image:', err);
+        res.status(500).send('Server error.');
+    }
+};
+
 module.exports = {
     loadHome,
     loadShop,
@@ -1315,4 +1388,7 @@ module.exports = {
     removeFromCart,
     searchResult,
     setDefaultAddress,
+    aboutLoad,
+    contactLoad,
+    uploadProfileImage,
 }

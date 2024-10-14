@@ -1,0 +1,71 @@
+<%- include('../userLayouts/header') %>
+    <style>
+        .selected-3{
+        color: blue;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        .about{
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0px;
+        }
+        header {
+            background-image: url('/static/images/about main.jpg');
+            background-size: cover;
+            color: white;
+            text-align: center;
+            padding: 100px 0;
+            margin-bottom: 40px;
+        }
+        h1 {
+            font-size: 48px;
+            margin: 0;
+        }
+        .content {
+            display: flex;
+            gap: 40px;
+        }
+        .text {
+            flex: 2;
+        }
+        .image {
+            flex: 1;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+
+    <header>
+        <h1>About</h1>
+    </header>
+<div class="about"> 
+    <div class="content">
+        <div class="text">
+            <h2>Our Story</h2>
+            <p>MAZE BOOKS began as a small corner shop in the heart of our city, founded by book enthusiasts who believed in the power of stories to transport, transform, and inspire. Our name reflects our passion for helping readers navigate the vast landscape of literature, finding hidden gems and new favorite authors along the way.</p>
+            
+            <p>Since our humble beginnings, we've grown into a beloved community hub for book lovers of all ages. Our shelves are carefully curated to offer a diverse selection of genres, from classic literature to cutting-edge contemporary works, ensuring there's something for every reader to discover.</p>
+            
+            <p>At MAZE BOOKS, we believe that every book is a new adventure waiting to unfold. Our knowledgeable staff are always ready to guide you through our literary labyrinth, offering personalized recommendations and engaging discussions about your latest reads.</p>
+            
+            <p>We're more than just a bookstore; we're a gathering place for the community. Our cozy reading nooks, regular author events, and book clubs create a warm and welcoming atmosphere where ideas can flourish and imaginations can soar.</p>
+            
+            <p>As we continue to grow, our mission remains the same: to share our love of books, foster a culture of reading, and create a space where stories come to life. We invite you to lose yourself in the maze of books and find your next great read with us.</p>
+        </div>
+        <div class="image">
+            <img src="static/images/about 2.jpg" alt="Interior of MAZE BOOKS store">
+        </div>
+    </div>
+</div>
+<br><br>
+<%- include('../userLayouts/footer') %>
+</body>
+</html>

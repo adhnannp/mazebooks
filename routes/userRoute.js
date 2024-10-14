@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const auth = require('../middleware/auth');
 const passport = require('passport');
+const upload = require('../config/multerConfig');
 require('../config/passportConfig');
 
 user_route.set('view engine', 'ejs');
@@ -151,5 +152,10 @@ user_route.post('/myaccount/retry-payment/:orderId',auth.isAdminLogin,auth.ifNot
 
 user_route.get('/myaccount/download-invoice/:orderId', auth.isAdminLogin,auth.isLogin,auth.isblock,auth.ifNotVerified,orderPlacingController.downloadInvoice);
 
+user_route.get('/about',auth.isAdminLogin,auth.isblock,auth.ifNotVerified,auth.updateCartAndWishlistCounts,userController.aboutLoad);
+
+user_route.get('/contact',auth.isAdminLogin,auth.isblock,auth.ifNotVerified,auth.updateCartAndWishlistCounts,userController.contactLoad);
+
+user_route.post('/myaccount/uploadProfileImage',auth.isAdminLogin,auth.ifNotVerified, upload.single('profileImage'), userController.uploadProfileImage);
 
 module.exports = user_route;

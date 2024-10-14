@@ -15,7 +15,8 @@ const userSchema = new mongoose.Schema({
     OTP: { type: String },
     otpExpires: { type: Date }, // Expiration time for the OTP
     resetPasswordToken: { type: String },// Token for resetting the password
-    resetPasswordExpires: { type: Date }// Expiration time for the token
+    resetPasswordExpires: { type: Date },// Expiration time for the token
+    ProfileImage: { type: String, default: null }
 })
 
 module.exports = mongoose.model("User", userSchema)

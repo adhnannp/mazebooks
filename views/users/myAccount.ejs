@@ -134,6 +134,46 @@
     background-color: #4F2F2D;
     color: white;
 }
+.profile-image-wrapper {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin-bottom: 20px;
+}
+
+.profile-image {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ddd;
+}
+
+.change-image-overlay {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    border-radius: 50%;
+    justify-content: center;
+    align-items: center;
+}
+
+.profile-image-wrapper:hover .change-image-overlay {
+    display: flex;
+}
+
+.file-input {
+    display: none;
+}
+
+.btn-save-image {
+    display: none;
+}
 </style>
 <div class="account-container">
     <!-- Breadcrumbs -->
@@ -160,6 +200,54 @@
             <% if (user.Is_verified) { %>
                 <h1>Account Overview</h1>
                 <div class="account-user-details">
+                     <!-- Profile Image Section -->
+                     <div class="profile-image-wrapper" style="position: relative;">
+                        <img 
+                            src="<%= user.ProfileImage ? '/static/uploads/' + user.ProfileImage : '/static/images/default-profile.jpg' %>" 
+                            alt="Profile Image" 
+                            class="profile-image" 
+                            id="profileImage"
+                            onerror="this.src='/static/images/default-profile.jpg';"
+                        >
+                        
+                        <!-- Hover effect for changing the image -->
+                        <div class="change-image-overlay">
+                            <label for="profileImageUpload" class="btn btn-sm btn-secondary">Change Image</label>
+                        </div>
+                        <form id="changeProfileImageForm" action="/myaccount/uploadProfileImage" method="post" enctype="multipart/form-data">
+                            <input type="file" name="profileImage" id="profileImageUpload" class="file-input" accept="image/*">
+                            <button type="submit" class="btn-save-image" style="display:none;">Save Image</button>
+                        </form>
+                        
+                    </div>
+                    <p id="fileError" style="color: red; display: none; position: absolute; bottom: 25px; left: 0; width: 100%; text-align: center;">
+                        Unrecognized file type. Please upload an image.
+                    </p>
+                    <script>
+                        // Listen for the file input change event
+                        document.getElementById('profileImageUpload').addEventListener('change', function() {
+                            const file = this.files[0];
+                            const errorMessage = document.getElementById('fileError');
+                    
+                            // Validate if the selected file is an image
+                            if (file && !file.type.startsWith('image/')) {
+                                // Display the error message if the file is not an image
+                                errorMessage.style.display = 'block';
+                                errorMessage.textContent = 'Unrecognized file type. Please upload an image.';
+                                
+                                // Hide the error message after 10 seconds
+                                setTimeout(() => {
+                                    errorMessage.style.display = 'none';
+                                }, 5000);
+                    
+                                // Prevent form submission
+                                return;
+                            }
+                    
+                            // If it's an image, submit the form
+                            document.getElementById('changeProfileImageForm').submit();
+                        });
+                    </script>
                     <p><strong>Name:</strong> <%= user.FirstName +' '+user.LastName %></p>
                     <p><strong>Email:</strong> <%= user.Email %></p>
                     <p><strong>Phone:</strong> <%= user.MobileNo %></p>
