@@ -960,6 +960,37 @@ const editAddress = async (req, res) => {
     }
 };
 
+const setDefaultAddress = async (req, res) => {
+    try {
+        const userId = req.session.user_id; // Get the user ID from the session
+        const addressId = req.params.addressId; // Get the address ID from the URL params
+
+        // Find all addresses of the user
+        const userAddresses = await Address.find({ UserId: userId });
+
+        // Check if any address is already set as default and update it to false
+        for (let address of userAddresses) {
+            if (address.IsDefault && address._id.toString() !== addressId) {
+                address.IsDefault = false; // Change the existing default to false
+                await address.save();
+            }
+        }
+
+        // Set the selected address as the default
+        await Address.findByIdAndUpdate(
+            addressId, 
+            { IsDefault: true }, 
+            { new: true }
+        );
+
+        // Redirect or send a response after successful update
+        res.redirect("/myaccount/address-book"); // Change the redirect path based on your route
+    } catch (error) {
+        console.error("Error setting default address:", error);
+        res.status(500).send("Internal Server Error");
+    }
+};
+
 // Add product to cart
 const addToCart = async(req,res)=>{
     try {
@@ -1283,4 +1314,5 @@ module.exports = {
     updateCart,
     removeFromCart,
     searchResult,
+    setDefaultAddress,
 }

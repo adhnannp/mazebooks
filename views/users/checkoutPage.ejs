@@ -274,83 +274,125 @@
                     <!-- Address Select Dropdown -->
                     <select id="addressSelect" class="address-select form-select" onchange="handleAddressChange(this)">
                         <option value="">Select an address</option>
-                        <% addresses.forEach((address, index) => { %>
-                            <option value="<%= address._id %>"
-                                data-fullname="<%= address.FullName %>"
-                                data-address="<%= address.Address %>"
-                                data-city="<%= address.City %>"
-                                data-state="<%= address.State %>"
-                                data-country="<%= address.Country %>"
-                                data-pincode="<%= address.Pincode %>"
-                                data-mobileno="<%= address.MobileNo %>"
-                                data-flatno="<%= address.FlatNo || '' %>"
-                                data-district="<%= address.District %>"
-                                data-landmark="<%= address.Landmark || '' %>">
-                                <%= address.FullName %> - <%= address.Address %>, <%= address.City %>
-                            </option>
+                    
+                        <% 
+                            // Flag to check if default address exists
+                            let defaultAddressExists = false; 
+                        %>
+                    
+                        <% addresses.forEach((address) => { %>
+                            <% if (address.IsDefault) { %>
+                                <option value="default"
+                                    data-fullname="<%= address.FullName %>"
+                                    data-address="<%= address.Address %>"
+                                    data-city="<%= address.City %>"
+                                    data-state="<%= address.State %>"
+                                    data-country="<%= address.Country %>"
+                                    data-pincode="<%= address.Pincode %>"
+                                    data-mobileno="<%= address.MobileNo %>"
+                                    data-flatno="<%= address.FlatNo || '' %>"
+                                    data-district="<%= address.District %>"
+                                    data-landmark="<%= address.Landmark || '' %>"
+                                    selected> <!-- Prefill default address -->
+                                    Default Address: <%= address.FullName %> - <%= address.Address %>, <%= address.City %>
+                                </option>
+                                <% defaultAddressExists = true; %> <!-- Set flag to true if default address is found -->
+                            <% } %>
                         <% }) %>
+                    
+                        <% addresses.forEach((address) => { %>
+                            <% if (!address.IsDefault) { %> <!-- Exclude default address from regular list -->
+                                <option value="<%= address._id %>"
+                                    data-fullname="<%= address.FullName %>"
+                                    data-address="<%= address.Address %>"
+                                    data-city="<%= address.City %>"
+                                    data-state="<%= address.State %>"
+                                    data-country="<%= address.Country %>"
+                                    data-pincode="<%= address.Pincode %>"
+                                    data-mobileno="<%= address.MobileNo %>"
+                                    data-flatno="<%= address.FlatNo || '' %>"
+                                    data-district="<%= address.District %>"
+                                    data-landmark="<%= address.Landmark || '' %>"
+                                >  
+                                    <%= address.FullName %> - <%= address.Address %>, <%= address.City %>
+                                </option>
+                            <% } %>
+                        <% }) %>
+                    
                         <option value="new">+ Add New Address</option>
                     </select>
+                
                     <!-- Editable Address Fields -->
                     <form id="addressForm">
                         <div id="addressFields" class="address-form container">
                             <div class="row mb-3"> <!-- First Row: Full Name and Mobile Number -->
                                 <div class="col-md-6">
-                                    <input type="text" id="fullName" class="form-control" placeholder="Full Name" required>
-                                    <label for="fullName" class="error"></label> <!-- For error messages -->
+                                    <label for="fullName">Full Name</label>
+                                    <input type="text" id="fullName" class="form-control" placeholder="Enter full name" required>
+                                    <label for="fullName" class="error"></label>
                                 </div>
                                 <div class="col-md-6">
-                                    <input type="tel" id="mobileNo" class="form-control" placeholder="Mobile Number" required>
+                                    <label for="mobileNo">Mobile Number</label>
+                                    <input type="tel" id="mobileNo" class="form-control" placeholder="Enter mobile number" required>
                                     <label for="mobileNo" class="error"></label>
                                 </div>
                             </div>
                             
                             <div class="row mb-3"> <!-- Second Row: Address -->
                                 <div class="col-12">
-                                    <input type="text" id="address" class="form-control" placeholder="Address" required>
+                                    <label for="address">Address</label>
+                                    <input type="text" id="address" class="form-control" placeholder="Enter address" required>
                                     <label for="address" class="error"></label>
                                 </div>
                             </div>
-                    
+                
                             <div class="row mb-3"> <!-- Third Row: Landmark -->
                                 <div class="col-12">
-                                    <input type="text" id="landmark" class="form-control" placeholder="Landmark (Optional)">
+                                    <label for="landmark">Landmark (Optional)</label>
+                                    <input type="text" id="landmark" class="form-control" placeholder="Enter landmark (optional)">
                                     <label for="landmark" class="error"></label>
                                 </div>
                             </div>
-                    
+                
                             <div class="row mb-3"> <!-- Fourth Row: Pincode, Flat No., District -->
                                 <div class="col-md-4">
-                                    <input type="text" id="pincode" class="form-control" placeholder="Pincode" required>
+                                    <label for="pincode">Pincode</label>
+                                    <input type="text" id="pincode" class="form-control" placeholder="Enter pincode" required>
                                     <label for="pincode" class="error"></label>
                                 </div>
                                 <div class="col-md-4">
-                                    <input type="text" id="flatNo" class="form-control" placeholder="Flat No. (Optional)">
+                                    <label for="flatNo">Flat No. (Optional)</label>
+                                    <input type="text" id="flatNo" class="form-control" placeholder="Enter flat number (optional)">
                                     <label for="flatNo" class="error"></label>
                                 </div>
                                 <div class="col-md-4">
-                                    <input type="text" id="district" class="form-control" placeholder="District" required>
+                                    <label for="district">District</label>
+                                    <input type="text" id="district" class="form-control" placeholder="Enter district" required>
                                     <label for="district" class="error"></label>
                                 </div>
                             </div>
-                    
+                
                             <div class="row mb-3"> <!-- Last Row: City, State, Country -->
                                 <div class="col-md-4">
-                                    <input type="text" id="city" class="form-control" placeholder="City" required>
+                                    <label for="city">City</label>
+                                    <input type="text" id="city" class="form-control" placeholder="Enter city" required>
                                     <label for="city" class="error"></label>
                                 </div>
                                 <div class="col-md-4">
-                                    <input type="text" id="state" class="form-control" placeholder="State" required>
+                                    <label for="state">State</label>
+                                    <input type="text" id="state" class="form-control" placeholder="Enter state" required>
                                     <label for="state" class="error"></label>
                                 </div>
                                 <div class="col-md-4">
-                                    <input type="text" id="country" class="form-control" placeholder="Country" required>
+                                    <label for="country">Country</label>
+                                    <input type="text" id="country" class="form-control" placeholder="Enter country" required>
                                     <label for="country" class="error"></label>
                                 </div>
                             </div>
                         </div>
                     </form>
                 </div>
+                
                 <div class="payment-box">
                     <h3>Select Payment Method</h3>
                     <div class="payment-option">
@@ -504,7 +546,7 @@
             </div>
         </div>
     </div>
-
+    <%- include('../userLayouts/footer') %>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script>
@@ -930,35 +972,24 @@ function populateAddressFields() {
     document.querySelector('input[name="Address[Country]"]').value = document.getElementById('country').value;
 }
 window.onload = function() {
-            const selectedRadio = document.querySelector('input[name="addressSelect"]:checked');
-            if (selectedRadio) {
-                selectAddress(
-                    selectedRadio.dataset.fullname,
-                    selectedRadio.dataset.address,
-                    selectedRadio.dataset.city,
-                    selectedRadio.dataset.state,
-                    selectedRadio.dataset.country,
-                    selectedRadio.dataset.pincode,
-                    selectedRadio.dataset.mobileno,
-                    selectedRadio.dataset.flatno,
-                    selectedRadio.dataset.district,
-                    selectedRadio.dataset.landmark
-                );
-            }
-
-            // Payment method selection
-            document.querySelectorAll('input[name="payment"]').forEach(paymentRadio => {
-                paymentRadio.addEventListener('change', function () {
-                    document.getElementById('paymentMethod').value = this.value;
-                });
-            });
-
-            // Set the initial payment method value
-            const initialPaymentMethod = document.querySelector('input[name="payment"]:checked');
-            if (initialPaymentMethod) {
-                document.getElementById('paymentMethod').value = initialPaymentMethod.value;
-            }
-        };
+    const addressSelect = document.getElementById("addressSelect");
+    
+    // Trigger the handleAddressChange function if a default address is selected
+    if (addressSelect.value) {
+        handleAddressChange(addressSelect);
+    }
+    // Payment method selection
+    document.querySelectorAll('input[name="payment"]').forEach(paymentRadio => {
+        paymentRadio.addEventListener('change', function () {
+            document.getElementById('paymentMethod').value = this.value;
+        });
+    });
+    // Set the initial payment method value
+    const initialPaymentMethod = document.querySelector('input[name="payment"]:checked');
+    if (initialPaymentMethod) {
+        document.getElementById('paymentMethod').value = initialPaymentMethod.value;
+    }
+};
 
 // Attach validation to form submission
 document.getElementById('checkout-form').onsubmit = async function (e) {
@@ -1047,6 +1078,82 @@ document.getElementById('checkout-form').onsubmit = async function (e) {
                 Swal.fire({
                     title: 'Order Creation Failed',
                     text: 'Failed to create order',
+                    icon: 'warning',
+                    confirmButtonText: 'Okay'
+                });
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            Swal.fire({
+                title: 'Processing Error',
+                text: 'There was an error processing your request. Please try again.',
+                icon: 'error',
+                confirmButtonText: 'Okay'
+            });
+        }
+    }else if (paymentMethod === 'Wallet Payment') {
+        try {
+            const orderDetails = {
+                paymentMethod: paymentMethod,
+                Products: [...document.querySelectorAll('input[name^="Products"][name$="[ProductId]"]')].map(input => {
+                    const index = input.name.match(/\d+/)[0]; // Get the index from the input name
+                    const productId = input.value; // Fetch product ID directly from this input
+                    const quantity = document.querySelector(`input[name="Products[${index}][Quantity]"]`).value; // Fetch the corresponding quantity
+                    
+                    return {
+                        ProductId: productId,
+                        Quantity: quantity
+                    };
+                }),
+                TotalPrice: document.querySelector('input[name="TotalPrice"]').value,
+                appliedCouponCode: document.getElementById("appliedCoupon").value,
+                actualTotalPrice: document.querySelector('input[name="actualTotalPrice"]').value,
+                priceWithoutDedection: document.querySelector('input[name="priceWithoutDedection"]').value,
+                Address: {
+                    FullName: document.querySelector('input[name="Address[FullName]"]').value,
+                    Address: document.querySelector('input[name="Address[Address]"]').value,
+                    MobileNo: document.querySelector('input[name="Address[MobileNo]"]').value,
+                    Pincode: document.querySelector('input[name="Address[Pincode]"]').value,
+                    FlatNo: document.querySelector('input[name="Address[FlatNo]"]').value,
+                    Country: document.querySelector('input[name="Address[Country]"]').value,
+                    City: document.querySelector('input[name="Address[City]"]').value,
+                    District: document.querySelector('input[name="Address[District]"]').value,
+                    Landmark: document.querySelector('input[name="Address[Landmark]"]').value,
+                    State: document.querySelector('input[name="Address[State]"]').value,
+                }
+            };
+
+            // Send request to backend to create Razorpay order
+            const response = await fetch('/place-order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(orderDetails)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                Swal.fire({
+                    title: 'Error!',
+                    text: `Error: ${errorData.message}`,
+                    icon: 'error',
+                    confirmButtonText: 'Okay'
+                });
+                console.error('Server Error:', errorData);
+                return;
+            }
+
+            const data = await response.json();
+            console.log('Server Response:', data);
+
+            // If wallet payment is processed successfully
+            if (data.success) {
+                window.location.href = `/order-success?orderId=${data.orderId}`; // Redirect to success page with order ID
+            } else {
+                Swal.fire({
+                    title: 'Payment Failed',
+                    text: 'There was an issue processing your payment with the wallet. Please try again.',
                     icon: 'warning',
                     confirmButtonText: 'Okay'
                 });

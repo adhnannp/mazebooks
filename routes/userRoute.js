@@ -105,6 +105,8 @@ user_route.delete('/myaccount/delete-address/:id',auth.isLogin,userController.de
 
 user_route.post('/myaccount/edit-address/:id',auth.isLogin,userController.editAddress);
 
+user_route.get("/myaccount/set-default-address/:addressId",auth.isAdminLogin,auth.isblock,auth.isLogin,auth.ifNotVerified,userController.setDefaultAddress);
+
 user_route.post('/cart/add',auth.isLogin,auth.ifNotVerified,userController.addToCart);
 
 user_route.get('/myaccount/edit-password',auth.isAdminLogin,auth.isLogin,auth.isblock,auth.ifNotVerified,auth.updateCartAndWishlistCounts,userController.editPasswordLoad);

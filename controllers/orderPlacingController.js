@@ -109,7 +109,7 @@ const loadCheckout = async (req, res) => {
         const cartTotal = cartSubtotal + shippingCost;
 
         // Format addresses for rendering
-        const userAddresses = addresses.map(({ FullName, MobileNo, Address, Landmark, Pincode, FlatNo, State, District, City, Country, AddressType }) => ({
+        const userAddresses = addresses.map(({ FullName, MobileNo, Address, Landmark, Pincode, FlatNo, State, District, City, Country, AddressType, IsDefault }) => ({
             FullName,
             MobileNo,
             Address,
@@ -120,7 +120,8 @@ const loadCheckout = async (req, res) => {
             District,
             City,
             Country,
-            AddressType
+            AddressType,
+            IsDefault
         }));
         
         const validCoupons = await getValidCoupons(req.session.user_id);
@@ -232,6 +233,84 @@ const placeOrder = async (req, res) => {
             });
         }
 
+        //payment method wallet
+        // If payment method is wallet
+        if (paymentMethod === 'Wallet Payment') {
+           // Find the user's wallet
+           let wallet = await Wallet.findOne({ UserId: userId });
+           if (!wallet) {
+               return res.status(400).json({ success: false, message: 'Wallet not found' });
+           }
+           // Check if wallet balance is sufficient
+           if (wallet.Balance < TotalPrice) {
+               return res.status(400).json({ success: false, message: 'Insufficient balance in wallet' });
+           }
+           // Deduct the total price from the wallet balance
+           wallet.Balance -= TotalPrice;
+           // Add a transaction record for the purchase
+           wallet.Transactions.push({
+               Type: 'Product Purchase',
+               Amount: TotalPrice,
+               Date: new Date()
+           });
+           // Save the updated wallet
+           await wallet.save();
+
+           const newOrder = new Order({
+                UserId: userId,
+                PaymentMethod: paymentMethod,
+                Products: Products.map(item => ({
+                    ProductId: new mongoose.Types.ObjectId(item.ProductId), // Convert string ID to ObjectId
+                    Quantity: item.Quantity
+                })), // Use converted ObjectId array
+                TotalPrice: parseFloat(TotalPrice),
+                ActualTotalPrice: parseFloat(actualTotalPrice),
+                AppliedCoupon: appliedCouponCode?appliedCouponCode:null,
+                PriceWithoutDedection:priceWithoutDedection,
+                Address: {
+                    FullName: Address.FullName,
+                    Address: Address.Address,
+                    MobileNo: Address.MobileNo,
+                    Pincode: Address.Pincode,
+                    FlatNo: Address.FlatNo,
+                    Country: Address.Country,
+                    City: Address.City,
+                    District: Address.District,
+                    Landmark: Address.Landmark,
+                    State: Address.State
+                },
+                Status: 'Pending' // Or whatever status fits your logic for non-online payments
+            });
+
+            // Save the new order
+            await newOrder.save();
+
+            // Check and update the coupon usage if an applied coupon code is present
+            if (appliedCouponCode) {
+                const coupon = await Coupon.findOne({ CouponCode: appliedCouponCode });
+                if (coupon) {
+                    coupon.UsedBy.push(userId); // Add the user ID to the UsedBy array
+                    await coupon.save(); // Save the updated coupon
+                }
+            }
+
+            // Update product quantities and remove items from cart
+            for (const item of Products) {
+                await Product.findByIdAndUpdate(
+                    item.ProductId,
+                    { $inc: { Quantity: -item.Quantity } } // Decrease quantity by the ordered amount
+                );
+            }
+
+            // Remove the ordered items from the user's cart
+            await Cart.findOneAndUpdate(
+                { UserId: userId },
+                { $pull: { Products: { ProductId: { $in: Products.map(item => item.ProductId) } } } }
+            );
+
+            req.session.order_id = newOrder.OrderId;
+            return res.status(200).json({success:true , orderId:req.session.order_id})
+        }
         // For other payment methods (not online payment)
         // Create order object without Razorpay details
         const newOrder = new Order({

@@ -12,7 +12,8 @@ const addressSchema = new mongoose.Schema({
     District: { type: String, required: true },
     City: { type: String, required: true },
     Country: { type: String, required: true },
-    AddressType: { type: String}
+    AddressType: { type: String},
+    IsDefault:{type: Boolean, default: false}
 }, { timestamps: true }); 
 
 module.exports = mongoose.model("Address", addressSchema);

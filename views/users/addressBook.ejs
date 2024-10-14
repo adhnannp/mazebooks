@@ -105,28 +105,39 @@
             <div class="row">
                 <!-- Loop through the addresses and render each in a card -->
                 <% addresses.forEach(address => { %>
-                <div class="col-md-12 mb-3">
-                    <div class="card shadow-sm" style="max-width: 100%; border-radius: 8px;">
-                        <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #f8f9fa;">
-                            <h6 class="card-title mb-0" style="font-weight: bold; font-size: 1rem;">Address</h6>
-                            <a href="#" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-address-id="<%= address._id %>">
-                                <i class="fas fa-trash-alt"></i> Delete
-                            </a>
-                        </div>
-                        <div class="card-body p-3">
-                            <p class="card-text mb-2" style="font-size: 0.85rem;">
-                                <strong><%= address.FullName %></strong><br>
-                                <%= address.Address %> ,<%=  address.FlatNo ? address.FlatNo : '' %><br>
-                                <%= address.Landmark ? address.Landmark + ', ' : '' %> <%= address.City %>, <%= address.District %>, <%= address.State %> - <%= address.Pincode %><br>
-                                <strong>Phone:</strong> <%= address.MobileNo %> <br>
-                                <strong>Address Type:</strong> <%= address.AddressType %>
-                            </p>
-                            <a href="#" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editModal-<%= address._id %>">
-                                <i class="fas fa-edit"></i> Edit Address
-                            </a>
+                    <div class="col-md-12 mb-3">
+                        <div class="card shadow-sm" style="max-width: 100%; border-radius: 8px;">
+                            <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #f8f9fa;">
+                                <h6 class="card-title mb-0" style="font-weight: bold; font-size: 1rem;">Address</h6>
+                                <a href="#" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal" data-address-id="<%= address._id %>">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </a>
+                            </div>
+                            <div class="card-body p-3">
+                                <p class="card-text mb-2" style="font-size: 0.85rem;">
+                                    <strong><%= address.FullName %></strong><br>
+                                    <%= address.Address %> ,<%=  address.FlatNo ? address.FlatNo : '' %><br>
+                                    <%= address.Landmark ? address.Landmark + ', ' : '' %> <%= address.City %>, <%= address.District %>, <%= address.State %> - <%= address.Pincode %><br>
+                                    <strong>Phone:</strong> <%= address.MobileNo %> <br>
+                                    <strong>Address Type:</strong> <%= address.AddressType %>
+                                </p>
+                    
+                                <a href="#" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editModal-<%= address._id %>">
+                                    <i class="fas fa-edit"></i> Edit Address
+                                </a>
+                    
+                                <% if (address.IsDefault) { %>
+                                    <!-- Show if the address is the default -->
+                                    <span class="badge bg-secondary ms-2">Default Address</span>
+                                <% } else { %>
+                                    <!-- Show 'Set as Default' if the address is not the default -->
+                                    <a href="/myaccount/set-default-address/<%= address._id %>" class="btn btn-outline-secondary btn-sm ms-2">
+                                        <i class="fas fa-check-circle"></i> Set as Default
+                                    </a>
+                                <% } %>
+                            </div>
                         </div>
                     </div>
-                </div>
 
                 <!-- Edit Address Modal -->
                 <div class="modal fade" id="editModal-<%= address._id %>" tabindex="-1" aria-labelledby="editModalLabel-<%= address._id %>" aria-hidden="true">
@@ -336,6 +347,8 @@
         </div>
     </div>
 </div>
+<br><br>
+<%- include('../userLayouts/footer') %>
 
 <!-- Bootstrap JS and dependencies -->
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
