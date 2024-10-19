@@ -228,6 +228,10 @@
         <% } else { %>
             <!-- Display if cart has items -->
             <div class="cart-items">
+                <!-- Add the "Select All" link if there are valid products -->
+                <div class="cart-actions">
+                    <a href="#" class="select-all-btn" onclick="selectAllProducts(); return false;">Select All</a>
+                </div>
                 <% cartItems.forEach(item => { %>
                     <div class="product-card <%= item.ProductId.Quantity === 0 ? 'sold-out' : '' %>" id="product-card-<%= item.ProductId._id %>">
                         <div class="product-checkbox-container">
@@ -322,6 +326,18 @@
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous">
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz4fnFO9Dcsf54Xr1JPrT9bqU4ZJhPt6yU4EMCqiljW00P17JdG3BOWtFz" crossorigin="anonymous"></script>
+    <script>
+        function selectAllProducts() {
+            // Get all checkboxes that are not sold out
+            const checkboxes = document.querySelectorAll('.product-checkbox:not([disabled])');
+            
+            // Loop through and check all
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+                toggleProductSelection(checkbox.value); // Call the existing function to handle the selection logic
+            });
+        }
+    </script>
 <script>
         let productIdToDelete = null;
         

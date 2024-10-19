@@ -159,7 +159,6 @@ const placeOrder = async (req, res) => {
         // If payment method is Online Payment, create a Razorpay order
         let razorpayOrderId = null;
         if (paymentMethod === 'Online Payment') {
-            // Create a Razorpay order
             const razorpayOrder = await razorpay.orders.create({
                 amount: Math.round(TotalPrice * 100), // Razorpay accepts amount in paise (smallest currency unit)
                 currency: 'INR',
@@ -167,64 +166,8 @@ const placeOrder = async (req, res) => {
                 payment_capture: 1 // Auto-capture after successful payment
             });
 
-            razorpayOrderId = razorpayOrder.id; // Store the order ID
-            req.session.razorpayOrderId = razorpayOrderId; // Store in session
-
-            // Create new order object here to include Razorpay order details
-            const newOrder = new Order({
-                UserId: userId,
-                PaymentMethod: paymentMethod,
-                Products: Products.map(item => ({
-                    ProductId: new mongoose.Types.ObjectId(item.ProductId), // Convert string ID to ObjectId
-                    Quantity: item.Quantity
-                })), // Use converted ObjectId array
-                TotalPrice: parseFloat(TotalPrice),
-                ActualTotalPrice: parseFloat(actualTotalPrice),
-                AppliedCoupon: appliedCouponCode ? appliedCouponCode:null,
-                PriceWithoutDedection: priceWithoutDedection,
-                Address: {
-                    FullName: Address.FullName,
-                    Address: Address.Address,
-                    MobileNo: Address.MobileNo,
-                    Pincode: Address.Pincode,
-                    FlatNo: Address.FlatNo,
-                    Country: Address.Country,
-                    City: Address.City,
-                    District: Address.District,
-                    Landmark: Address.Landmark,
-                    State: Address.State
-                },
-                Status: 'Pending', // Default status
-                RazorpayOrderId: razorpayOrderId // Ensure it's saved correctly
-            });
-
-            // Save the new order
-            await newOrder.save();
-
-            // Check and update the coupon usage if an applied coupon code is present
-            if (appliedCouponCode) {
-                const coupon = await Coupon.findOne({ CouponCode: appliedCouponCode });
-                if (coupon) {
-                    coupon.UsedBy.push(userId); // Add the user ID to the UsedBy array
-                    await coupon.save(); // Save the updated coupon
-                }
-            }
-
-            // Update product quantities and remove items from cart
-            for (const item of Products) {
-                await Product.findByIdAndUpdate(
-                    item.ProductId,
-                    { $inc: { Quantity: -item.Quantity } } // Decrease quantity by the ordered amount
-                );
-            }
-
-            // Remove the ordered items from the user's cart
-            await Cart.findOneAndUpdate(
-                { UserId: userId },
-                { $pull: { Products: { ProductId: { $in: Products.map(item => item.ProductId) } } } }
-            );
-            
-            req.session.order_id = newOrder.OrderId;
+            req.session.razorpayOrderId = razorpayOrder.id; // Store in session
+            req.session.orderDetails = { paymentMethod, Products, TotalPrice, Address, actualTotalPrice, appliedCouponCode, priceWithoutDedection };
             return res.json({
                 razorpayOrderId: razorpayOrder.id,
                 amount: razorpayOrder.amount,
@@ -395,33 +338,82 @@ const successPage = async (req, res) => {
 //verify payment
 const verifyPayment = async (req, res) => {
     try {
-        const { razorpayPaymentId, razorpayOrderId, razorpaySignature } = req.body;
+        const { razorpayPaymentId, razorpayOrderId, razorpaySignature, status } = req.body;
+        const userId = req.session.user_id;
+        const orderDetails = req.session.orderDetails;
 
-        console.log('Received:', { razorpayPaymentId, razorpayOrderId, razorpaySignature });
+        let paymentStatus = status === 'Failed' ? 'Pending' : 'Paid';
 
-        const crypto = require('crypto');
-        const generated_signature = crypto.createHmac('sha256', process.env.YOUR_RAZORPAY_KEY_SECRET)
-            .update(razorpayOrderId + "|" + razorpayPaymentId)
-            .digest('hex');
+        if (paymentStatus === 'Paid') {
+            const crypto = require('crypto');
+            const generated_signature = crypto.createHmac('sha256', process.env.YOUR_RAZORPAY_KEY_SECRET)
+                .update(razorpayOrderId + "|" + razorpayPaymentId)
+                .digest('hex');
 
-        console.log('Generated Signature:', generated_signature);
-
-        if (generated_signature !== razorpaySignature) {
-            console.error('Signature mismatch:', { generated_signature, razorpaySignature });
-            return res.json({ success: false, message: 'Payment verification failed' });
+            if (generated_signature !== razorpaySignature) {
+                console.error('Signature mismatch:', { generated_signature, razorpaySignature });
+                return res.json({ success: false, message: 'Payment verification failed' });
+            }
         }
 
-        const order = await Order.findOneAndUpdate(
-            { RazorpayOrderId: razorpayOrderId },
-            { RazorpayPaymentId: razorpayPaymentId, PaymentStatus: 'Paid' },
-            { new: true }
+        // Create the order regardless of payment success/failure
+        const newOrder = new Order({
+            UserId: userId,
+            PaymentMethod: orderDetails.paymentMethod,
+            Products: orderDetails.Products.map(item => ({
+                ProductId: new mongoose.Types.ObjectId(item.ProductId),
+                Quantity: item.Quantity
+            })),
+            TotalPrice: parseFloat(orderDetails.TotalPrice),
+            ActualTotalPrice: parseFloat(orderDetails.actualTotalPrice),
+            AppliedCoupon: orderDetails.appliedCouponCode ? orderDetails.appliedCouponCode : null,
+            PriceWithoutDedection: orderDetails.priceWithoutDedection,
+            Address: {
+                FullName: orderDetails.Address.FullName,
+                Address: orderDetails.Address.Address,
+                MobileNo: orderDetails.Address.MobileNo,
+                Pincode: orderDetails.Address.Pincode,
+                FlatNo: orderDetails.Address.FlatNo,
+                Country: orderDetails.Address.Country,
+                City: orderDetails.Address.City,
+                District: orderDetails.Address.District,
+                Landmark: orderDetails.Address.Landmark,
+                State: orderDetails.Address.State
+            },
+            Status: 'Pending', // Pending by default until confirmed
+            RazorpayOrderId: razorpayOrderId,
+            RazorpayPaymentId: razorpayPaymentId || null,
+            PaymentStatus: paymentStatus // 'Paid' or 'Failed'
+        });
+
+        // Save the new order
+        await newOrder.save();
+
+        // Check and update the coupon usage if an applied coupon code is present
+        if (orderDetails.appliedCouponCode) {
+            const coupon = await Coupon.findOne({ CouponCode: orderDetails.appliedCouponCode });
+            if (coupon) {
+                coupon.UsedBy.push(userId); // Add the user ID to the UsedBy array
+                await coupon.save(); // Save the updated coupon
+            }
+        }
+
+        // Update product quantities and remove items from cart
+        for (const item of orderDetails.Products) {
+            await Product.findByIdAndUpdate(
+                item.ProductId,
+                { $inc: { Quantity: -item.Quantity } }
+            );
+        }
+
+        // Remove the ordered items from the user's cart
+        await Cart.findOneAndUpdate(
+            { UserId: userId },
+            { $pull: { Products: { ProductId: { $in: orderDetails.Products.map(item => item.ProductId) } } } }
         );
 
-        if (order) {
-            return res.json({ success: true, orderId: order.OrderId });
-        }
-
-        res.json({ success: false, message: 'Order not found' });
+        req.session.order_id = newOrder.OrderId;
+        res.json({ success: true, orderId: newOrder.OrderId });
     } catch (error) {
         console.error('Error verifying payment:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
@@ -544,7 +536,7 @@ const cancelOrder = async (req, res) => {
             }
         }));
 
-        if (order.PaymentMethod !== 'Cash On Delivery') {
+        if (order.PaymentMethod !== 'Cash On Delivery' && order.PaymentStatus === 'Paid') {
             // Find the user's wallet
             let wallet = await Wallet.findOne({ UserId: order.UserId });
 

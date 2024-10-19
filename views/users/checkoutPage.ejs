@@ -1175,84 +1175,98 @@ document.getElementById('checkout-form').onsubmit = async function (e) {
 
 // Razorpay payment initiation function
 function initiateRazorpayPayment(data) {
-            let paymentSuccess = false; // Flag to check payment status
+    // Create Razorpay instance
+    const razorpay = new Razorpay({
+        key: data.key, // Razorpay key
+        amount: data.amount, // Amount in paise
+        currency: data.currency,
+        name: "MAZE BOOKS",
+        description: "Test Transaction",
+        order_id: data.razorpayOrderId, // Order ID created in backend
+        handler: async function (response) {
+            try {
+                // Payment success, send verification request
+                const verifyResponse = await fetch('/verify-payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        razorpayPaymentId: response.razorpay_payment_id,
+                        razorpayOrderId: data.razorpayOrderId,
+                        razorpaySignature: response.razorpay_signature
+                    })
+                });
 
-            var options = {
-                key: data.key, // Your Razorpay key
-                amount: data.amount, // Amount in paise
-                currency: data.currency,
-                name: "MAZE BOOKS",
-                description: "Test Transaction",
-                order_id: data.razorpayOrderId, // Order ID created in backend
-                handler: async function (response) {
-                    paymentSuccess = true; // Payment was successful
-
-                    // Send payment verification request to server
-                    const verifyResponse = await fetch('/verify-payment', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            razorpayPaymentId: response.razorpay_payment_id,
-                            razorpayOrderId: data.razorpayOrderId,
-                            razorpaySignature: response.razorpay_signature
-                        })
-                    });
-                    paymentSuccess = true;
-                    const verificationData = await verifyResponse.json();
-                    if (verificationData.success) {
-                        // Redirect or show success message
-                        paymentSuccess = true;
-                        window.location.href = `/order-success?orderId=${verificationData.orderId}`;
-                    } else {
-                        Swal.fire({
-                            title: 'Payment Verification Failed',
-                            text: 'There was an issue verifying your payment. Please try again.',
-                            icon: 'error',
-                            confirmButtonText: 'Okay'
-                        });
-                    }
-                },
-                prefill: {
-                    name: "",
-                    email: '',
-                    contact: ""
-                },
-                theme: {
-                    color: "#333"
-                }
-            };
-
-            const razorpay = new Razorpay(options);
-
-            // Open the Razorpay payment modal
-            razorpay.open();
-
-            // Check if the modal was closed without payment
-            razorpay.on('payment.failed', function(response) {
-                // Handle the payment failure case if needed
-            });
-
-            // Use a simple setTimeout to check if the payment was completed after a few seconds
-            const checkPaymentStatus = setInterval(() => {
-                if (paymentSuccess) {
-                    clearInterval(checkPaymentStatus); // Clear interval if payment is successful
-                } else if (!razorpay.isOpen) {
-                    clearInterval(checkPaymentStatus); // Clear interval if modal is closed
-                    // Show a sweet alert for order failure
+                const verificationData = await verifyResponse.json();
+                if (verificationData.success) {
                     Swal.fire({
-                        icon: 'error',
-                        title: 'Order Failed',
-                        text: 'Your order was not completed. Please try again.',
-                        confirmButtonText: 'OK'
+                        title: 'Paid successfully',
+                        text: 'Your payment was successful',
+                        icon: 'success',
+                        confirmButtonText: 'Okay'
                     }).then(() => {
-                        // Redirect to order history after alert is acknowledged
-                        window.location.href = "/myaccount/order-history";
+                        window.location.href = `/order-success?orderId=${verificationData.orderId}`;
                     });
+                } else {
+                    // Handle payment verification failure
+                    await handlePaymentFailure('Payment Verification Failed', 'Your payment was not verified. Please check your order in the history.', data.razorpayOrderId);
                 }
-            }, 1000); // Check every second
+            } catch (error) {
+                console.error("Error during payment verification", error);
+                await handlePaymentFailure('Payment Verification Failed', 'An error occurred while verifying your payment.', data.razorpayOrderId);
+            }
+        },
+        prefill: {
+            name: "",
+            email: '',
+            contact: ""
+        },
+        theme: {
+            color: "#333"
         }
+    });
+
+    // Open Razorpay modal
+    razorpay.open();
+
+    // Handle payment failure
+    razorpay.on('payment.failed', async function (response) {
+        // Handle payment failure logic
+        await handlePaymentFailure('Payment Failed', 'Your payment could not be processed. Please check your order in the history.', data.razorpayOrderId);
+
+        // Explicitly close Razorpay modal (although Razorpay might close it automatically on failure)
+        if (razorpay) {
+            razorpay.close(); // Close the modal immediately, without delay
+        }
+    });
+}
+
+// Function to handle payment failure
+async function handlePaymentFailure(title, text, razorpayOrderId) {
+    Swal.fire({
+        title: title,
+        text: text,
+        icon: 'error',
+        confirmButtonText: 'Okay'
+    }).then(() => {
+        // Redirect after modal closes
+        window.location.href = "/myaccount/order-history";
+    });
+
+    // Log the failure status to the backend
+    await fetch('/verify-payment', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            razorpayOrderId: razorpayOrderId, // Order ID is necessary
+            status: 'Failed', // Explicitly pass the failed status
+        })
+    });
+}
+
 </script>
 </body>
 </html>
