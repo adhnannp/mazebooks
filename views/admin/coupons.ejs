@@ -375,6 +375,29 @@
                                   </nav>
                               <% } %>
                           </div>
+                          <style>
+                            .pagination {
+                              text-align: center;
+                              display: flex;
+                              justify-content: center;
+                              margin-top: 20px; /* Adjust as needed */
+                            }
+                          
+                            .pagination .page-item .page-link {
+                              color: #fff;
+                              background-color: #191C24;
+                              border-color: #191C24;
+                            }
+                          
+                            .pagination .page-item.active .page-link {
+                              background-color: #007bff;
+                              border-color: #007bff;
+                            }
+                          
+                            .pagination .page-item.disabled .page-link {
+                              color: #6c757d;
+                            }
+                          </style>   
                       </div>
                   </div>
               </div>

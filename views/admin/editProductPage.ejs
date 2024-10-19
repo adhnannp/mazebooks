@@ -211,22 +211,39 @@
                                 <p id="price-error" style="color: red; display: none;"></p>
                             </div>
 
-                              <!-- Image Upload and Cropping Section -->
-                              <div class="form-group">
-                                <label for="productImages1" class="image-label">Change Cover Image</label>
-                                <input type="file" name="croppedImage" class="file-upload-default" id="productImages1" accept="image/*" style="display: none;">
-                                <img id="preview1" style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;" src="/static/uploads/<%= product.Images[0] %>" alt="Upload Image 1" />
-                                <button type="button" id="changeImage1" class="change-image-button" style="display: none;">Change Image</button>
-                              </div>
+                             <!-- Product Image Upload and Cropping Section -->
+                             <div class="form-group">
+                              <label for="productImages1" class="image-label">Change Cover Image</label>
+                              <input type="file" name="croppedImage1" class="file-upload-default" id="productImages1" accept="image/*" style="display: none;">
+                              <img id="preview1" style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;" src="/static/uploads/<%= product.Images[0] %>" alt="Upload Image 1" />
+                              <button type="button" id="changeImage1" class="change-image-button" style="display: none;">Change Image</button>
+                              <p id="image1-error" style="color: red; display: none;"></p> <!-- Error message placeholder -->
+                          </div>
+                          
+                          <div class="form-group">
+                              <label for="productImages2" class="image-label">Change Image 2</label>
+                              <input type="file" name="croppedImage2" class="file-upload-default" id="productImages2" accept="image/*" style="display: none;">
+                              <img id="preview2" style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;" src="/static/uploads/<%= product.Images[1] %>" alt="Upload Image 2" />
+                              <button type="button" id="changeImage2" class="change-image-button" style="display: none;">Change Image</button>
+                              <p id="image2-error" style="color: red; display: none;"></p> <!-- Error message placeholder -->
+                          </div>
+                          
+                          <div class="form-group">
+                              <label for="productImages3" class="image-label">Change Image 3</label>
+                              <input type="file" name="croppedImage3" class="file-upload-default" id="productImages3" accept="image/*" style="display: none;">
+                              <img id="preview3" style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;" src="/static/uploads/<%= product.Images[2] %>" alt="Upload Image 3" />
+                              <button type="button" id="changeImage3" class="change-image-button" style="display: none;">Change Image</button>
+                              <p id="image3-error" style="color: red; display: none;"></p> <!-- Error message placeholder -->
+                          </div>
 
-                              <!-- Cropping Section -->
-                              <div id="cropperContainer" style="display: none; width: 400px; height: 400px; margin: 0 auto;">
-                                <img id="cropperImage" src="" alt="Image for cropping" style="max-width: 100%; max-height: 100%;" />
-                                <div style="margin-top: 10px;">
-                                    <button type="button" id="cropButton" class="btn btn-primary">Crop Image</button>
-                                    <button type="button" id="cancelCropButton" class="btn btn-secondary">Cancel</button>
-                                </div>
+                            <!-- Cropping Section -->
+                            <div id="cropperContainer" style="display: none; width: 400px; height: 400px; margin: 0 auto;">
+                              <img id="cropperImage" src="" alt="Image for cropping" style="max-width: 100%; max-height: 100%;" />
+                              <div style="margin-top: 10px;">
+                                  <button type="button" id="cropButton" class="btn btn-primary">Crop Image</button>
+                                  <button type="button" id="cancelCropButton" class="btn btn-secondary">Cancel</button>
                               </div>
+                            </div>
                             <p id="image-error" style="color: red; display: none;"></p>
                             <button type="submit" class="btn btn-success mr-2" id="submitButton" disabled>Edit Product</button>
                             <a href="/admin/products" type="button" class="btn btn-dark">Cancel</a>

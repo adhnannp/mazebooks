@@ -1,10 +1,14 @@
 let cropper;
 let croppedImages = []; // To hold the cropped images
+let uploadedImages = []; // To hold the uploaded images
 let currentImageIndex; // To keep track of which image is being cropped
 
+// Add this line to keep track if any image has been cropped
+let isImageCropped = false;
+
+// Modify the handleCropper function
 function handleCropper(imageIndex, file) {
     if (typeof file === 'string') {  // Check if it's a URL
-        // Fetch the image from the URL and convert it to a Blob
         fetch(file)
             .then(response => response.blob())
             .then(blob => {
@@ -21,9 +25,12 @@ function handleCropper(imageIndex, file) {
 
                 currentImageIndex = imageIndex;
                 document.getElementById('cropperContainer').style.display = 'block';
+
+                // Enable the submit button when an existing image is cropped
+                isImageCropped = true;
+                document.getElementById('submitButton').disabled = false;
             });
     } else {
-        // If it's a new file, proceed as normal
         const reader = new FileReader();
         reader.onload = function(e) {
             const image = document.getElementById('cropperImage');
@@ -38,6 +45,10 @@ function handleCropper(imageIndex, file) {
 
             currentImageIndex = imageIndex;
             document.getElementById('cropperContainer').style.display = 'block';
+
+            // Enable the submit button when a new image is cropped
+            isImageCropped = true;
+            document.getElementById('submitButton').disabled = false;
         };
         reader.readAsDataURL(file);
     }
@@ -49,13 +60,12 @@ function previewImage(input, previewId, imageIndex, changeButtonId) {
         const reader = new FileReader();
         reader.onload = function(e) {
             document.getElementById(previewId).src = e.target.result;
+            uploadedImages[imageIndex] = e.target.result; // Save uploaded image to the array
         };
         reader.readAsDataURL(file);
         
-        // Show the "Change Image" button
         document.getElementById(changeButtonId).style.display = 'block';
 
-        // Enable cropping by clicking on the preview image
         document.getElementById(previewId).addEventListener('click', () => handleCropper(imageIndex, file));
     }
 }
@@ -65,18 +75,40 @@ document.getElementById('productImages1').addEventListener('change', function() 
     previewImage(this, 'preview1', 0, 'changeImage1');
 });
 
-// Handle "Change Image" button click
+document.getElementById('productImages2').addEventListener('change', function() {
+    previewImage(this, 'preview2', 1, 'changeImage2');
+});
+
+document.getElementById('productImages3').addEventListener('change', function() {
+    previewImage(this, 'preview3', 2, 'changeImage3');
+});
+
+// Handle "Change Image" button clicks
 document.getElementById('changeImage1').addEventListener('click', () => {
     document.getElementById('productImages1').click();
 });
-
-// Handle existing image click (Treat it as new for cropping)
-document.getElementById('preview1').addEventListener('click', function() {
-    // When clicking on an already existing image, allow cropping as if it's a new image
-    const imgSrc = document.getElementById('preview1').src;
-    handleCropper(0, imgSrc);  // Image index is 0 for the first image
+document.getElementById('changeImage2').addEventListener('click', () => {
+    document.getElementById('productImages2').click();
+});
+document.getElementById('changeImage3').addEventListener('click', () => {
+    document.getElementById('productImages3').click();
 });
 
+// Handle existing image clicks (Treat it as new for cropping)
+document.getElementById('preview1').addEventListener('click', function() {
+    const imgSrc = document.getElementById('preview1').src;
+    handleCropper(0, imgSrc);
+});
+document.getElementById('preview2').addEventListener('click', function() {
+    const imgSrc = document.getElementById('preview2').src;
+    handleCropper(1, imgSrc);
+});
+document.getElementById('preview3').addEventListener('click', function() {
+    const imgSrc = document.getElementById('preview3').src;
+    handleCropper(2, imgSrc);
+});
+
+// Handle crop button click
 // Handle crop button click
 document.getElementById('cropButton').addEventListener('click', function() {
     if (cropper) {
@@ -86,8 +118,11 @@ document.getElementById('cropButton').addEventListener('click', function() {
         // Update the preview with the cropped image
         document.getElementById(`preview${currentImageIndex + 1}`).src = croppedImageURL;
 
-        // Save cropped image
-        croppedImages[currentImageIndex] = croppedImageURL;
+        // Save the cropped image, overwriting the previous one at the current index
+        croppedImages[currentImageIndex] = croppedImageURL; // Keep only the last cropped image
+
+        // Optionally, also clear the uploaded image at the index
+        uploadedImages[currentImageIndex] = null; // Clear if you want to replace
 
         // Hide the cropping section
         document.getElementById('cropperContainer').style.display = 'none';
@@ -117,19 +152,23 @@ function dataURLtoBlob(dataURL) {
 
 // Form submission handling
 document.getElementById('addProductForm').addEventListener('submit', function(event) {
-    event.preventDefault(); // Prevent the form from submitting normally
+    event.preventDefault();
 
     const formData = new FormData(this);
 
-    // Add cropped image to FormData if it exists
-    if (croppedImages.length > 0 && croppedImages[0]) { // Check if there are cropped images
-        const blob = dataURLtoBlob(croppedImages[0]);
-        formData.append('croppedImage', blob, 'croppedImage.jpg');
-    }
+    // Add cropped images to FormData if they exist
+    croppedImages.forEach((image, index) => {
+        if (image) {
+            const blob = dataURLtoBlob(image);
+            formData.append(`croppedImage${index + 1}`, blob, `croppedImage${index + 1}.jpg`);
+        } else if (uploadedImages[index]) {
+            // Optionally add the uploaded image if no cropping occurred
+            const blob = dataURLtoBlob(uploadedImages[index]);
+            formData.append(`uploadedImage${index + 1}`, blob, `uploadedImage${index + 1}.jpg`);
+        }
+    });
 
     const productId = document.getElementById('productId').value;
-    console.log('Product ID:', productId);
-    console.log(`/admin/products/edit/${productId}`);
 
     fetch(`/admin/products/edit/${productId}`, {
         method: 'POST',
@@ -138,7 +177,7 @@ document.getElementById('addProductForm').addEventListener('submit', function(ev
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            window.location.href = '/admin/products'; // Redirect on success
+            window.location.href = '/admin/products';
         } else {
             const errorElement = document.getElementById('existingError');
             errorElement.innerHTML = data.message;
@@ -153,12 +192,44 @@ document.getElementById('addProductForm').addEventListener('submit', function(ev
     });
 });
 
-
 //validation
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('addProductForm');
     const submitButton = document.getElementById('submitButton');
-    
+
+    // Function to validate image files
+    function validateImageFiles() {
+        let valid = true;
+
+        const imageInputs = [
+            { inputId: 'productImages1', errorId: 'image1-error' },
+            { inputId: 'productImages2', errorId: 'image2-error' },
+            { inputId: 'productImages3', errorId: 'image3-error' },
+        ];
+
+        imageInputs.forEach(({ inputId, errorId }) => {
+            const input = document.getElementById(inputId);
+            const errorElement = document.getElementById(errorId);
+            const files = input.files;
+
+            // If files exist, check if they're images
+            if (files.length > 0) {
+                const validImage = Array.from(files).every(file => file.type.startsWith('image/'));
+                if (!validImage) {
+                    errorElement.textContent = 'Please upload a valid image file.';
+                    errorElement.style.display = 'block';
+                    valid = false;
+                } else {
+                    errorElement.style.display = 'none'; // Hide error message if valid
+                }
+            } else {
+                errorElement.style.display = 'none'; // Hide error if no file uploaded
+            }
+        });
+
+        return valid;
+    }
+
     // Function to validate form fields
     function validateForm() {
         let valid = true;
@@ -166,9 +237,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Validate Name
         const name = document.getElementById('productName').value.trim();
         const nameError = document.getElementById('name-error');
-        const nameRegex =   /^(?!.*[!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]{2})(?!.*\s{2,})[^\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]*(?:[\w\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~][^\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]*){2,85}$/;
+        const nameRegex = /^(?!.*[!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]{2})(?!.*\s{2,})[^\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]*(?:[\w\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~][^\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]*){2,85}$/;
         if (!nameRegex.test(name)) {
-            nameError.textContent = 'invalid Name';
+            nameError.textContent = 'Invalid Name';
             nameError.style.display = 'block';
             valid = false;
         } else {
@@ -179,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const author = document.getElementById('productAuthor').value.trim();
         const authorError = document.getElementById('author-error');
         if (!nameRegex.test(author)) {
-            authorError.textContent = 'invalid Author Name';
+            authorError.textContent = 'Invalid Author Name';
             authorError.style.display = 'block';
             valid = false;
         } else {
@@ -189,7 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Validate Description
         const description = document.getElementById('productDescription').value.trim();
         const descriptionError = document.getElementById('description-error');
-        const descriptionRegex =  /^(?!.*[!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]{2})(?!.*\s{2,})[^\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]*(?:[\w\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~][^\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]*){25,250}$/;
+        const descriptionRegex = /^(?!.*[!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]{2})(?!.*\s{2,})[^\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]*(?:[\w\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~][^\s!@#$%^&*()_+=\[\]{};:'",.<>?\/\\|`~]*){25,250}$/;
         if (!descriptionRegex.test(description)) {
             descriptionError.textContent = 'Invalid Description';
             descriptionError.style.display = 'block';
@@ -198,13 +269,10 @@ document.addEventListener('DOMContentLoaded', () => {
             descriptionError.style.display = 'none';
         }
 
-       // Validate Quantity
+        // Validate Quantity
         const quantity = document.getElementById('productQuantity').value;
         const quantityError = document.getElementById('quantity-error');
-
-        // Check if the quantity is a positive number or zero and is an integer
         const quantityIsValid = /^[0-9]+$/.test(quantity);
-
         if (!quantityIsValid || quantity < 0) {
             quantityError.textContent = 'Invalid Quantity';
             quantityError.style.display = 'block';
@@ -213,16 +281,11 @@ document.addEventListener('DOMContentLoaded', () => {
             quantityError.style.display = 'none';
         }
 
-       // Validate Price
+        // Validate Price
         const price = document.getElementById('productPrice').value;
         const priceError = document.getElementById('price-error');
-
-        // Regular expression for positive floating-point numbers with up to two decimal places
         const priceRegex = /^\d+(\.\d{1,2})?$/;
-
-        // Check if the price is a valid floating-point number with up to two decimal places and non-negative
-        const priceIsValid = priceRegex.test(price) && parseFloat(price) >= 0;
-
+        const priceIsValid = priceRegex.test(price) && parseFloat(price) > 0;
         if (!priceIsValid) {
             priceError.textContent = 'Invalid Price';
             priceError.style.display = 'block';
@@ -230,6 +293,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             priceError.style.display = 'none';
         }
+
+        // Validate image files
+        const imagesValid = validateImageFiles();
+        valid = valid && imagesValid;
 
         // Enable or disable submit button
         submitButton.disabled = !valid;

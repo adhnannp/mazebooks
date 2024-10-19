@@ -39,7 +39,7 @@ admin_route.post('/products/add', upload.fields([{ name: 'img1' }, { name: 'img2
 
 admin_route.get('/products/edit/:id',auth.isLogin, adminController.editProductLoadPage);
 
-admin_route.post('/products/edit/:id',upload.single('croppedImage'), adminController.editProduct);
+admin_route.post('/products/edit/:id', upload.fields([{ name: 'croppedImage1' },{ name: 'croppedImage2' },{ name: 'croppedImage3' }]), adminController.editProduct);
 
 admin_route.post('/products/unlistproduct/:id',adminController.unlistProduct)
 

@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function validateDiscountPercentage() {
       const discountPercentage = parseFloat(discountPercentageInput.value);
 
-      if (isNaN(discountPercentage) || discountPercentage < 0 || discountPercentage > 100) {
+      if (isNaN(discountPercentage) || discountPercentage <= 0 || discountPercentage >= 100) {
         discountPercentageError.innerHTML = 'Discount percentage must be between 0 and 100';
         discountPercentageError.style.display = 'block';
         return false;
@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
     function validateDiscountPercentage() {
       const discountPercentage = parseFloat(discountPercentageInput.value);
-      if (isNaN(discountPercentage) || discountPercentage < 0 || discountPercentage > 100) {
+      if (isNaN(discountPercentage) || discountPercentage <= 0 || discountPercentage >= 100) {
         discountPercentageError.innerHTML = 'Discount percentage must be between 0 and 100';
         discountPercentageError.style.display = 'block';
         return false;

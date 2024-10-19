@@ -264,6 +264,7 @@ const placeOrder = async (req, res) => {
                     Quantity: item.Quantity
                 })), // Use converted ObjectId array
                 TotalPrice: parseFloat(TotalPrice),
+                PaymentStatus: 'Paid',
                 ActualTotalPrice: parseFloat(actualTotalPrice),
                 AppliedCoupon: appliedCouponCode?appliedCouponCode:null,
                 PriceWithoutDedection:priceWithoutDedection,

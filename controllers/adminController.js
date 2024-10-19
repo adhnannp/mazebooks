@@ -282,27 +282,32 @@ const editProductLoadPage = async (req, res) => {
 //edit product
 const editProduct = async (req, res) => {
     try {
-
-        // Extract and validate productId
         const Id = req.params.id;
+
+        // Validate ObjectId
         if (!mongoose.isValidObjectId(Id)) {
             console.error(`Invalid product ID: ${Id}`);
             return res.status(400).json({ success: false, message: 'Invalid product ID' });
         }
 
-        const existingProduct = await Product.findOne({ 
-            Name: new RegExp(`^${req.body.name}$`, 'i'), 
-            _id: { $ne: req.params.id }  // Exclude the product with the current ID
+        // Check if product name already exists
+        const existingProduct = await Product.findOne({
+            Name: new RegExp(`^${req.body.name}$`, 'i'),
+            _id: { $ne: Id }
         });
+
         if (existingProduct) {
             return res.json({ success: false, message: "Product already exists" });
         }
-        const productId = req.params.id;
-        const { name, author, description, categoryId, quantity, price, imageToReplace } = req.body;
-        
-        // Find the product
-        let product = await Product.findById(productId);
-        if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+
+        // Destructure the product data from the request body
+        const { name, author, description, categoryId, quantity, price } = req.body;
+
+        // Fetch the existing product
+        let product = await Product.findById(Id);
+        if (!product) {
+            return res.status(404).json({ success: false, message: 'Product not found' });
+        }
 
         // Update product fields
         product.Name = name;
@@ -311,29 +316,43 @@ const editProduct = async (req, res) => {
         product.CategoryId = categoryId;
         product.Quantity = quantity;
         product.Price = price;
-        product.UpdatedAt= new Date();
+        product.UpdatedAt = new Date();
 
-       // Handle image replacement
-       if (req.file) {
-        // Delete the existing image if it exists
-        if (product.Images[0]) {
-            fs.unlinkSync(path.join(__dirname, '../public/uploads', product.Images[0])); // Adjust the path as needed
+        // Handle image replacement if new images are uploaded
+        const imageFields = ['croppedImage1', 'croppedImage2', 'croppedImage3'];
+        console.log(req.files);
+
+        for (const [index, field] of imageFields.entries()) {
+            if (req.files[field] && req.files[field].length > 0) {
+                // Only keep the last image if there are multiple uploads
+                const lastImage = req.files[field][req.files[field].length - 1];
+                
+                // Unlink all previous images (except the last one)
+                for (let i = 0; i < req.files[field].length - 1; i++) {
+                    const oldImage = req.files[field][i];
+                    fs.unlinkSync(path.join(__dirname, '../public/uploads', oldImage.filename));
+                }
+                
+                // Unlink the existing image in the database if it exists
+                if (product.Images[index]) {
+                    fs.unlinkSync(path.join(__dirname, '../public/uploads', product.Images[index]));
+                }
+                
+                // Replace with the last image
+                product.Images[index] = lastImage.filename; // Get the filename
+            }
         }
 
-        // Add the new image
-        const fileName = req.file.filename; // Get the filename from Multer
-        product.Images[0] = fileName; // Update the image URL in the product array
-        }
-
-        // Save updated product
+        // Save the updated product
         await product.save();
-        res.json({ success: true, message: "Product Added Successfully" });
+        res.json({ success: true, message: "Product updated successfully" });
 
     } catch (error) {
         console.error('Error updating product:', error);
-        res.status(500).json({ success: false, message: 'Server error,Please try again' });
+        res.status(500).json({ success: false, message: 'Server error, please try again' });
     }
 };
+
 
 
 // unlist product
