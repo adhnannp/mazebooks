@@ -519,7 +519,14 @@ const ordersLoad = async (req, res) => {
                 query = {}; // Fetch all orders for "New" (recently placed orders)
             } else if (filterOption === "Rejected" || filterOption === "Requested") {
                 query["ReturnRequest.status"] = filterOption; // Find orders with return requests
-            } else {
+            } else if (filterOption === "Cancelled"){
+                query = {
+                    $or: [
+                        { "Products.ProductStatus": "Cancelled" },
+                        { "Status": "Cancelled" }
+                    ]
+                };
+            }else {
                 query["Status"] = filterOption; // For regular order statuses
             }
         }
@@ -556,66 +563,119 @@ const ordersLoad = async (req, res) => {
 const cancelOrder = async (req,res)=>{
     try {
         const orderId = req.params.orderId;
-
-        // Find the order by its ID
+        const { selectedProducts } = req.body; // Only the selected products
+        console.log(selectedProducts);
+        
         const order = await Order.findById(orderId).populate('Products.ProductId');
-
         if (!order) {
-            return res.status(404).send('Order not found');
+            return res.redirect('/admin/orders?error=Order not found');
         }
 
-        // Check if the order is already canceled
-        if (order.Status === 'Cancelled') {
-            res.status(404).send('it is allready cancelled');
+        let wallet = await Wallet.findOne({ UserId: order.UserId });
+        if (!wallet) {
+            wallet = await Wallet.create({
+                UserId: order.UserId,
+                Balance: 0,
+                Transactions: []
+            });
         }
 
-        // Update the order status to "Cancelled"
-        order.Status = 'Cancelled';
-        await order.save();  // Save the updated order
-
-        // Loop through each product in the order and update the stock
-        await Promise.all(order.Products.map(async (item) => {
-            const product = await Product.findById(item.ProductId._id);
-            if (product) {
-                product.Quantity += item.Quantity;  // Add the canceled quantity back to the stock
-                await product.save();  // Save the updated product
-                console.log(product);
+        if (selectedProducts && selectedProducts.length > 0) {
+            const productsToCancel = Array.isArray(selectedProducts) ? selectedProducts : [selectedProducts];
+            let totalProductRefund = 0;
+            let totalActualPriceReduction = 0;
+            let totalWithoutDeductionReduction = 0;
+            let allProductsCancelled = true;
+            let discountPercentage = 0;
+            // Check if an applied coupon is present
+            if (order.AppliedCoupon) {
+                // Fetch the coupon from the database
+                const coupon = await Coupon.findOne({ CouponCode: order.AppliedCoupon });
+                if (coupon) {
+                    discountPercentage = coupon.DiscountPercentage;
+                }
             }
-        }));
+            // Update each selected product's status to "Cancelled"
+            await Promise.all(productsToCancel.map(async (productId) => {
+                const productInOrder = order.Products.find(p => p.ProductId._id.toString() === productId); // Ensure _id is accessed correctly
+                if (productInOrder && productInOrder.ProductStatus === 'Placed') {
+                    productInOrder.ProductStatus = 'Cancelled';
 
-        if (order.PaymentMethod !== 'Cash On Delivery') {
-            // Find the user's wallet
-            let wallet = await Wallet.findOne({ UserId: order.UserId });
+                    // (price after Coupon)
+                    // Calculate the refund considering the discount
+                    const productTotal = productInOrder.Price * productInOrder.Quantity;
+                    let refundAmount = productTotal;
 
-            // If no wallet exists, create a new one
-            if (!wallet) {
-                wallet = await Wallet.create({
-                    UserId: order.UserId,  // Use the correct user ID
-                    Balance: 0,
-                    Transactions: []
-                });
-            }
+                    if (discountPercentage > 0) {
+                        // Calculate the discount only if the discount percentage is greater than 0
+                        refundAmount = productTotal - (productTotal * (discountPercentage / 100));
+                    }
 
-            // Add the amount of the order to the wallet balance
-            wallet.Balance += order.TotalPrice; // Assuming order.TotalPrice contains the amount to be added
+                    totalProductRefund += refundAmount;
 
-            // Add a transaction record for the return
-            wallet.Transactions.push({
-                Type: 'Cancelled Order',
-                Amount: order.TotalPrice,
-                Date: new Date() // Current date for the transaction
+                    //  (price after offer)
+                    totalActualPriceReduction += productInOrder.Price * productInOrder.Quantity;
+
+                    // (original price)
+                    totalWithoutDeductionReduction += productInOrder.PriceWithoutOffer * productInOrder.Quantity;
+
+                    // Return product quantity to stock
+                    const product = await Product.findById(productInOrder.ProductId._id);
+                    if (product) {
+                        product.Quantity += productInOrder.Quantity;
+                        await product.save();
+                    }
+                }
+            }));
+
+            // Adjust order amounts based on cancellations
+            order.ActualTotalPrice -= totalActualPriceReduction; // Reduce ActualTotalPrice
+            order.TotalPrice -= totalProductRefund; // Reduce TotalPrice
+            order.PriceWithoutDedection -= totalWithoutDeductionReduction; // Reduce PriceWithoutDeduction
+
+            // Check if all products have been cancelled
+            order.Products.forEach(product => {
+                if (product.ProductStatus !== 'Cancelled') {
+                    allProductsCancelled = false;
+                }
             });
 
-            // Save the updated wallet
-            await wallet.save();
+            if (allProductsCancelled) {
+                if (order.PaymentMethod !== 'Cash On Delivery' && order.PaymentStatus === 'Paid') {
+                    // Add the refund amount to the user's wallet
+                    wallet.Balance += totalProductRefund+50;
+                    wallet.Transactions.push({
+                        Type: 'Cancelled Order',
+                        Amount: totalProductRefund+50,
+                        Date: new Date()
+                    });
+                    await wallet.save(); // Save updated wallet
+                }  
+                order.TotalPrice = order.ReferencePrice.TotalPrice;
+                order.ActualTotalPrice = order.ReferencePrice.ActualTotalPrice;
+                order.PriceWithoutDedection = order.ReferencePrice.PriceWithoutDeduction;
+                order.Status = 'Cancelled';
+                
+            }
+            await order.save();
+
+            // Add the partial product refund to the user's wallet
+            if (totalProductRefund > 0 && !allProductsCancelled) {
+                wallet.Balance += totalProductRefund;
+                wallet.Transactions.push({
+                    Type: 'Cancelled Products',
+                    Amount: totalProductRefund,
+                    Date: new Date()
+                });
+                await wallet.save(); // Save the updated wallet
+            }
+
+            return res.redirect('/admin/orders?success=Selected products cancelled successfully');
         }
-        
-        // Redirect back to the order history page
-        res.redirect('/admin/orders');
+        return res.redirect('/admin/orders?error=No products selected for cancellation');
     } catch (error) {
         console.error('Error cancelling order:', error);
-        // Redirect back to order history with an error message if something goes wrong
-        res.redirect('/admin/orders');
+        return res.redirect('/admin/orders?error=Could not cancel the order');
     }
 }
 

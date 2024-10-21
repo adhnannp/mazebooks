@@ -105,7 +105,7 @@ const loadCheckout = async (req, res) => {
         });
 
         // Calculate shipping cost
-        const shippingCost = cartSubtotal > 499 ? 0 : 50;
+        const shippingCost = 50
         const cartTotal = cartSubtotal + shippingCost;
 
         // Format addresses for rendering
@@ -199,18 +199,33 @@ const placeOrder = async (req, res) => {
            // Save the updated wallet
            await wallet.save();
 
+            const productDetails = await Promise.all(Products.map(async (item) => {
+                const product = await Product.findById(item.ProductId);
+                if (!product) {
+                    throw new Error(`Product with ID ${item.ProductId} not found`);
+                }
+                return {
+                    ProductId: new mongoose.Types.ObjectId(item.ProductId),
+                    Quantity: item.Quantity,
+                    Price: item.Price, // Price after offer/discount (from request body)
+                    PriceWithoutOffer: product.Price, // Price without offer/discount (from Product schema)
+                };
+            }));
+
            const newOrder = new Order({
                 UserId: userId,
                 PaymentMethod: paymentMethod,
-                Products: Products.map(item => ({
-                    ProductId: new mongoose.Types.ObjectId(item.ProductId), // Convert string ID to ObjectId
-                    Quantity: item.Quantity
-                })), // Use converted ObjectId array
+                Products: productDetails, // Use converted ObjectId array
                 TotalPrice: parseFloat(TotalPrice),
                 PaymentStatus: 'Paid',
                 ActualTotalPrice: parseFloat(actualTotalPrice),
                 AppliedCoupon: appliedCouponCode?appliedCouponCode:null,
                 PriceWithoutDedection:priceWithoutDedection,
+                ReferencePrice: {
+                    TotalPrice: parseFloat(TotalPrice),
+                    ActualTotalPrice: parseFloat(actualTotalPrice),
+                    PriceWithoutDeduction: priceWithoutDedection  // Total price without any deductions
+                },
                 Address: {
                     FullName: Address.FullName,
                     Address: Address.Address,
@@ -257,17 +272,34 @@ const placeOrder = async (req, res) => {
         }
         // For other payment methods (not online payment)
         // Create order object without Razorpay details
+
+        // Initialize the array to store product details with prices from the database
+        const productDetails = await Promise.all(Products.map(async (item) => {
+            const product = await Product.findById(item.ProductId);
+            if (!product) {
+                throw new Error(`Product with ID ${item.ProductId} not found`);
+            }
+            return {
+                ProductId: new mongoose.Types.ObjectId(item.ProductId),
+                Quantity: item.Quantity,
+                Price: item.Price, // Price after offer/discount (from request body)
+                PriceWithoutOffer: product.Price, // Price without offer/discount (from Product schema)
+            };
+        }));
+
         const newOrder = new Order({
             UserId: userId,
             PaymentMethod: paymentMethod,
-            Products: Products.map(item => ({
-                ProductId: new mongoose.Types.ObjectId(item.ProductId), // Convert string ID to ObjectId
-                Quantity: item.Quantity
-            })), // Use converted ObjectId array
+            Products: productDetails,
             TotalPrice: parseFloat(TotalPrice),
             ActualTotalPrice: parseFloat(actualTotalPrice),
             AppliedCoupon: appliedCouponCode?appliedCouponCode:null,
             PriceWithoutDedection:priceWithoutDedection,
+            ReferencePrice: {
+                TotalPrice: parseFloat(TotalPrice),
+                ActualTotalPrice: parseFloat(actualTotalPrice),
+                PriceWithoutDeduction: priceWithoutDedection  // Total price without any deductions
+            },
             Address: {
                 FullName: Address.FullName,
                 Address: Address.Address,
@@ -355,19 +387,33 @@ const verifyPayment = async (req, res) => {
                 return res.json({ success: false, message: 'Payment verification failed' });
             }
         }
-
+        console.log(orderDetails)
+        const productDetails = await Promise.all(orderDetails.Products.map(async (item) => {
+            const product = await Product.findById(item.ProductId);
+            if (!product) {
+                throw new Error(`Product with ID ${item.ProductId} not found`);
+            }
+            return {
+                ProductId: new mongoose.Types.ObjectId(item.ProductId),
+                Quantity: item.Quantity,
+                Price: item.Price, // Price after offer/discount (from request body)
+                PriceWithoutOffer: product.Price, // Price without offer/discount (from Product schema)
+            };
+        }));
         // Create the order regardless of payment success/failure
         const newOrder = new Order({
             UserId: userId,
             PaymentMethod: orderDetails.paymentMethod,
-            Products: orderDetails.Products.map(item => ({
-                ProductId: new mongoose.Types.ObjectId(item.ProductId),
-                Quantity: item.Quantity
-            })),
+            Products: productDetails,
             TotalPrice: parseFloat(orderDetails.TotalPrice),
             ActualTotalPrice: parseFloat(orderDetails.actualTotalPrice),
             AppliedCoupon: orderDetails.appliedCouponCode ? orderDetails.appliedCouponCode : null,
             PriceWithoutDedection: orderDetails.priceWithoutDedection,
+            ReferencePrice: {
+                TotalPrice: parseFloat(orderDetails.TotalPrice),
+                ActualTotalPrice: parseFloat(orderDetails.actualTotalPrice),
+                PriceWithoutDeduction: orderDetails.priceWithoutDedection,  // Total price without any deductions
+            },
             Address: {
                 FullName: orderDetails.Address.FullName,
                 Address: orderDetails.Address.Address,
@@ -466,9 +512,9 @@ const loadOrderHistory = async (req, res) => {
         // Define the query to filter orders based on category
         let orderQuery = { UserId: userId };
         if (category === 'cancelled') {
-            orderQuery.Status = 'Cancelled';
+            return res.redirect('/myaccount/cancelled-orders');
         } else if (category === 'returned') {
-            orderQuery.Status = 'Returned';
+            return res.redirect('/myaccount/returned-orders');
         } else if (category === 'delivered') {
             orderQuery.Status = 'Placed';
         } else {
@@ -505,70 +551,267 @@ const loadOrderHistory = async (req, res) => {
 };
 
 
+const loadCancelledOrders = async (req, res) => {
+    try {
+        const error = req.query.error; 
+        const userId = req.session.user_id; // Assuming user ID is stored in session
+        // Pagination variables
+        let orderQuery = { UserId: userId, 
+            $or: [
+                { Status: 'Cancelled' }, // Order-level status
+                { 'Products.ProductStatus': 'Cancelled' } // Product-level status within the order
+            ]
+        };
+        const currentPage = parseInt(req.query.page) || 1;
+        const itemsPerPage = 5; 
+        const totalOrders = await Order.countDocuments(orderQuery);
+        console.log(totalOrders);
+        const totalPages = Math.ceil(totalOrders / itemsPerPage);
+
+        // Fetch paginated orders based on the selected category
+        const orders = await Order.find(orderQuery)
+            .skip((currentPage - 1) * itemsPerPage)
+            .limit(itemsPerPage)
+            .populate('Products.ProductId')
+            .sort({ createdAt: -1 });
+            console.log(orders.Products);
+        // Render the orders with pagination
+        res.render('cancelledOrderPage', {
+            orders,
+            currentPage,
+            totalPages,
+            error,
+            cartItemCount: req.session.cartItemCount,
+            wishlistItemCount: req.session.wishlistItemCount,
+            user: req.session.user_id
+        });
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+        res.status(500).send('Error fetching orders');
+    }
+};
+
+const loadDeliveredOrders = async (req, res) => {
+    try {
+        const error = req.query.error; 
+        const userId = req.session.user_id; // Assuming user ID is stored in session
+        // Pagination variables
+        let orderQuery = { UserId: userId, 
+            Status: 'Placed'
+        };
+        const currentPage = parseInt(req.query.page) || 1;
+        const itemsPerPage = 5; 
+        const totalOrders = await Order.countDocuments(orderQuery);
+        console.log(totalOrders);
+        const totalPages = Math.ceil(totalOrders / itemsPerPage);
+
+        // Fetch paginated orders based on the selected category
+        const orders = await Order.find(orderQuery)
+            .skip((currentPage - 1) * itemsPerPage)
+            .limit(itemsPerPage)
+            .populate('Products.ProductId')
+            .sort({ createdAt: -1 });
+            console.log(orders.Products);
+        // Render the orders with pagination
+        res.render('PlacedOrderPage', {
+            orders,
+            currentPage,
+            totalPages,
+            error,
+            cartItemCount: req.session.cartItemCount,
+            wishlistItemCount: req.session.wishlistItemCount,
+            user: req.session.user_id
+        });
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+        res.status(500).send('Error fetching orders');
+    }
+};
+
+const loadReturnedOrders = async (req, res) => {
+    try {
+        const error = req.query.error; 
+        const userId = req.session.user_id; // Assuming user ID is stored in session
+        // Pagination variables
+        let orderQuery = { UserId: userId, 
+            $or: [
+                { Status: 'Returned' }, // Order-level status
+                { 'Products.ProductStatus': 'Returned' } // Product-level status within the order
+            ]
+        };
+        const currentPage = parseInt(req.query.page) || 1;
+        const itemsPerPage = 5; 
+        const totalOrders = await Order.countDocuments(orderQuery);
+        console.log(totalOrders);
+        const totalPages = Math.ceil(totalOrders / itemsPerPage);
+
+        // Fetch paginated orders based on the selected category
+        const orders = await Order.find(orderQuery)
+            .skip((currentPage - 1) * itemsPerPage)
+            .limit(itemsPerPage)
+            .populate('Products.ProductId')
+            .sort({ createdAt: -1 });
+            console.log(orders.Products);
+        // Render the orders with pagination
+        res.render('returnedOrderPage', {
+            orders,
+            currentPage,
+            totalPages,
+            error,
+            cartItemCount: req.session.cartItemCount,
+            wishlistItemCount: req.session.wishlistItemCount,
+            user: req.session.user_id
+        });
+    } catch (error) {
+        console.error('Error fetching orders:', error);
+        res.status(500).send('Error fetching orders');
+    }
+};
+
 // Controller for cancelling the order and updating product stock
 const cancelOrder = async (req, res) => {
     try {
         const orderId = req.params.orderId;
-
-        // Find the order by its ID
+        const { selectedProducts, cancelFullOrder } = req.body;
+        console.log(req.body.selectedProducts,req.body.cancelFullOrder)
         const order = await Order.findById(orderId).populate('Products.ProductId');
-
         if (!order) {
             return res.redirect('/myaccount/order-history?error=Order not found');
         }
+        let wallet = await Wallet.findOne({ UserId: order.UserId });
+        if (!wallet) {
+            wallet = await Wallet.create({
+                UserId: order.UserId,
+                Balance: 0,
+                Transactions: []
+            });
+        }
+        // If "Cancel Full Order" is selected
+        if (cancelFullOrder === 'true') {
+            if (order.Status === 'Cancelled') {
+                return res.redirect('/myaccount/order-history?error=Order is already cancelled');
+            }
+            order.Status = 'Cancelled';
 
-        // Check if the order is already canceled
-        if (order.Status === 'Cancelled') {
-            return res.redirect('/myaccount/order-history?error=Order is already cancelled');
+            await Promise.all(order.Products.map(async (item) => {
+                const product = await Product.findById(item.ProductId._id);
+                if (product) {
+                    item.ProductStatus = 'Cancelled';
+                    product.Quantity += item.Quantity; 
+                    await product.save(); 
+                }
+            }));
+            await order.save();
+            if (order.PaymentMethod !== 'Cash On Delivery' && order.PaymentStatus === 'Paid') {
+                // Add the refund amount to the user's wallet
+                wallet.Balance += order.TotalPrice;
+                wallet.Transactions.push({
+                    Type: 'Cancelled Order',
+                    Amount: order.TotalPrice,
+                    Date: new Date()
+                });
+                await wallet.save(); // Save updated wallet
+            } 
+            return res.redirect('/myaccount/order-history?success=Order cancelled successfully');
         }
 
-        // Update the order status to "Cancelled"
-        order.Status = 'Cancelled';
-        await order.save();  // Save the updated order
-
-        // Loop through each product in the order and update the stock
-        await Promise.all(order.Products.map(async (item) => {
-            const product = await Product.findById(item.ProductId._id);
-            if (product) {
-                product.Quantity += item.Quantity;  // Add the canceled quantity back to the stock
-                await product.save();  // Save the updated product
-                console.log(product);
+        // Handle product-wise cancellation
+        if (selectedProducts && selectedProducts.length > 0) {
+            const productsToCancel = Array.isArray(selectedProducts) ? selectedProducts : [selectedProducts];
+            let totalProductRefund = 0;
+            let totalActualPriceReduction = 0;
+            let totalWithoutDeductionReduction = 0;
+            let allProductsCancelled = true;
+            let discountPercentage = 0;
+            // Check if an applied coupon is present
+            if (order.AppliedCoupon) {
+                // Fetch the coupon from the database
+                const coupon = await Coupon.findOne({ CouponCode: order.AppliedCoupon });
+                if (coupon) {
+                    discountPercentage = coupon.DiscountPercentage;
+                }
             }
-        }));
+            // Update each selected product's status to "Cancelled"
+            await Promise.all(productsToCancel.map(async (productId) => {
+                const productInOrder = order.Products.find(p => p.ProductId._id.toString() === productId); // Ensure _id is accessed correctly
+                if (productInOrder && productInOrder.ProductStatus === 'Placed') {
+                    productInOrder.ProductStatus = 'Cancelled';
 
-        if (order.PaymentMethod !== 'Cash On Delivery' && order.PaymentStatus === 'Paid') {
-            // Find the user's wallet
-            let wallet = await Wallet.findOne({ UserId: order.UserId });
+                    // (price after Coupon)
+                    // Calculate the refund considering the discount
+                    const productTotal = productInOrder.Price * productInOrder.Quantity;
+                    let refundAmount = productTotal;
 
-            // If no wallet exists, create a new one
-            if (!wallet) {
-                wallet = await Wallet.create({
-                    UserId: order.UserId,  // Use the correct user ID
-                    Balance: 0,
-                    Transactions: []
-                });
-            }
+                    if (discountPercentage > 0) {
+                        // Calculate the discount only if the discount percentage is greater than 0
+                        refundAmount = productTotal - (productTotal * (discountPercentage / 100));
+                    }
 
-            // Add the amount of the order to the wallet balance
-            wallet.Balance += order.TotalPrice; // Assuming order.TotalPrice contains the amount to be added
+                    totalProductRefund += refundAmount;
 
-            // Add a transaction record for the return
-            wallet.Transactions.push({
-                Type: 'Cancelled Order',
-                Amount: order.TotalPrice,
-                Date: new Date() // Current date for the transaction
+                    //  (price after offer)
+                    totalActualPriceReduction += productInOrder.Price * productInOrder.Quantity;
+
+                    // (original price)
+                    totalWithoutDeductionReduction += productInOrder.PriceWithoutOffer * productInOrder.Quantity;
+
+                    // Return product quantity to stock
+                    const product = await Product.findById(productInOrder.ProductId._id);
+                    if (product) {
+                        product.Quantity += productInOrder.Quantity;
+                        await product.save();
+                    }
+                }
+            }));
+
+            // Adjust order amounts based on cancellations
+            order.ActualTotalPrice -= totalActualPriceReduction; // Reduce ActualTotalPrice
+            order.TotalPrice -= totalProductRefund; // Reduce TotalPrice
+            order.PriceWithoutDedection -= totalWithoutDeductionReduction; // Reduce PriceWithoutDeduction
+
+            // Check if all products have been cancelled
+            order.Products.forEach(product => {
+                if (product.ProductStatus !== 'Cancelled') {
+                    allProductsCancelled = false;
+                }
             });
 
-            // Save the updated wallet
-            await wallet.save();
-        }
+            if (allProductsCancelled) {
+                if (order.PaymentMethod !== 'Cash On Delivery' && order.PaymentStatus === 'Paid') {
+                    // Add the refund amount to the user's wallet
+                    wallet.Balance += totalProductRefund+50;
+                    wallet.Transactions.push({
+                        Type: 'Cancelled Order',
+                        Amount: totalProductRefund+50,
+                        Date: new Date()
+                    });
+                    await wallet.save(); // Save updated wallet
+                }  
+                order.TotalPrice = order.ReferencePrice.TotalPrice;
+                order.ActualTotalPrice = order.ReferencePrice.ActualTotalPrice;
+                order.PriceWithoutDedection = order.ReferencePrice.PriceWithoutDeduction;
+                order.Status = 'Cancelled';
+                
+            }
+            await order.save();
 
-        // Redirect back to the order history page
-        res.redirect('/myaccount/order-history?success=Order cancelled successfully');
+            // Add the partial product refund to the user's wallet
+            if (totalProductRefund > 0 && !allProductsCancelled) {
+                wallet.Balance += totalProductRefund;
+                wallet.Transactions.push({
+                    Type: 'Cancelled Products',
+                    Amount: totalProductRefund,
+                    Date: new Date()
+                });
+                await wallet.save(); // Save the updated wallet
+            }
+
+            return res.redirect('/myaccount/order-history?success=Selected products cancelled successfully');
+        }
+        return res.redirect('/myaccount/order-history?error=No products selected for cancellation');
     } catch (error) {
         console.error('Error cancelling order:', error);
-        // Redirect back to order history with an error message if something goes wrong
-        res.redirect('/myaccount/order-history?error=Could not cancel the order');
+        return res.redirect('/myaccount/order-history?error=Could not cancel the order');
     }
 };
 
@@ -672,17 +915,6 @@ const generateInvoice = async (order, res) => {
             doc.fontSize(10).text('No products in this order.', 50, position);
             position += 20;
         }
-
-        // Return status if applicable
-        if (order.ReturnRequest && order.ReturnRequest.status) {
-            const returnStatusPosition = position + 30;
-            doc.fontSize(10).text('Return Status:', 50, returnStatusPosition);
-            doc.text(`Reason: ${order.ReturnRequest.reason || 'N/A'}`, 150, returnStatusPosition);
-            doc.text(`Requested At: ${order.ReturnRequest.requestedAt ? formatDate(order.ReturnRequest.requestedAt) : 'N/A'}`, 150, returnStatusPosition + 30);
-            doc.text('Status: Fund returned to wallet', 150, returnStatusPosition + 45);
-            generateHr(doc, returnStatusPosition + 60);
-        }
-
         // Add totals and footer
         const subtotalPosition = position + 60;
 
@@ -791,4 +1023,7 @@ module.exports = {
     verifyPayment,
     retryPayment,
     downloadInvoice,
+    loadCancelledOrders,
+    loadDeliveredOrders,
+    loadReturnedOrders,
 }

@@ -180,10 +180,10 @@
                 <h3>Order History</h3>
                 <!-- Display error message if it exists -->
                 <div class="order-category-tabs">
-                    <a href="/myaccount/order-history" class="active">Live Orders</a>
+                    <a href="/myaccount/order-history">Live Orders</a>
                     <a href="/myaccount/cancelled-orders">Cancelled Orders</a>
                     <a href="/myaccount/returned-orders">Returned Orders</a>
-                    <a href="/myaccount/delivered-orders">Delivered Orders</a>
+                    <a href="/myaccount/delivered-orders" class="active">Delivered Orders</a>
                 </div>
                 <!-- Horizontal Section for different order statuses -->
                 <% if (orders.length === 0) { %>
@@ -196,50 +196,64 @@
                 <% } else { %>
                     <div class="order-cards">
                         <% orders.forEach(order => { %>
-                            <% if (order.Status !== 'Cancelled' && order.Status !== 'Returned' && order.Status !== 'Placed') { %> <!-- Filter for live orders -->
-                                <div class="order-card">
-                                    <div class="order-header">
-                                        <div class="status-cell">
-                                            <% if (order.Status === 'Pending') { %>
-                                                <span class="status-indicator pending">&#9673; <%= order.Status %></span>
-                                            <% } else if (order.Status === 'Shipped') { %>
-                                                <span class="status-indicator shipped">&#9673; <%= order.Status %></span>
-                                            <% } else if (order.Status === 'Delivered') { %>
-                                                <span class="status-indicator delivered">&#9673; Out For Delivery</span>
-                                            <% } %>
-                                        </div>
-                                        <div class="date-cell">
-                                            <p>Ordered Date: <%= new Date(order.createdAt).toLocaleDateString('en-GB') %></p>
-                                        </div>
+                            <div class="order-card">
+                                <div class="order-header">
+                                    <div class="status-cell">
+                                        <% if (order.Status === 'Pending') { %>
+                                            <span class="status-indicator pending">&#9673; <%= order.Status %></span>
+                                        <% } else if (order.Status === 'Shipped') { %>
+                                            <span class="status-indicator shipped">&#9673; <%= order.Status %></span>
+                                        <% } else if (order.Status === 'Delivered') { %>
+                                            <span class="status-indicator delivered">&#9673; Out For Delivery</span>
+                                        <% } else if (order.Status === 'Placed') { %>
+                                            <span class="status-indicator placed">&#9673; Delivered</span>
+                                        <% } else if (order.Status === 'Cancelled' || order.Status === 'Returned') { %>
+                                            <span class="status-indicator cancelled">&#9673; <%= order.Status %></span>
+                                        <% } %>
                                     </div>
-                                    <div class="order-details">
-                                        <% order.Products.forEach(item => { %>
-                                            <div class="order-item">
-                                                <img src="/static/uploads/<%= item.ProductId.Images[0] %>" alt="<%= item.ProductId.Name %>" class="product-image">
-                                                <div class="item-info">
-                                                    <p class="item-name"><%= item.ProductId.Name %></p>
-                                                    <p class="item-quantity">Quantity: <%= item.Quantity %></p>
-                                                </div>
-                                            </div>
-                                        <% }) %>
-                                        <div class="total-cell">
-                                            <p>Total: ₹ <%= order.TotalPrice.toFixed(2) %></p>
-                                        </div>
-                                    </div>
-                                    <div class="payment-action">
-                                        <div class="payment-status-cell">
-                                            <% if (order.PaymentStatus !== 'Paid' && order.PaymentMethod !== 'Cash On Delivery') { %>
-                                                <span>Payment: <button id="retry-payment" data-order-id="<%= order.OrderId %>" class="btn btn-primary btn-sm retry-payment">Retry Payment</button></span>
-                                            <% } else { %>
-                                                <p>Payment: <%= order.PaymentMethod === 'Cash On Delivery' ? 'Cash On Delivery' : 'Paid' %></p>
-                                            <% } %>
-                                        </div>
-                                        <div class="action-cell">
-                                            <button type="button" class="btn btn-danger btn-sm" onclick="openCancelProductModal('<%= order._id %>', <%= JSON.stringify(order.Products) %>)">Cancel Products</button>
-                                        </div>
+                                    <div class="date-cell">
+                                        <p>Ordered Date: <%= new Date(order.createdAt).toLocaleDateString('en-GB') %></p>
                                     </div>
                                 </div>
-                            <% } %> <!-- End of live orders check -->
+                                <div class="order-details">
+                                    <% order.Products.forEach(item => { %>
+                                        <% if (item.ProductStatus === 'Cancelled' || order.Status === 'Cancelled' || item.ProductStatus === 'Returned' || order.Status === 'Returned' ) { %>
+                                        <% }else{ %>
+                                        <div class="order-item">
+                                            <img src="/static/uploads/<%= item.ProductId.Images[0] %>" alt="<%= item.ProductId.Name %>" class="product-image">
+                                            <div class="item-info">
+                                                <p class="item-name"><%= item.ProductId.Name %></p>
+                                                <p class="item-quantity">Quantity: <%= item.Quantity %></p>
+                                            </div>
+                                            <div class="return-action">
+                                                <% 
+                                                    const placedAt = order.PlacedAt ? new Date(order.PlacedAt) : new Date(order.createdAt);
+                                                    const currentDate = new Date();
+                                                    const timeDifference = Math.floor((currentDate - placedAt) / (1000 * 60 * 60 * 24));
+                                                %>
+                                                <% if (item.ProductStatus && item.ProductStatus === 'Return Requested') { %>
+                                                    <button type="button" class="btn btn-secondary btn-sm" disabled>Return Requested</button>
+                                                <% } else if (item.ProductStatus && item.ProductStatus === 'Returned') { %>
+                                                    <button type="button" class="btn btn-secondary btn-sm" disabled>Returned</button>
+                                                <% } else if (item.ProductStatus && item.ProductStatus === 'Return Rejected') { %>
+                                                    <button type="button" class="btn btn-warning btn-sm" disabled>Return Request Rejected</button>
+                                                <% } else if (timeDifference <= 7 && item.ProductStatus=== "Placed") { %>
+                                                    <button type="button" class="btn btn-warning btn-sm" onclick="openReturnModal('<%= order._id %>', '<%= item.ProductId._id %>', '<%= item.ProductId.Name %>')">Return This Product</button>
+                                                <% }%>
+                                            </div>
+                                        </div>
+                                        <%}%>
+                                    <% }) %>
+                                    <div class="total-cell">
+                                        <p>Total: ₹ <%= order.TotalPrice.toFixed(2) %></p>
+                                    </div>
+                                </div>
+                                <% if (order.Status === 'Placed') { %>
+                                    <div class="invoice-download">
+                                        <a href="/myaccount/download-invoice/<%= order._id %>">Download Invoice</a>
+                                    </div>
+                                <% } %>
+                            </div>
                         <% }) %>
                     </div>
                     
@@ -586,7 +600,7 @@ function showAlert() {
             timer: 3000, // Auto-close after 3 seconds
         }).then(() => {
             // Redirect to another page if the message indicates success
-            window.location.href = '/myaccount/order-history?category=cancelled'; // Change to your desired redirect URL
+            window.location.href = '/myaccount/delivered-orders'; // Change to your desired redirect URL
         });
     }
 }
@@ -735,12 +749,13 @@ function openCancelProductModal(orderId, products) {
 }
 </script>
 <script>
-function openReturnModal(orderId) {
+function openReturnModal(orderId, productId, productName) {
     Swal.fire({
-        title: 'Return Order',
+        title: `Return ${productName}`,
         html: `
-            <form id="returnForm-${orderId}" action="/myaccount/return-order/${orderId}" method="POST">
-                <p>Why do you want to return this order?</p>
+            <form id="returnForm-${orderId}-${productId}" action="/myaccount/return-order/${orderId}" method="POST">
+                <input type="hidden" name="productId" value="${productId}"> <!-- Hidden input for product ID -->
+                <p>Why do you want to return this Product?</p>
                 <div class="form-check">
                     <input class="form-check-input" type="radio" name="returnReason" id="quality-${orderId}" value="Quality Issue,Damaged">
                     <label class="form-check-label" for="quality-${orderId}" style="display: inline-block; text-align: left; width: 100%;">Quality Issue,Damaged</label>
@@ -762,8 +777,8 @@ function openReturnModal(orderId) {
                     <label class="form-check-label" for="other-${orderId}" style="display: inline-block; text-align: left; width: 100%;">Other</label>
                 </div>
                 <div class="form-group">
-                    <label for="comments-${orderId}" style="text-align: left;">Additional Comments:</label>
-                    <textarea class="form-control" id="comments-${orderId}" name="comments"></textarea>
+                    <label for="comments-${orderId}-${productId}" style="text-align: left;">Additional Comments:</label>
+                    <textarea class="form-control" id="comments-${orderId}-${productId}" name="comments"></textarea>
                 </div>
             </form>
         `,
@@ -771,14 +786,14 @@ function openReturnModal(orderId) {
         confirmButtonText: 'Submit Return Request',
         preConfirm: () => {
             // Validate at least one radio button is checked
-            const checkedRadio = Array.from(document.querySelectorAll(`#returnForm-${orderId} input[name="returnReason"]:checked`));
+            const checkedRadio = Array.from(document.querySelectorAll(`#returnForm-${orderId}-${productId} input[name="returnReason"]:checked`));
             if (checkedRadio.length === 0) {
                 Swal.showValidationMessage('Please select at least one reason for returning the order.');
                 return false; // Prevent the form from submitting
             }
             // Submit the form via JavaScript
-            const comments = document.getElementById(`comments-${orderId}`).value; // Get the comments
-            document.getElementById(`returnForm-${orderId}`).submit();
+            const comments = document.getElementById(`comments-${orderId}-${productId}`).value; // Get the comments
+            document.getElementById(`returnForm-${orderId}-${productId}`).submit();
         }
     });
 
@@ -862,6 +877,5 @@ document.addEventListener('click', function (e) {
     }
 });
 </script>
-
 </body>
 </html>

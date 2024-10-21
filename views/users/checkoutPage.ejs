@@ -450,15 +450,16 @@
                     <!-- Shipping Information -->
                     <div class="total-row">
                         <span>Shipping: </span>
-                        <% if (cartTotal > 499 && cartTotal > 5000) { %>
-                            <span>Cash on delivery is unavailable for bulk orders. Please use online payment.</span>
-                        <% } else if(cartTotal > 499) { %>
-                            <span>Free Shipping</span>
-                        <% } else { %>
-                            <span>₹ 50 added to shipping</span>
-                        <% } %>
+                        <% if (cartTotal > 5000) { %>
+                            ₹ 50 Shipping charge applied <br> Cash on delivery is unavailable for bulk orders. Please use online payment.
+                        <% } else {%>
+                            <span>₹ 50 Delivery charge applied</span>
+                        <%}%>    
                     </div>
-                
+                    <div class="total-row">
+                        <span>Discount:</span>
+                        <span id="discount-amount">₹ 0</span>   
+                    </div>
                     <!-- Total (Subtotal + Shipping if applicable) -->
                     <div class="total-row">
                         <strong>Total</strong>
@@ -516,6 +517,7 @@
                         <% cartItems.forEach((item, index) => { %>
                             <input type="hidden" name="Products[<%= index %>][ProductId]" value="<%= item.ProductId._id %>">
                             <input type="hidden" name="Products[<%= index %>][Quantity]" value="<%= item.Quantity %>">
+                            <input type="hidden" name="Products[<%= index %>][Price]" value="<%= item.Price.toFixed(2) %>">
                         <% }) %>
                     
                         <!-- Total Price -->
@@ -560,6 +562,7 @@
         const removeCouponSection = document.querySelector('.remove-coupon-section');
         const removeCouponButton = document.querySelector('.remove-coupon-btn');
         const removeCouponCross = document.querySelector('.remove-coupon-cross');
+        const discountElement = document.getElementById('discount-amount');
     
         // Show the tooltip when clicking the Coupons link
         couponsLink.addEventListener('click', () => {
@@ -631,6 +634,9 @@
                 removeCouponSection.style.display = 'block';
                 removeCouponButton.style.color = 'red'; // Set text color to red
     
+                const discountAmount = theActualCartTotal - data.totalPrice;
+                discountElement.innerText = `₹ ${discountAmount.toFixed(2)}`;
+
                 // Update the total price displayed
                 cartTotalElement.innerText = data.totalPrice;
                 totalPriceInput.value = data.totalPrice; // Update hidden input value
@@ -689,6 +695,7 @@
                 // Update the total price displayed after removing the coupon
                 cartTotalElement.innerText = data.totalPrice;
                 totalPriceInput.value = data.totalPrice;
+                discountElement.innerText = `₹ 0`;
     
                 Swal.fire({
                     text: data.message,
@@ -1023,10 +1030,11 @@ document.getElementById('checkout-form').onsubmit = async function (e) {
                     const index = input.name.match(/\d+/)[0]; // Get the index from the input name
                     const productId = input.value; // Fetch product ID directly from this input
                     const quantity = document.querySelector(`input[name="Products[${index}][Quantity]"]`).value; // Fetch the corresponding quantity
-                    
+                    const price = document.querySelector(`input[name="Products[${index}][Price]"]`).value; // Fetch the corresponding price
                     return {
                         ProductId: productId,
-                        Quantity: quantity
+                        Quantity: quantity,
+                        Price: price
                     };
                 }),
                 TotalPrice: document.querySelector('input[name="TotalPrice"]').value,
@@ -1099,10 +1107,12 @@ document.getElementById('checkout-form').onsubmit = async function (e) {
                     const index = input.name.match(/\d+/)[0]; // Get the index from the input name
                     const productId = input.value; // Fetch product ID directly from this input
                     const quantity = document.querySelector(`input[name="Products[${index}][Quantity]"]`).value; // Fetch the corresponding quantity
+                    const price = document.querySelector(`input[name="Products[${index}][Price]"]`).value; // Fetch the corresponding price
                     
                     return {
                         ProductId: productId,
-                        Quantity: quantity
+                        Quantity: quantity,
+                        Price: price
                     };
                 }),
                 TotalPrice: document.querySelector('input[name="TotalPrice"]').value,
@@ -1232,41 +1242,27 @@ function initiateRazorpayPayment(data) {
 
     // Handle payment failure
     razorpay.on('payment.failed', async function (response) {
-        // Handle payment failure logic
-        await handlePaymentFailure('Payment Failed', 'Your payment could not be processed. Please check your order in the history.', data.razorpayOrderId);
-
-        // Explicitly close Razorpay modal (although Razorpay might close it automatically on failure)
-        if (razorpay) {
-            razorpay.close(); // Close the modal immediately, without delay
-        }
+        const failureData = response.error;
+        Swal.fire({
+            title: 'Payment Failed',
+            text: 'Unfortunately, the payment failed. Please try again',
+            icon: 'error',
+            confirmButtonText: 'Okay'
+        }).then(() => {
+            window.location.href = "/myaccount/order-history";
+        });
+        await fetch('/verify-payment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                razorpayOrderId: data.razorpayOrderId,
+                status: 'Failed',
+            })
+        });
     });
 }
-
-// Function to handle payment failure
-async function handlePaymentFailure(title, text, razorpayOrderId) {
-    Swal.fire({
-        title: title,
-        text: text,
-        icon: 'error',
-        confirmButtonText: 'Okay'
-    }).then(() => {
-        // Redirect after modal closes
-        window.location.href = "/myaccount/order-history";
-    });
-
-    // Log the failure status to the backend
-    await fetch('/verify-payment', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            razorpayOrderId: razorpayOrderId, // Order ID is necessary
-            status: 'Failed', // Explicitly pass the failed status
-        })
-    });
-}
-
 </script>
 </body>
 </html>

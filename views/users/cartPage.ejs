@@ -280,13 +280,7 @@
                 <h2>Cart Summary</h2>
                 <p>Subtotal: ₹ <span id="cart-subtotal"><%= cartSubtotal.toFixed(2) %></span></p>
                 <p id="shipping-message">
-                    <% if (cartSubtotal > 499 && cartSubtotal > 5000) { %>
-                        Cash on delivery is unavailable for bulk orders. Please use online payment.
-                    <% } else if (cartSubtotal > 499) { %>
-                        Free Shipping, Eligible For COD
-                    <% } else { %>
-                        ₹ 50 cash on delivery fee applied
-                    <% } %>
+                    ₹ 50 delivery fee applied <br>
                 </p>
                 <p>Total: ₹ <span id="cart-total"><%= cartTotal.toFixed(2) %></span></p>
                 <form id="checkout-form" action="/product/checkout" method="post">

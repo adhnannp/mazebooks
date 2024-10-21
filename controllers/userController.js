@@ -1173,7 +1173,7 @@ const loadCart = async (req, res) => {
         }, 0);
 
         // Calculate shipping cost (free if subtotal > 499, otherwise 50)
-        const shippingCost = cartSubtotal > 499 ? 0 : 50;
+        const shippingCost = 50;
 
         // Total cart cost including shipping
         const cartTotal = cartSubtotal + shippingCost;

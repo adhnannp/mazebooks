@@ -130,6 +130,12 @@ user_route.get('/order-success',auth.isAdminLogin,auth.isLogin,auth.isblock,auth
 
 user_route.get('/myaccount/order-history',auth.isAdminLogin,auth.isLogin,auth.isblock,auth.ifNotVerified,auth.updateCartAndWishlistCounts,orderPlacingController.loadOrderHistory)
 
+user_route.get('/myaccount/cancelled-orders',auth.isAdminLogin,auth.isLogin,auth.isblock,auth.ifNotVerified,auth.updateCartAndWishlistCounts,orderPlacingController.loadCancelledOrders)
+
+user_route.get('/myaccount/delivered-orders',auth.isAdminLogin,auth.isLogin,auth.isblock,auth.ifNotVerified,auth.updateCartAndWishlistCounts,orderPlacingController.loadDeliveredOrders)
+
+user_route.get('/myaccount/returned-orders',auth.isAdminLogin,auth.isLogin,auth.isblock,auth.ifNotVerified,auth.updateCartAndWishlistCounts,orderPlacingController.loadReturnedOrders)
+
 user_route.post('/myaccount/cancel-order/:orderId',auth.isAdminLogin,orderPlacingController.cancelOrder);
 
 user_route.post('/wishlist/toggle',auth.isLogin,auth.ifNotVerified,wishListController.toggleWishlist);

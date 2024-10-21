@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="/static/admin/vendors/mdi/css/materialdesignicons.min.css">
     <link rel="stylesheet" href="/static/admin/vendors/css/vendor.bundle.base.css">
     <!-- endinject -->
+
     <!-- Plugin css for this page -->
     <link rel="stylesheet" href="/static/admin/vendors/jvectormap/jquery-jvectormap.css">
     <link rel="stylesheet" href="/static/admin/vendors/flag-icon-css/css/flag-icon.min.css">
@@ -271,101 +272,168 @@
                                             <td><%= order.PaymentStatus %></td>
                                             <td>₹ <%= order.TotalPrice.toFixed(2) %></td>
                                             <td>
-                                                <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#orderModal<%= order._id %>">View</button>
-                                                <% if (order.Status !== 'Cancelled' && order.Status !== 'Placed' && order.ReturnRequest.status !== 'Returned' && order.ReturnRequest.status !== 'Requested') { %>
-                                                    <form action="/admin/orders/cancel-order/<%= order._id %>" method="POST" class="cancel-order-form" style="display:inline;">
-                                                        <button type="button" class="btn btn-danger btn-sm" onclick="openCancelModal('<%= order._id %>')">Cancel</button>
-                                                    </form>
-                                                <% } else if (order.Status == 'Placed' && order.ReturnRequest.status == 'Requested') { %>
-                                                  <button class="btn btn-warning btn-sm" data-toggle="modal" data-target="#returnRequestModal<%= order._id %>">
-                                                    Return Request
-                                                </button>
-                                                <% } else if (order.Status == 'Placed' && order.ReturnRequest.status == 'Rejected'){ %>
-                                                  <button class="btn btn-secondary btn-sm" disabled>Return Rejected</button>
-                                                <% } else { %>
-                                                    <button class="btn btn-secondary btn-sm" disabled>No Action</button>
-                                                <% } %>
-                                            </td>
-                                        </tr>
+                                              <% 
+                                                // Initialize flags for return request and cancel conditions
+                                                let canCancel = true; 
+                                                let returnRequested = false; 
+                                                let returnReasons = [];
+                                                let reutrnProduct = []
+                                                let returnComments = [];
+                                          
+                                                // Iterate through products to determine status
+                                                order.Products.forEach(item => {
+                                                    if (item.ProductStatus === 'Return Requested') {
+                                                        returnRequested = true;
+                                                    }
+                                                    if (item.ProductStatus === 'Returned') {
+                                                        canCancel = false; // If any product is Returned, cancel is not allowed
+                                                    }
+                                                    // Collect return reasons and comments for the modal
+                                                    if (item.ReturnRequested) {
+                                                        reutrnProduct.push(item.ProductId.Name);
+                                                        returnReasons.push(item.ReturnReason);
+                                                        returnComments.push(item.ReturnComments || 'No additional comments provided');
+                                                    }
+                                                }); 
+                                              %>
 
-                                        <div class="modal fade" id="returnRequestModal<%= order._id %>" tabindex="-1" role="dialog" aria-labelledby="returnRequestModalLabel<%= order._id %>" aria-hidden="true">
-                                          <div class="modal-dialog" role="document">
-                                              <div class="modal-content">
-                                                  <div class="modal-header">
-                                                      <h5 class="modal-title" id="returnRequestModalLabel<%= order._id %>">Return Request for Order <%= order.OrderId %></h5>
-                                                  </div>
-                                                  <div class="modal-body">
-                                                      <p>Reason for Return: <%= order.ReturnRequest.reason %></p>
-                                                      <p>Comments: <%= order.ReturnRequest.comments || 'No additional comments provided' %></p>
-                                                  </div>
-                                                  <div class="modal-footer">
-                                                      <button type="button" class="btn btn-danger" onclick="handleReturnRequest('<%= order._id %>', 'reject')">Reject</button>
-                                                      <button type="button" class="btn btn-success" onclick="handleReturnRequest('<%= order._id %>', 'accept')">Accept</button>
-                                                      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                                  </div>
-                                              </div>
-                                          </div>
-                                      </div>
-                            
-                                        <!-- Confirmation Modal -->
-                                        <div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
-                                            <div class="modal-dialog">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title" id="cancelOrderModalLabel">Confirm Cancellation</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        Are you sure you want to cancel this order?
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                                        <form id="confirmCancelForm" method="POST" style="display: inline;">
-                                                            <button type="submit" class="btn btn-danger">Cancel Order</button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                            
-                                        <!-- Order Details Modal -->
-                                        <div class="modal fade" id="orderModal<%= order._id %>" tabindex="-1" role="dialog" aria-labelledby="orderModalLabel<%= order._id %>" aria-hidden="true">
+                                              <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#orderModal<%= order._id %>">View</button>
+                                          
+                                              <% if (order.Status !== 'Cancelled' && order.Status !== 'Placed' && canCancel) { %>
+                                                  <form action="/admin/orders/cancel-order/<%= order._id %>" method="POST" class="cancel-order-form" style="display:inline;">
+                                                      <button type="button" class="btn btn-danger btn-sm" onclick="openCancelModal('<%= order._id %>',<%= JSON.stringify(order.Products) %>)">Cancel</button>
+                                                  </form>
+                                              <% } else if (order.Status === 'Placed' && returnRequested) { %>
+                                                  <button class="btn btn-warning btn-sm" data-toggle="modal" data-target="#returnRequestModal<%= order._id %>">
+                                                      Return Request
+                                                  </button>
+                                              <% } else if (order.Status === 'Placed' && order.ReturnRequest && order.ReturnRequest.status === 'Rejected') { %>
+                                                  <button class="btn btn-secondary btn-sm" disabled>Return Rejected</button>
+                                              <% } else { %>
+                                                  <button class="btn btn-secondary btn-sm" disabled>No Action</button>
+                                              <% } %>
+                                          </td>
+                                          </tr>
+                                          
+                                          <div class="modal fade" id="returnRequestModal<%= order._id %>" tabindex="-1" role="dialog" aria-labelledby="returnRequestModalLabel<%= order._id %>" aria-hidden="true">
                                             <div class="modal-dialog" role="document">
                                                 <div class="modal-content">
                                                     <div class="modal-header">
-                                                        <h5 class="modal-title" id="orderModalLabel<%= order._id %>">Order Details for <%= order.OrderId %></h5>
+                                                        <h5 class="modal-title" id="returnRequestModalLabel<%= order._id %>">Return Request for Order <%= order.OrderId %></h5>
                                                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                                             <span aria-hidden="true">&times;</span>
                                                         </button>
                                                     </div>
                                                     <div class="modal-body">
-                                                        <h6>Shipping Address:</h6>
-                                                        <p>
-                                                            <%= order.Address.FullName %><br>
-                                                            <%= order.Address.Address %><br>
-                                                            <%= order.Address.City %>, <%= order.Address.State %> <%= order.Address.Pincode %><br>
-                                                            <%= order.Address.MobileNo %>
-                                                        </p>
-                                                        <h6>Ordered Products:</h6>
-                                                        <ul>
-                                                            <% order.Products.forEach(product => { %>
-                                                                <li>
-                                                                    <% if (product.ProductId.Images && product.ProductId.Images.length > 0) { %>
-                                                                        <img src="/static/uploads/<%= product.ProductId.Images[0] %>" alt="<%= product.ProductId.Name %>" style="width: 50px; height: 50px;"> 
-                                                                    <% } else { %>
-                                                                        <img src="/path/to/default/image.jpg" alt="No image available" style="width: 50px; height: 50px;"> 
-                                                                    <% } %>
-                                                                    <%= product.ProductId.Name %> - Quantity: <%= product.Quantity %>
-                                                                </li>
-                                                            <% }) %>
-                                                        </ul>
-                                                        <h6>Total Price: ₹ <%= order.TotalPrice.toFixed(2) %></h6>
+                                                        <h6>Return Requested Products:</h6>
+                                                        <form id="returnRequestForm<%= order._id %>" method="POST" action="/admin/orders/handle-return-request/<%= order._id %>">
+                                                          <% order.Products.forEach((product, index) => { %>
+                                                              <% if (product.ProductStatus === 'Return Requested') { %>
+                                                                  <div>
+                                                                    <input type="checkbox" id="product_<%= product._id %>" name="products[]" value="<%= product._id %>" 
+                                                                    onclick="toggleProductSelection('<%= product._id %>', '<%= order._id %>')">
+                                                                      <label for="product_<%= product._id %>">
+                                                                          <% if (product.ProductId.Images && product.ProductId.Images.length > 0) { %>
+                                                                              <img src="/static/uploads/<%= product.ProductId.Images[0] %>" alt="<%= product.ProductId.Name %>" style="width: 50px; height: 50px;">
+                                                                          <% } else { %>
+                                                                              <img src="/path/to/default/image.jpg" alt="No image available" style="width: 50px; height: 50px;">
+                                                                          <% } %>
+                                                                          <strong><%= product.ProductId.Name %></strong>
+                                                                          <br>Reason: <%= product.ReturnReason %>
+                                                                          <br>Comments: <%= product.ReturnComment || "No comments" %>
+                                                                      </label>
+                                                                      <hr/>
+                                                                  </div>
+                                                              <% } %>
+                                                          <% }) %>
+                                                      </form>
                                                     </div>
                                                     <div class="modal-footer">
+                                                        <button type="button" class="btn btn-danger" onclick="submitReturnRequest('<%= order._id %>', 'reject')">Reject</button>
+                                                        <button type="button" class="btn btn-success" onclick="submitReturnRequest('<%= order._id %>', 'accept')">Accept</button>
                                                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                                                     </div>
                                                 </div>
                                             </div>
+                                          </div>
+                                        
+                                        <!-- Confirmation Modal -->
+                                        <div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
+                                          <div class="modal-dialog">
+                                              <div class="modal-content">
+                                                  <div class="modal-header">
+                                                      <h5 class="modal-title" id="cancelOrderModalLabel">Confirm Product Cancellation</h5>
+                                                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                  </div>
+                                                  <div class="modal-body">
+                                                      <p>Select the product(s) you want to cancel:</p>
+                                                      <div id="cancelProductCheckboxes">
+                                                          <!-- Checkboxes will be populated here -->
+                                                      </div>
+                                                  </div>
+                                                  <div class="modal-footer">
+                                                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                      <form id="confirmCancelForm" method="POST" style="display: inline;" action="/admin/orders/cancel-order/<%= order._id %>">
+                                                          <input type="hidden" name="orderId" id="orderIdInput">
+                                                          <input type="hidden" name="selectedProducts" id="cancelProductIds" value="">
+                                                          <button type="submit" class="btn btn-danger">Cancel Selected Product(s)</button>
+                                                      </form>
+                                                  </div>
+                                              </div>
+                                          </div>
+                                        </div>
+                                        
+                            
+                                        <!-- Order Details Modal -->
+                                        <div class="modal fade" id="orderModal<%= order._id %>" tabindex="-1" role="dialog" aria-labelledby="orderModalLabel<%= order._id %>" aria-hidden="true">
+                                          <div class="modal-dialog" role="document">
+                                              <div class="modal-content">
+                                                  <div class="modal-header">
+                                                      <h5 class="modal-title" id="orderModalLabel<%= order._id %>">Order Details for <%= order.OrderId %></h5>
+                                                      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                          <span aria-hidden="true">&times;</span>
+                                                      </button>
+                                                  </div>
+                                                  <div class="modal-body">
+                                                      <h6>Shipping Address:</h6>
+                                                      <p>
+                                                          <%= order.Address.FullName %><br>
+                                                          <%= order.Address.Address %><br>
+                                                          <%= order.Address.City %>, <%= order.Address.State %> <%= order.Address.Pincode %><br>
+                                                          <%= order.Address.MobileNo %>
+                                                      </p>
+                                                      <h6>Ordered Products:</h6>
+                                                      <ul>
+                                                          <% order.Products.forEach(product => { %>
+                                                              <li>
+                                                                  <% if (product.ProductId.Images && product.ProductId.Images.length > 0) { %>
+                                                                      <img src="/static/uploads/<%= product.ProductId.Images[0] %>" alt="<%= product.ProductId.Name %>" style="width: 50px; height: 50px;"> 
+                                                                  <% } else { %>
+                                                                      <img src="/path/to/default/image.jpg" alt="No image available" style="width: 50px; height: 50px;"> 
+                                                                  <% } %>
+                                                                  <%= product.ProductId.Name %> - Quantity: <%= product.Quantity %> 
+                                                                  <br>Price: ₹ <%= product.Price %> 
+                                                                  <% if (product.ProductStatus === 'Cancelled') { %> 
+                                                                      <span style="color: red;">&#9673;(Cancelled)</span>
+                                                                  <% } else if (product.ProductStatus === 'Return Requested') { %> 
+                                                                    <span style="color: rgb(252, 154, 7)">&#9673;(Return Requested)</span>
+                                                                <% } else if (product.ProductStatus === 'Returned') { %> 
+                                                                  <span style="color: red;">&#9673;(Returned)</span>
+                                                                <% } else if (product.ProductStatus === 'Return Rejected') { %> 
+                                                                  <span style="color: rgb(255, 0, 234);">&#9673;(Return Rejected)</span>
+                                                                <% } %>%>
+                                                              </li>
+                                                          <% }) %>
+                                                      </ul>
+                                                      <h6>Shipping Charge: ₹ 50 %></h6>
+                                                      <h6>Total Price: ₹ <%= order.TotalPrice.toFixed(2) %></h6>
+                                                  </div>
+                                                  <div class="modal-footer">
+                                                      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                                  </div>
+                                              </div>
+                                          </div>
+                                        </div>
                                         </div>
                                     <% }) %>
                                 </tbody>
@@ -457,13 +525,161 @@
     <script src="/static/admin/js/dashboard.js"></script>
     <!-- End custom js for this page -->
     <script>
-        function openCancelModal(orderId) {
-            const form = document.getElementById('confirmCancelForm');
-            form.action = `/admin/orders/cancel-order/${orderId}`;
-            const cancelModal = new bootstrap.Modal(document.getElementById('cancelOrderModal'));
-            cancelModal.show();
+      // Initialize a global object to track selected products for each order
+const selectedProductIds = {};
+
+// Function to handle the selection/deselection of products
+function toggleProductSelection(productId, orderId) {
+    // Check if the selectedProductIds object for this orderId exists
+    if (!selectedProductIds[orderId]) {
+        selectedProductIds[orderId] = [];
+    }
+
+    const index = selectedProductIds[orderId].indexOf(productId);
+    
+    if (index > -1) {
+        // If the product is already selected, remove it (deselect)
+        selectedProductIds[orderId].splice(index, 1);
+    } else {
+        // If the product is not selected, add it (select)
+        selectedProductIds[orderId].push(productId);
+    }
+
+    console.log("Currently selected products for order", orderId, selectedProductIds[orderId]);
+}
+
+function submitReturnRequest(orderId, action) {
+    const form = document.getElementById(`returnRequestForm${orderId}`);
+
+    // Use the globally tracked selected product IDs
+    const selectedProducts = selectedProductIds[orderId] || [];
+
+    if (selectedProducts.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'No products selected',
+            text: 'Please select at least one product before submitting the return request.',
+            customClass: {
+                popup: 'swal-dark-popup',
+                title: 'swal-dark-title',
+                content: 'swal-dark-content',
+                confirmButton: 'swal-dark-button',
+                cancelButton: 'swal-dark-cancel-button'
+            },
+            background: '#2c2c2c', // Dark background color
+            color: '#fff', // Text color
+        });
+        return;
+    }
+
+    // Log the selected products for debugging
+    console.log("Selected products: ", selectedProducts);
+
+    // Ask for confirmation to accept/reject the request with dark background
+    Swal.fire({
+        title: action === 'accept' ? 'Accept Return Request?' : 'Reject Return Request?',
+        text: `Are you sure you want to ${action} the return request?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: `Yes, ${action}!`,
+        cancelButtonText: 'Cancel',
+        customClass: {
+            popup: 'swal-dark-popup',
+            title: 'swal-dark-title',
+            content: 'swal-dark-content',
+            confirmButton: 'swal-dark-button',
+            cancelButton: 'swal-dark-cancel-button'
+        },
+        background: '#2c2c2c', // Dark background color
+        color: '#fff', // Text color
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Create hidden input to store action (accept/reject)
+            const actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            actionInput.value = action;
+
+            // Append the action input to the form
+            form.appendChild(actionInput);
+
+            // Create hidden inputs for selected products
+            selectedProducts.forEach(productId => {
+                const productInput = document.createElement('input');
+                productInput.type = 'hidden';
+                productInput.name = 'products[]';
+                productInput.value = productId;
+                form.appendChild(productInput);
+            });
+
+            // Submit the form
+            form.submit();
         }
+    });
+}
     </script>
+
+
+    <script>
+      function openCancelModal(orderId, products) {
+          const form = document.getElementById('confirmCancelForm');
+          const cancelProductCheckboxes = document.getElementById('cancelProductCheckboxes');
+          const orderIdInput = document.getElementById('orderIdInput');
+          const cancelProductIds = document.getElementById('cancelProductIds');
+  
+          // Clear previous checkboxes
+          cancelProductCheckboxes.innerHTML = '';
+  
+          // Set the order ID
+          orderIdInput.value = orderId;
+  
+          // Populate the checkboxes with cancelable products
+          products.forEach(product => {
+              if (product.ProductStatus !== 'Cancelled') {
+                  const checkboxDiv = document.createElement('div');
+                  const checkbox = document.createElement('input');
+                  checkbox.type = 'checkbox';
+                  checkbox.id = `product-${product.ProductId._id}`; // Unique ID for each checkbox
+                  checkbox.value = product.ProductId._id; // Product ID for submission
+                  checkbox.name = 'cancelProducts'; // Name for form submission
+  
+                  const label = document.createElement('label');
+                  label.htmlFor = checkbox.id;
+                  label.textContent = `${product.ProductId.Name} - Quantity: ${product.Quantity} - Price: ${product.Price}`;
+  
+                  checkboxDiv.appendChild(checkbox);
+                  checkboxDiv.appendChild(label);
+                  cancelProductCheckboxes.appendChild(checkboxDiv);
+              }
+          });
+  
+          // Show the modal
+          const cancelModal = new bootstrap.Modal(document.getElementById('cancelOrderModal'));
+          cancelModal.show();
+      }
+  
+      document.getElementById('confirmCancelForm').addEventListener('submit', function (e) {
+        const selectedCheckboxes = document.querySelectorAll('input[name="cancelProducts"]:checked');
+        const selectedProductIds = Array.from(selectedCheckboxes).map(checkbox => checkbox.value);
+        
+        // Set the product IDs to the hidden input
+        document.getElementById('cancelProductIds').value = selectedProductIds.join(',');
+
+        // If no product is selected, prevent submission
+        if (selectedProductIds.length === 0) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'warning',
+                title: 'No Products Selected',
+                text: 'Please select at least one product to cancel.',
+                confirmButtonText: 'OK',
+                background: '#191C24', // Set dark background color
+                color: '#ffffff', // Set text color to white
+                confirmButtonColor: '#4F2F2D' // Optional: Change the button color
+            });
+        }
+      });
+  </script>
     <script>
         function openChangeStatusModal(orderId, status) {
             document.getElementById('newStatus').textContent = status;
@@ -475,56 +691,49 @@
         }
     </script>
     <script>
-      function handleReturnRequest(orderId, action) {
-          const url = `/admin/orders/handle-return-request/${orderId}`; // Adjust your endpoint accordingly
-          const data = { action: action };
-
-          fetch(url, {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(data),
-          })
-          .then(response => response.json())
-          .then(data => {
-              if (data.success) {
-                  // Show SweetAlert for successful request
-                  Swal.fire({
-                      title: 'Success!',
-                      text: 'Return request processed successfully.',
-                      icon: 'success',
-                      background: '#343a40',  // Dark background
-                      color: '#fff',  // White text color
-                      confirmButtonColor: '#28a745'  // Green confirm button
-                  }).then(() => {
-                      location.reload(); // Reload the page after the user closes the alert
-                  });
-              } else {
-                  // Show SweetAlert for failure
-                  Swal.fire({
-                      title: 'Failed!',
-                      text: 'Failed to process the return request.',
-                      icon: 'error',
-                      background: '#343a40',  // Dark background
-                      color: '#fff',  // White text color
-                      confirmButtonColor: '#dc3545'  // Red confirm button
-                  });
-              }
-          })
-          .catch(error => {
-              console.error('Error:', error);
-              // Show SweetAlert for network or server error
-              Swal.fire({
-                  title: 'Error!',
-                  text: 'An error occurred while processing the request.',
-                  icon: 'error',
-                  background: '#343a40',  // Dark background
-                  color: '#fff',  // White text color
-                  confirmButtonColor: '#dc3545'  // Red confirm button
-              });
+      // Function to extract query parameters
+      function getQueryParam(param) {
+          const urlParams = new URLSearchParams(window.location.search);
+          return urlParams.get(param);
+      }
+  
+      // Check for success or error messages in the URL query string
+      const successMessage = getQueryParam('success');
+      const errorMessage = getQueryParam('error');
+  
+      // If success message is present, show the success Swal alert
+      if (successMessage) {
+          Swal.fire({
+              title: 'Success',
+              text: successMessage,
+              icon: 'success',
+              background: '#191C24', // Set dark background color
+              color: '#ffffff',
+              confirmButtonText: 'OK'
+          }).then(() => {
+              // Clear the query parameters from the URL after showing the alert
+              const url = new URL(window.location);
+              url.searchParams.delete('success');
+              history.replaceState(null, null, url.toString());
           });
       }
-    </script>
+  
+      // If error message is present, show the error Swal alert
+      if (errorMessage) {
+          Swal.fire({
+              title: 'Error',
+              text: errorMessage,
+              icon: 'error',
+              background: '#191C24', // Set dark background color
+              color: '#ffffff',
+              confirmButtonText: 'OK'
+          }).then(() => {
+              // Clear the query parameters from the URL after showing the alert
+              const url = new URL(window.location);
+              url.searchParams.delete('error');
+              history.replaceState(null, null, url.toString());
+          });
+      }
+  </script>
   </body>
 </html>
