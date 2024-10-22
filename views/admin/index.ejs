@@ -230,7 +230,7 @@
                                                   <%= order.CouponDeduction ? order.CouponDeduction.toFixed(2) : '0.00' %>
                                               </td>
                                               <td><%= order.OfferDeduction.toFixed(2) %></td>
-                                              <td><%= order.FinalPrice.toFixed(2) %></td>
+                                              <td><%= order.TotalPrice.toFixed(2) %></td>
                                               <td><%= order.PaymentMethod %></td>
                                           </tr>
                                       <% }); %>

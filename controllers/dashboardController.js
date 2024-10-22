@@ -262,7 +262,15 @@ const generateExcel = async (req, res) => {
                 $group: {
                     _id: null,
                     totalOrders: { $sum: 1 },
-                    totalSales: { $sum: "$FinalPrice" },
+                    totalSales: {$sum: 
+                        {
+                            $add: [
+                                "$CouponDeduction",
+                                "$OfferDeduction",
+                                "$FinalPrice"
+                            ]
+                        }
+                    },
                     totalDiscounts: { 
                         $sum: {
                             $add: [
@@ -308,7 +316,7 @@ const generateExcel = async (req, res) => {
             PlacedAt: new Date(order.PlacedAt).toLocaleDateString(),
             CouponDeduction: order.CouponDeduction ? order.CouponDeduction.toFixed(2) : '0.00',
             OfferDeduction: order.OfferDeduction.toFixed(2),
-            FinalPrice: order.FinalPrice.toFixed(2),
+            FinalPrice: (order.FinalPrice+order.OfferDeduction+order.CouponDeduction).toFixed(2),
             PaymentMethod: order.PaymentMethod
         });
     });
@@ -452,7 +460,15 @@ const generatePdf = async (req, res) => {
                 $group: {
                     _id: null,
                     totalOrders: { $sum: 1 },
-                    totalSales: { $sum: "$FinalPrice" },
+                    totalSales: { 
+                        $sum: {
+                            $add: [
+                                "$CouponDeduction",
+                                "$OfferDeduction",
+                                "$FinalPrice"
+                            ]
+                        }
+                    },
                     totalDiscounts: { 
                         $sum: {
                             $add: [
@@ -573,7 +589,7 @@ const generatePdf = async (req, res) => {
                         value = order.OfferDeduction ? `Rs:${order.OfferDeduction.toFixed(2)}` : 'Rs:0.00';
                         break;
                     case 'Total':
-                        value = order.FinalPrice ? `Rs:${order.FinalPrice.toFixed(2)}` : 'N/A';
+                        value = order.FinalPrice ? `Rs:${(order.FinalPrice+order.OfferDeduction+order.CouponDeduction).toFixed(2)}` : 'N/A';
                         break;
                     case 'Payment Method':
                         value = order.PaymentMethod || 'N/A';
