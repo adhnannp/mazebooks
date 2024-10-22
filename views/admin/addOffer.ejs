@@ -264,7 +264,7 @@
           }
   
           // Validate discount percentage
-          if (discount < 0 || discount > 100 || discount === "") {
+          if (discount <= 0 || discount >= 100 || discount === "") {
               discountError.style.display = 'block';
               discountError.textContent = "Discount percentage must be between 0 and 100.";
               isValid = false;

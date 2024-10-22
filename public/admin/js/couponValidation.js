@@ -209,12 +209,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return false;
       }
   
-      if (existingCoupons.includes(couponCode.toUpperCase())) {
-        couponCodeError.innerHTML = 'Coupon code already exists';
-        couponCodeError.style.display = 'block';
-        return false;
-      }
-  
       couponCodeError.innerHTML = '';
       couponCodeError.style.display = 'none';
       return true;

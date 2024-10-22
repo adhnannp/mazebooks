@@ -99,37 +99,48 @@ const activateCoupon = async (req, res) => {
 
 //  for editing a coupon
 const editCoupon = async (req, res) => {
-  const couponId = req.params.id;
-  const {
-      CouponCode,
-      MaxAmount,
-      DiscountPercentage,
-      StartDate,
-      EndDate,
-  } = req.body;
+    const couponId = req.params.id;
+    const {
+        CouponCode,
+        MaxAmount,
+        DiscountPercentage,
+        StartDate,
+        EndDate,
+    } = req.body;
 
-  try {
-      const updatedCoupon = await Coupon.findByIdAndUpdate(
-          couponId,
-          {
-              CouponCode,
-              MaxAmount,
-              DiscountPercentage,
-              StartDate,
-              EndDate,
-          },
-          { new: true, runValidators: true } 
-      );
+    try {
+        // Check if CouponCode already exists excluding the current coupon
+        const existingCoupon = await Coupon.findOne({
+            CouponCode,
+            _id: { $ne: couponId } // Exclude the current coupon by its id
+        });
 
-      if (!updatedCoupon) {
-          return res.redirect('/admin/coupons?error=nocouponfound');
-      }
+        if (existingCoupon) {
+            return res.redirect('/admin/coupons?error=couponexists');
+        }
 
-      res.redirect('/admin/coupons?success=couponedited');
-  } catch (error) {
-      console.error(error);
-      res.redirect('/admin/coupons?error=servererror');
-  }
+        // Update the coupon
+        const updatedCoupon = await Coupon.findByIdAndUpdate(
+            couponId,
+            {
+                CouponCode,
+                MaxAmount,
+                DiscountPercentage,
+                StartDate,
+                EndDate,
+            },
+            { new: true, runValidators: true } 
+        );
+
+        if (!updatedCoupon) {
+            return res.redirect('/admin/coupons?error=nocouponfound');
+        }
+
+        res.redirect('/admin/coupons?success=couponedited');
+    } catch (error) {
+        console.error(error);
+        res.redirect('/admin/coupons?error=servererror');
+    }
 };
 
 const applyCoupon = async (req, res) => {

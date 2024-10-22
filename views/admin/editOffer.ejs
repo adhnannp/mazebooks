@@ -266,12 +266,22 @@ function validateForm() {
     }
 
     // Validate discount percentage
-    if (discount < 0 || discount > 100 || discount === "") {
+    if (discount <= 0 || discount >= 100 || discount === "") {
         discountError.style.display = 'block';
         discountError.textContent = "Discount percentage must be between 0 and 100.";
         isValid = false;
     } else {
         discountError.style.display = 'none';
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to midnight for accurate comparison
+    if (startDate < today || isNaN(startDate.getTime())) {
+        startDateError.style.display = 'block';
+        startDateError.textContent = "Start date cannot be in the past or empty.";
+        isValid = false;
+    } else {
+        startDateError.style.display = 'none';
     }
 
     // Validate end date
