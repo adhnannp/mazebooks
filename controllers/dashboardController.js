@@ -567,13 +567,13 @@ const generatePdf = async (req, res) => {
                         value = order.PlacedAt ? new Date(order.PlacedAt).toLocaleDateString() : 'N/A';
                         break;
                     case 'Coupon Deduction':
-                        value = order.CouponDeduction ? `$${order.CouponDeduction.toFixed(2)}` : '$0.00';
+                        value = order.CouponDeduction ? `Rs:${order.CouponDeduction.toFixed(2)}` : 'Rs:0.00';
                         break;
                     case 'Offer Deduction':
-                        value = order.OfferDeduction ? `$${order.OfferDeduction.toFixed(2)}` : '$0.00';
+                        value = order.OfferDeduction ? `Rs:${order.OfferDeduction.toFixed(2)}` : 'Rs:0.00';
                         break;
                     case 'Total':
-                        value = order.FinalPrice ? `$${order.FinalPrice.toFixed(2)}` : 'N/A';
+                        value = order.FinalPrice ? `Rs:${order.FinalPrice.toFixed(2)}` : 'N/A';
                         break;
                     case 'Payment Method':
                         value = order.PaymentMethod || 'N/A';
@@ -602,8 +602,8 @@ const generatePdf = async (req, res) => {
     doc.fontSize(14).font('Helvetica-Bold').fillColor('black').text('Summary', 50);
     doc.fontSize(12).font('Helvetica').fillColor('black');
     doc.text(`Total Orders: ${totalOrders}`, 50);
-    doc.text(`Total Sales: $${totalSales.toFixed(2)}`, 50);
-    doc.text(`Total Discounts: $${totalDiscounts.toFixed(2)}`, 50);
+    doc.text(`Total Sales: Rs:${totalSales.toFixed(2)}`, 50);
+    doc.text(`Total Discounts: Rs:${totalDiscounts.toFixed(2)}`, 50);
 
     // Add a footer
     const pageCount = doc.bufferedPageRange().count;
@@ -764,7 +764,7 @@ const getPaymentMethodData = async () => {
 const getReturnRequestData = async () => {
     const returnRequests = await Order.aggregate([
         { $unwind: '$Products' }, // Unwind products array to access individual products
-        { $match: { 'ReturnRequest.status': { $ne: null } } }, // Only match orders with return requests
+        { $match: { 'Products.ProductStatus': { $eq: "Returned" } } }, // Only match orders with return requests
         {
             $lookup: {
                 from: 'products', // Join with products collection

@@ -5,7 +5,7 @@ const orderSchema = new Schema({
     OrderId: { type: String, unique: true },
     PaymentMethod: { type: String, required: true },
     PaymentStatus: { type: String, required: true ,default:'Pending'},
-    RazorpayPaymentId: { type: String, unique: true, required: false },
+    RazorpayPaymentId: { type: String, required: false },
     RazorpayOrderId: { type: String, required: false },
     UserId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     Products: [{

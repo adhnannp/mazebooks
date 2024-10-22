@@ -96,7 +96,7 @@
             <div class="wallet-balance">
                 Current Balance: &#8377;<%= wallet.Balance.toFixed(2) %> <!-- Show wallet balance -->
             </div><br>
-        
+
             <h3>Recent Transactions</h3>
             <table class="table">
                 <thead>
@@ -107,19 +107,19 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <% if (recentTransactions.length > 0) { %>
-                        <% recentTransactions.forEach(transaction => { %>
+                    <% if (paginatedTransactions.length > 0) { %>
+                        <% paginatedTransactions.forEach(transaction => { %>
                             <tr>
                                 <td><strong><%= transaction.Type %></strong></td>
-                                <%if(transaction.Type === 'Product Purchase') {%>
+                                <% if (transaction.Type === 'Product Purchase') { %>
                                     <td style="color:red;">
                                         -&#8377;<%= transaction.Amount.toFixed(2) %>
                                     </td>
-                                <%}else {%>
+                                <% } else { %>
                                     <td style="color:green;">
                                         +&#8377;<%= transaction.Amount.toFixed(2) %>
                                     </td>
-                                <%}%>
+                                <% } %>
                                 <td><%= new Date(transaction.Date).toLocaleDateString() %></td>
                             </tr>
                         <% }); %>
@@ -130,6 +130,49 @@
                     <% } %>
                 </tbody>
             </table>
+            <div class="pagination">
+                <% if (totalPages > 1) { %>
+                    <nav aria-label="Page navigation example">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item <%= currentPage === 1 ? 'disabled' : '' %>">
+                                <a class="page-link" href="?page=<%= currentPage - 1 %>" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                            <% for (let i = 1; i <= totalPages; i++) { %>
+                                <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                                    <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+                                </li>
+                            <% } %>
+                            <li class="page-item <%= currentPage === totalPages ? 'disabled' : '' %>">
+                                <a class="page-link" href="?page=<%= currentPage + 1 %>" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                <% } %>
+            </div>
+            <style>
+                .pagination {
+                    text-align: center;
+                    display: flex;
+                    justify-content: center;
+                    margin-top: 20px;
+                }
+                .pagination .page-item .page-link {
+                    color: #fff;
+                    background-color: #6c757d;
+                    border-color: #6c757d;
+                }
+                .pagination .page-item.active .page-link {
+                    background-color: #5a6268;
+                    border-color: #5a6268;
+                }
+                .pagination .page-item.disabled .page-link {
+                    color: #adb5bd;
+                }
+              </style>    
         </div>
     </div>
 </div>

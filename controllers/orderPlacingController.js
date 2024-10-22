@@ -35,6 +35,22 @@ const getValidCoupons = async (userId) => {
     }).select('_id CouponCode DiscountPercentage MaxAmount'); // Select relevant fields
 }
 
+const validateCoupon = async (couponCode, userId) => {
+    const currentDate = new Date(); // Get the current date
+
+    // Find the coupon that matches the code, is active, and within the date range
+    const coupon = await Coupon.findOne({
+        CouponCode: couponCode,
+        IsActive: true,
+        StartDate: { $lte: currentDate }, // Coupon has started
+        EndDate: { $gt: currentDate },
+        UsedBy: { $ne: userId } 
+    });
+    if (!coupon) {
+        return false;
+    }
+    return coupon; // Return the coupon details if valid
+};
 
 
 const loadCheckout = async (req, res) => {
@@ -155,7 +171,14 @@ const placeOrder = async (req, res) => {
         console.log(req.body);
         const userId = req.session.user_id; // Assuming user ID is stored in session
         console.log('Incoming Products:', paymentMethod, Products, TotalPrice, Address, priceWithoutDedection);
-
+        // Validate the applied coupon code if provided
+        let coupon = null;
+        if (appliedCouponCode) {
+            coupon = await validateCoupon(appliedCouponCode, userId);
+            if (!coupon) {
+                return res.status(400).json({ success: false, message: 'Invalid or expired coupon code, Please try other or Remove' });
+            }
+        }
         // If payment method is Online Payment, create a Razorpay order
         let razorpayOrderId = null;
         if (paymentMethod === 'Online Payment') {
@@ -469,9 +492,10 @@ const verifyPayment = async (req, res) => {
 const retryPayment = async (req, res) => {
     try {
         const OrderId = req.params.orderId;
-        const order = await Order.findOne({OrderId});
-        console.log("reeach here")
-        console.log(order)
+        const order = await Order.findOne({ OrderId });
+
+        console.log("Reach here");
+        console.log(order);
         if (!order) {
             return res.status(404).json({ success: false, message: 'Order not found' });
         }
@@ -481,11 +505,15 @@ const retryPayment = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Payment already completed' });
         }
 
-        // If the order is still pending, send the order details for payment
-        req.session.order_id = order.OrderId;
+        // Create the Razorpay order and save the ID to the order document
+        const razorpayOrder = await createRazorpayOrder(order.TotalPrice);
+        order.RazorpayOrderId = razorpayOrder.id; // Save the new Razorpay order ID
+        await order.save(); // Don't forget to save the updated order
+
+        console.log(order.TotalPrice);
         return res.json({
             success: true,
-            razorpayOrderId: order.RazorpayOrderId,
+            razorpayOrderId: razorpayOrder.id, // Use the correct property name for Razorpay order ID
             amount: order.TotalPrice * 100, // Convert to paise
             currency: 'INR',
             key: process.env.YOUR_RAZORPAY_KEY_ID
@@ -495,6 +523,63 @@ const retryPayment = async (req, res) => {
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 };
+
+
+const verifyRetryPayment = async (req, res) => {
+    try {
+        const { razorpayPaymentId, razorpayOrderId, razorpaySignature } = req.body;
+        console.log('Received:', { razorpayPaymentId, razorpayOrderId, razorpaySignature });
+        
+        const crypto = require('crypto');
+        const generated_signature = crypto.createHmac('sha256', process.env.YOUR_RAZORPAY_KEY_SECRET)
+            .update(razorpayOrderId + "|" + razorpayPaymentId)
+            .digest('hex');
+        console.log('Generated Signature:', generated_signature);
+
+        if (generated_signature !== razorpaySignature) {
+            console.error('Signature mismatch:', { generated_signature, razorpaySignature });
+            return res.redirect(`/myaccount/order-history?error=Payment verification failed`);
+        }
+
+        // Now find the order using the Razorpay order ID stored in the order document
+        const order = await Order.findOneAndUpdate(
+            { RazorpayOrderId: razorpayOrderId }, // This should work since we stored it in the retryPayment function
+            { RazorpayPaymentId: razorpayPaymentId, PaymentStatus: 'Paid' },
+            { new: true }
+        );
+
+        if (order) {
+            req.session.order_id = order.OrderId
+            return res.status(200).json({ success: true, orderId: order.OrderId});
+        }
+        return res.redirect(`/myaccount/order-history?error=Order not found`);
+    } catch (error) {
+        console.error('Error verifying payment:', error);
+        return res.redirect(`/myaccount/order-history?error=Internal server error`);
+    }
+};
+
+async function createRazorpayOrder(amount) {
+    const options = {
+        amount: amount * 100, // Convert to paise
+        currency: 'INR',
+        receipt: `receipt#${Math.random() * 100}`, // Generate a receipt ID or use a meaningful ID
+    };
+
+    // Call Razorpay API to create the order
+    const instance = new Razorpay({
+        key_id: process.env.YOUR_RAZORPAY_KEY_ID,
+        key_secret: process.env.YOUR_RAZORPAY_KEY_SECRET,
+    });
+
+    try {
+        const order = await instance.orders.create(options);
+        return order; // Return the newly created order
+    } catch (error) {
+        console.error('Error creating Razorpay order:', error);
+        throw new Error('Unable to create Razorpay order');
+    }
+}
 
 //load order history
 const loadOrderHistory = async (req, res) => {
@@ -532,7 +617,14 @@ const loadOrderHistory = async (req, res) => {
             .limit(itemsPerPage)
             .populate('Products.ProductId')
             .sort({ createdAt: -1 });
-
+        for (let order of orders) {
+            if (order.AppliedCoupon) {
+                const coupon = await Coupon.findOne({ CouponCode: order.AppliedCoupon});
+                if (coupon) {
+                    order.DiscountPercentage = coupon.DiscountPercentage;
+                }
+            }
+        }
         // Render the orders with pagination
         res.render('orderHistoryPage', {
             orders,
@@ -575,6 +667,16 @@ const loadCancelledOrders = async (req, res) => {
             .populate('Products.ProductId')
             .sort({ createdAt: -1 });
             console.log(orders.Products);
+
+            for (let order of orders) {
+                if (order.AppliedCoupon) {
+                    const coupon = await Coupon.findOne({ CouponCode: order.AppliedCoupon});
+                    if (coupon) {
+                        order.DiscountPercentage = coupon.DiscountPercentage;
+                    }
+                }
+            }
+
         // Render the orders with pagination
         res.render('cancelledOrderPage', {
             orders,
@@ -613,6 +715,15 @@ const loadDeliveredOrders = async (req, res) => {
             .sort({ createdAt: -1 });
             console.log(orders.Products);
         // Render the orders with pagination
+        for (let order of orders) {
+            if (order.AppliedCoupon) {
+                const coupon = await Coupon.findOne({ CouponCode: order.AppliedCoupon});
+                if (coupon) {
+                    order.DiscountPercentage = coupon.DiscountPercentage;
+                }
+            }
+        }
+
         res.render('PlacedOrderPage', {
             orders,
             currentPage,
@@ -652,6 +763,15 @@ const loadReturnedOrders = async (req, res) => {
             .populate('Products.ProductId')
             .sort({ createdAt: -1 });
             console.log(orders.Products);
+
+            for (let order of orders) {
+                if (order.AppliedCoupon) {
+                    const coupon = await Coupon.findOne({ CouponCode: order.AppliedCoupon});
+                    if (coupon) {
+                        order.DiscountPercentage = coupon.DiscountPercentage;
+                    }
+                }
+            }
         // Render the orders with pagination
         res.render('returnedOrderPage', {
             orders,
@@ -797,13 +917,15 @@ const cancelOrder = async (req, res) => {
 
             // Add the partial product refund to the user's wallet
             if (totalProductRefund > 0 && !allProductsCancelled) {
-                wallet.Balance += totalProductRefund;
-                wallet.Transactions.push({
-                    Type: 'Cancelled Products',
-                    Amount: totalProductRefund,
-                    Date: new Date()
-                });
-                await wallet.save(); // Save the updated wallet
+                if (order.PaymentMethod !== 'Cash On Delivery' && order.PaymentStatus === 'Paid') {
+                    wallet.Balance += totalProductRefund;
+                    wallet.Transactions.push({
+                        Type: 'Cancelled Products',
+                        Amount: totalProductRefund,
+                        Date: new Date()
+                    });
+                    await wallet.save(); // Save the updated wallet
+                } 
             }
 
             return res.redirect('/myaccount/order-history?success=Selected products cancelled successfully');
@@ -850,7 +972,7 @@ const generateInvoice = async (order, res) => {
         // Invoice title
         doc.fontSize(25)
            .text('INVOICE', 50, 160);
-        
+
         generateHr(doc, 185);
 
         // Invoice details
@@ -863,9 +985,9 @@ const generateInvoice = async (order, res) => {
            .text('Invoice Date:', 50, customerInformationTop + 15)
            .text(formatDate(order.createdAt), 150, customerInformationTop + 15)
            .text('Payment Method:', 50, customerInformationTop + 30)
-           .text(order.PaymentMethod || 'N/A', 150, customerInformationTop + 30) // Handle undefined Payment Method
+           .text(order.PaymentMethod || 'N/A', 150, customerInformationTop + 30)
            .text('Total Amount:', 50, customerInformationTop + 45)
-           .text("Rs:" + (order.TotalPrice || 0), 150, customerInformationTop + 45) // Handle undefined Total Price
+           .text("Rs:" + (order.TotalPrice || 0), 150, customerInformationTop + 45)
            .font('Helvetica-Bold')
            .text(order.Address.FullName || 'N/A', 300, customerInformationTop)
            .font('Helvetica')
@@ -878,27 +1000,36 @@ const generateInvoice = async (order, res) => {
         // Product table
         let position = 330; // Set initial position
         let priceWithoutDeduction = 0;
-        if (order.Products && order.Products.length > 0) {
+
+        // Filter products based on ProductStatus
+        const validProducts = order.Products.filter(item => 
+            ['Placed', 'Return Requested', 'Return Rejected'].includes(item.ProductStatus)
+        );
+
+        if (validProducts.length > 0) {
             generateTableRow(
                 doc,
                 position,
                 'Item',
                 'Unit Cost',
+                'Offer Cost', // New column
                 'Quantity',
                 'Line Total'
             );
             generateHr(doc, position + 20);
             position += 30; // Update position after header
-            for (let item of order.Products) {
+
+            for (let item of validProducts) {
                 if (item.ProductId) {
-                    priceWithoutDeduction+=(item.ProductId.Price || 0) * (item.Quantity || 0)
+                    priceWithoutDeduction += (item.PriceWithoutOffer || 0) * (item.Quantity || 0);
                     position = generateTableRow(
                         doc,
                         position,
                         item.ProductId.Name || 'N/A',
-                        "Rs:" + (item.ProductId.Price || 0),
+                        "Rs:" + (item.PriceWithoutOffer|| 0),
+                        "Rs:" + (item.Price || 0), // Offer cost column
                         item.Quantity || 0,
-                        "Rs:" + ((item.ProductId.Price || 0) * (item.Quantity || 0))
+                        "Rs:" + ((item.PriceWithoutOffer || 0) * (item.Quantity || 0))
                     );
 
                     // Check if position is valid before generating HR
@@ -912,55 +1043,54 @@ const generateInvoice = async (order, res) => {
                 }
             }
         } else {
-            doc.fontSize(10).text('No products in this order.', 50, position);
+            doc.fontSize(10).text('No valid products in this order.', 50, position);
             position += 20;
         }
+
         // Add totals and footer
         const subtotalPosition = position + 60;
 
         // Calculate discount amount
-        const discountAmount = priceWithoutDeduction - (order.TotalPrice || 0);
+        const discountAmount = (priceWithoutDeduction+50) - (order.TotalPrice || 0);
+        const shippingCharge = 50; // Shipping charge always 50
+
         generateTableRow(
             doc,
             subtotalPosition,
             '',
             '',
-            'Sub Total:',
-            "Rs: "+priceWithoutDeduction, // Ensure the amount is formatted to 2 decimal places
-            ''
+            'Unit Cost Sub Total:',
+            "Rs: " + priceWithoutDeduction
         );
-        // Conditional display logic
-        if (discountAmount >= 0) {
-            // Display Discount Amount
-            generateTableRow(
-                doc,
-                subtotalPosition+30,
-                '',
-                '',
-                'Discount Amount:',
-                "Rs: -"+discountAmount, // Ensure the amount is formatted to 2 decimal places
-                ''
-            );
-        } else {
-            generateTableRow(
-                doc,
-                subtotalPosition+30,
-                '',
-                '',
-                'Shipping Charge: (After Discount)',
-                "Rs: +"+(discountAmount*-1),// Ensure the amount is formatted to 2 decimal places
-                ''
-            );
-        }
-        const paidToDatePosition = subtotalPosition + 60;
+
+        // Display shipping charge
         generateTableRow(
             doc,
-            paidToDatePosition,
+            subtotalPosition + 30,
+            '',
+            '',
+            'Shipping Charge:',
+            "Rs: +" + shippingCharge
+        );
+
+        // Display discount
+        generateTableRow(
+            doc,
+            subtotalPosition + 60,
+            '',
+            '',
+            'All Discount:',
+            "Rs: -" + discountAmount.toFixed(2)
+        );
+
+        const totalPosition = subtotalPosition + 90;
+        generateTableRow(
+            doc,
+            totalPosition,
             '',
             '',
             'Total:',
-            "Rs: " +(order.TotalPrice || 0),
-            ''
+            "Rs: " + ((order.TotalPrice || 0))
         );
 
         // Add QR code if needed
@@ -1026,4 +1156,5 @@ module.exports = {
     loadCancelledOrders,
     loadDeliveredOrders,
     loadReturnedOrders,
+    verifyRetryPayment,
 }

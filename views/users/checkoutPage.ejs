@@ -1220,11 +1220,11 @@ function initiateRazorpayPayment(data) {
                     });
                 } else {
                     // Handle payment verification failure
-                    await handlePaymentFailure('Payment Verification Failed', 'Your payment was not verified. Please check your order in the history.', data.razorpayOrderId);
+                    alert('Payment Verification Failed', 'Your payment was not verified. Please check your order in the history.', data.razorpayOrderId);
                 }
             } catch (error) {
                 console.error("Error during payment verification", error);
-                await handlePaymentFailure('Payment Verification Failed', 'An error occurred while verifying your payment.', data.razorpayOrderId);
+                alert('Payment Verification Failed', 'An error occurred while verifying your payment.', data.razorpayOrderId);
             }
         },
         prefill: {

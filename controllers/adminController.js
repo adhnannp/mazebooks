@@ -6,6 +6,7 @@ const bcrypt = require("bcrypt");
 const Product = require("../models/productModel");
 const Category = require("../models/categoryModel");
 const Order = require("../models/orderModel");
+const Coupon = require("../models/coupenModel")
 const Wallet = require("../models/walletModel");
 
 //login setup
@@ -517,15 +518,10 @@ const ordersLoad = async (req, res) => {
         if (filterOption) {
             if (filterOption === "New") {
                 query = {}; // Fetch all orders for "New" (recently placed orders)
-            } else if (filterOption === "Rejected" || filterOption === "Requested") {
-                query["ReturnRequest.status"] = filterOption; // Find orders with return requests
-            } else if (filterOption === "Cancelled"){
-                query = {
-                    $or: [
-                        { "Products.ProductStatus": "Cancelled" },
-                        { "Status": "Cancelled" }
-                    ]
-                };
+            } else if (filterOption === "Requested") {
+                query["Products.ProductStatus"] = "Return Requested"; // Find orders with return requests
+            } else if (filterOption === "Rejected"){
+                query["Products.ProductStatus"] = "Return Rejected";
             }else {
                 query["Status"] = filterOption; // For regular order statuses
             }
@@ -545,7 +541,14 @@ const ordersLoad = async (req, res) => {
                 select: 'Name Images' // Select only the fields you need
             })
             .exec();
-
+        for (let order of orders) {
+            if (order.AppliedCoupon) {
+                const coupon = await Coupon.findOne({ CouponCode: order.AppliedCoupon});
+                if (coupon) {
+                    order.DiscountPercentage = coupon.DiscountPercentage;
+                }
+            }
+        }
         // Render the orders with pagination and filtering
         res.render("orders.ejs", {
             orders,

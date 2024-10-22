@@ -11,6 +11,7 @@ const Cart = require("../models/cartModel");
 const Order = require("../models/orderModel");
 const Wishlist = require("../models/wishlistModel");
 const Wallet = require("../models/walletModel");
+const Coupon = require("../models/coupenModel");
 
 
 const returnRequest = async (req, res) => {
@@ -56,106 +57,145 @@ const returnRequest = async (req, res) => {
 
 const handleReturnRequest = async (req, res) => {
     const { orderId } = req.params;
-    const { action, products } = req.body; // Get action and selected products from form data
-    console.log(orderId, action, products); // Log all received data for debugging
+    const { action, products } = req.body; 
+    console.log('Action:', action);
+    console.log('OrderId:', orderId);
+    console.log('Products:', products);
 
     try {
-        // Find the order by its ID
         const order = await Order.findById(orderId);
         if (!order) {
-            return res.status(404).json({ message: 'Order not found' });
+            console.log('Order not found');
+            return res.redirect(`/admin/orders?error=Order not found`);
         }
+        console.log(order)
 
-        // Ensure products is an array
-        const selectedProducts = Array.isArray(products) ? products : [products];
+        // Remove duplicate product IDs
+        const selectedProducts = Array.isArray(products) ? [...new Set(products)] : [products];
+        const uniqueProductIds = selectedProducts.map(productId => new mongoose.Types.ObjectId(productId));
+        console.log('Unique Selected Products:', uniqueProductIds);
 
-        // Initialize variables for price reductions
         let totalProductRefund = 0;
         let totalActualPriceReduction = 0;
         let totalWithoutDeductionReduction = 0;
-        let allProductsReturned = true;
+        let discountPercentage = 0;
 
-        // Handle action based on the request
+        // Check if a coupon was applied
+        if (order.AppliedCoupon) {
+            const coupon = await Coupon.findOne({ CouponCode: order.AppliedCoupon });
+            if (coupon) {
+                discountPercentage = coupon.DiscountPercentage;
+            }
+        }
+
         if (action === 'reject') {
-            // Set the status to 'Return Rejected' for all selected products
-            selectedProducts.forEach(productId => {
-                const productInOrder = order.Products.find(p => p.ProductId.toString() === productId);
+            // If rejecting the return
+            uniqueProductIds.forEach(productId => {
+                const productInOrder = order.Products.find(p => p.ProductId.equals(productId));
                 if (productInOrder) {
                     productInOrder.ProductStatus = 'Return Rejected';
+                    console.log(`Product ${productId} status set to 'Return Rejected'`);
+                } else {
+                    console.log(`Product ${productId} not found in order`);
                 }
             });
         } else if (action === 'accept') {
-            // Process return for each selected product
-            selectedProducts.forEach(productId => {
-                const productInOrder = order.Products.find(p => p.ProductId.toString() === productId);
-                if (productInOrder && productInOrder.ProductStatus === 'Placed') {
-                    // Update the product status to 'Returned'
-                    productInOrder.ProductStatus = 'Returned';
+            await Promise.all(uniqueProductIds.map(async (productId) => {
+                const productInOrder = order.Products.find(p => p.ProductId.equals(productId));
+                console.log(`Checking product ${productId}:`, productInOrder); // Log the product details
+                if (productInOrder) {
+                    if (productInOrder.ProductStatus === 'Return Requested') {
+                        productInOrder.ProductStatus = 'Returned';
 
-                    // (price after offer)
-                    totalActualPriceReduction += productInOrder.Price * productInOrder.Quantity;
+                        const productTotal = productInOrder.Price * productInOrder.Quantity;
+                        let refundAmount = productTotal;
 
-                    // (original price)
-                    totalWithoutDeductionReduction += productInOrder.PriceWithoutOffer * productInOrder.Quantity;
+                        // Apply coupon discount if applicable
+                        if (discountPercentage > 0) {
+                            refundAmount = productTotal - (productTotal * (discountPercentage / 100));
+                        }
 
-                    // Add the refund amount to totalProductRefund
-                    totalProductRefund += productInOrder.Price * productInOrder.Quantity;
+                        // Add the refund amount
+                        totalProductRefund += refundAmount;
+
+                        // Price reductions
+                        totalActualPriceReduction += productInOrder.Price * productInOrder.Quantity;
+                        totalWithoutDeductionReduction += productInOrder.PriceWithoutOffer * productInOrder.Quantity;
+                    } else {
+                        console.log(`Product ${productId} is not eligible for return. Status: ${productInOrder.ProductStatus}`);
+                    }
+                } else {
+                    console.log(`Product ${productId} is not found in order`);
                 }
-            });
+            }));
 
-            // Check if all products are returned
-            order.Products.forEach(product => {
-                if (product.ProductStatus !== 'Returned') {
-                    allProductsReturned = false;
-                }
-            });
-
-            // Update the order if all products are returned
-            if (allProductsReturned) {
-                order.Status = 'Returned';
-            }
-
-            // Update the order's price fields
-            order.TotalPrice -= totalProductRefund;
-            order.ActualTotalPrice -= totalActualPriceReduction;
-            order.PriceWithoutDeduction -= totalWithoutDeductionReduction;
-
-            // Find the user's wallet
+            // Check if all products have been returned
+            const allProductsReturned = order.Products.every(product => product.ProductStatus === 'Returned');
+            const hasPlacedProduct = order.Products.some(product => 
+                product.ProductStatus === 'Placed' || 
+                product.ProductStatus === 'Return Rejected' || 
+                product.ProductStatus === 'Return Requested'
+            );
+            const hasReturnedProduct = order.Products.some(product => product.ProductStatus === 'Returned');
+            // Handle wallet refund if applicable
             let wallet = await Wallet.findOne({ UserId: order.UserId });
             if (!wallet) {
                 wallet = await Wallet.create({
                     UserId: order.UserId,
-                    balance: 0,
-                    transactions: []
+                    Balance: 0,
+                    Transactions: []
                 });
             }
+            //no need to send the shipping charge
+            if (allProductsReturned) {
+                wallet.Balance += totalProductRefund;
+                wallet.Transactions.push({
+                    Type: 'Returned Order',
+                    Amount: totalProductRefund,
+                    Date: new Date()
+                });
+                await wallet.save();
 
-            // Add the refund amount to the wallet balance
-            wallet.Balance += totalProductRefund; // Assuming totalProductRefund is the amount to be returned
+                order.TotalPrice = order.ReferencePrice.TotalPrice;
+                order.ActualTotalPrice = order.ReferencePrice.ActualTotalPrice;
+                order.PriceWithoutDedection = order.ReferencePrice.PriceWithoutDeduction;
+                order.Status = 'Returned';
+            } else if (!hasPlacedProduct && hasReturnedProduct) {
+                wallet.Balance += totalProductRefund;
+                wallet.Transactions.push({
+                    Type: 'Returned Order',
+                    Amount: totalProductRefund,
+                    Date: new Date()
+                });
+                await wallet.save();
+                order.Status = 'Returned';
+            } else {
+                order.TotalPrice -= totalProductRefund;
+                order.ActualTotalPrice -= totalActualPriceReduction;
+                order.PriceWithoutDedection -= totalWithoutDeductionReduction;
 
-            // Add a transaction record for the return
-            wallet.Transactions.push({
-                Type: 'Return Order',
-                Amount: totalProductRefund,
-                Date: new Date() // Current date for the transaction
-            });
+                wallet.Balance += totalProductRefund;
+                wallet.Transactions.push({
+                    Type: 'Returned Products',
+                    Amount: totalProductRefund,
+                    Date: new Date()
+                });
 
-            // Save the updated wallet
-            await wallet.save();
+                await wallet.save();
+            }
         } else {
-            return res.status(400).json({ success: false, message: 'Invalid action' });
+            return res.redirect(`/admin/orders?error=Invalid action`);
         }
-
-        // Save the updated order
         await order.save();
-
-        // Return a success response
-        res.status(200).json({ success: true, message: 'Return request updated successfully', order, selectedProducts });
+        res.redirect(`/admin/orders?success=Product Return Request handled successfully`);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: 'Internal server error' });
+        console.error('Error:', error);
+        res.redirect(`/admin/orders?error=Internal server error`);
     }
 };
+
+
+
 
 
 module.exports = {

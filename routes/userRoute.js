@@ -156,6 +156,8 @@ user_route.post('/checkout/remove-coupon',auth.isAdminLogin, auth.isLogin,auth.i
 
 user_route.post('/myaccount/retry-payment/:orderId',auth.isAdminLogin,auth.ifNotVerified,orderPlacingController.retryPayment)
 
+user_route.post('/verify-retry-payment',auth.isAdminLogin,auth.ifNotVerified,orderPlacingController.verifyRetryPayment)
+
 user_route.get('/myaccount/download-invoice/:orderId', auth.isAdminLogin,auth.isLogin,auth.isblock,auth.ifNotVerified,orderPlacingController.downloadInvoice);
 
 user_route.get('/about',auth.isAdminLogin,auth.isblock,auth.ifNotVerified,auth.updateCartAndWishlistCounts,userController.aboutLoad);

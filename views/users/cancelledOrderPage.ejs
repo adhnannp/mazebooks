@@ -208,7 +208,7 @@
                                 <div class="order-details">
                                     <% let cancelledTotal = 0; %> <!-- Initialize the cancelledTotal -->
                                     <% let allProductsCancelled = true; %> <!-- Flag to check if all products are cancelled -->
-                                
+                        
                                     <% order.Products.forEach(item => { %>
                                         <% if (item.ProductStatus === 'Cancelled' || order.Status === 'Cancelled') { %> <!-- Only show if ProductStatus is 'Cancelled' -->
                                             <div class="order-item">
@@ -223,16 +223,32 @@
                                             <% allProductsCancelled = false; %> <!-- If any product is not cancelled, set this flag to false -->
                                         <% } %>
                                     <% }) %>
-                                
+                        
                                     <div class="total-cell">
                                         <% if (allProductsCancelled) { %>
                                             <!-- If all products are cancelled, show the total order price -->
                                             <p>Total: ₹ <%= order.TotalPrice.toFixed(2) %></p>
                                         <% } else { %>
                                             <!-- If only some products are cancelled, show the total for cancelled products -->
-                                            <p>Cancelled Products Total: ₹ <%= cancelledTotal.toFixed(2) %></p>
+                                            <p>Cancelled Products Total: ₹ 
+                                                <% 
+                                                    let finalCancelledTotal = cancelledTotal;
+                                                    if (order.DiscountPercentage) {
+                                                        finalCancelledTotal = cancelledTotal * (1 - order.DiscountPercentage / 100);
+                                                    }
+                                                %>
+                                                <%= finalCancelledTotal.toFixed(2) %>
+                                            </p>
                                         <% } %>
                                     </div>
+                        
+                                    <!-- Display coupon code and discount if applied -->
+                                    <% if (order.AppliedCoupon) { %>
+                                        <div class="coupon-info">
+                                            <p>Coupon Code: <%= order.AppliedCoupon%></p>
+                                            <p>Discount: <%= order.DiscountPercentage %> %</p>
+                                        </div>
+                                    <% } %>
                                 </div>
                             </div>
                         <% }) %>

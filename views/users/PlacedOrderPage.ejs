@@ -247,6 +247,12 @@
                                     <div class="total-cell">
                                         <p>Total: ₹ <%= order.TotalPrice.toFixed(2) %></p>
                                     </div>
+                                    <% if (order.AppliedCoupon) { %>
+                                        <div class="coupon-info">
+                                            <p>Coupon Code: <%= order.AppliedCoupon%></p>
+                                            <p>Discount: <%= order.DiscountPercentage %> %</p>
+                                        </div>
+                                    <% } %>
                                 </div>
                                 <% if (order.Status === 'Placed') { %>
                                     <div class="invoice-download">

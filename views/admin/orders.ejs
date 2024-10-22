@@ -330,7 +330,7 @@
                                                           <% order.Products.forEach((product, index) => { %>
                                                               <% if (product.ProductStatus === 'Return Requested') { %>
                                                                   <div>
-                                                                    <input type="checkbox" id="product_<%= product._id %>" name="products[]" value="<%= product._id %>" 
+                                                                    <input type="checkbox" id="product_<%= product._id %>" name="products[]" value="<%= product.ProductId._id %>" 
                                                                     onclick="toggleProductSelection('<%= product._id %>', '<%= order._id %>')">
                                                                       <label for="product_<%= product._id %>">
                                                                           <% if (product.ProductId.Images && product.ProductId.Images.length > 0) { %>
@@ -413,6 +413,17 @@
                                                                   <% } %>
                                                                   <%= product.ProductId.Name %> - Quantity: <%= product.Quantity %> 
                                                                   <br>Price: ₹ <%= product.Price %> 
+                                                                  <% if (order.AppliedCoupon) { %>
+                                                                  <p>Coupon Applied Price: ₹ 
+                                                                    <% 
+                                                                        let finalreturnedTotals = product.Price;
+                                                                        if (order.DiscountPercentage) {
+                                                                            finalreturnedTotals = product.Price * (1 - order.DiscountPercentage / 100);
+                                                                        }
+                                                                    %>
+                                                                    <%= finalreturnedTotals.toFixed(2) %>
+                                                                  </p>
+                                                                  <%}%>
                                                                   <% if (product.ProductStatus === 'Cancelled') { %> 
                                                                       <span style="color: red;">&#9673;(Cancelled)</span>
                                                                   <% } else if (product.ProductStatus === 'Return Requested') { %> 
@@ -425,8 +436,13 @@
                                                               </li>
                                                           <% }) %>
                                                       </ul>
+                                                      <% if (order.AppliedCoupon) { %>
+                                                        <span>Coupon Code:<%= order.AppliedCoupon%></span><br>
+                                                        <span>Discount Percentage:<%= order.DiscountPercentage %>%</span>
+                                                      <%}%>
                                                       <h6>Shipping Charge: ₹ 50 %></h6>
                                                       <h6>Total Price: ₹ <%= order.TotalPrice.toFixed(2) %></h6>
+                                                      
                                                   </div>
                                                   <div class="modal-footer">
                                                       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>

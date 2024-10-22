@@ -206,11 +206,11 @@
                                     </div>
                                 </div>
                                 <div class="order-details">
-                                    <% let returnedTotals = 0; %> <!-- Initialize the cancelledTotal -->
+                                    <% let returnedTotals = 0; %> <!-- Initialize the returnedTotals -->
                                     <% let allProductsReturned = true; %> <!-- Flag to check if all products are cancelled -->
                                 
                                     <% order.Products.forEach(item => { %>
-                                        <% if (item.ProductStatus === 'Returned' || order.Status === 'Returned') { %> <!-- Only show if ProductStatus is 'Cancelled' -->
+                                        <% if (item.ProductStatus === 'Returned') { %> <!-- Only show if ProductStatus is 'Cancelled' -->
                                             <div class="order-item">
                                                 <img src="/static/uploads/<%= item.ProductId.Images[0] %>" alt="<%= item.ProductId.Name %>" class="product-image">
                                                 <div class="item-info">
@@ -218,7 +218,7 @@
                                                     <p class="item-quantity">Quantity: <%= item.Quantity %></p>
                                                 </div>
                                             </div>
-                                            <% returnedTotals += (item.Price * item.Quantity); %> <!-- Add canceled product price to cancelledTotal -->
+                                            <% returnedTotals += (item.Price * item.Quantity); %> <!-- Add canceled product price to returnedTotals -->
                                         <% } else { %>
                                             <% allProductsReturned = false; %> <!-- If any product is not cancelled, set this flag to false -->
                                         <% } %>
@@ -228,16 +228,28 @@
                                         <% if (allProductsReturned) { %>
                                             <!-- If all products are cancelled, show the total order price -->
                                             <p>Total: ₹ <%= order.TotalPrice.toFixed(2) %></p>
-                                        <% } else { %>
-                                            <!-- If only some products are cancelled, show the total for cancelled products -->
-                                            <p>Returned Products Total: ₹ <%= returnedTotals.toFixed(2) %></p>
+                                        <% } else if(order.Status == 'Returned' && !allProductsReturned ){ %>
+                                            <p>Returned Products Total: ₹ 
+                                                <% 
+                                                    let finalreturnedTotals = returnedTotals;
+                                                    if (order.DiscountPercentage) {
+                                                        finalreturnedTotals = returnedTotals * (1 - order.DiscountPercentage / 100);
+                                                    }
+                                                %>
+                                                <%= finalreturnedTotals.toFixed(2) %>
+                                            </p>
                                         <% } %>
                                     </div>
+                                    <% if (order.AppliedCoupon) { %>
+                                        <div class="coupon-info">
+                                            <p>Coupon Code: <%= order.AppliedCoupon%></p>
+                                            <p>Discount: <%= order.DiscountPercentage %> %</p>
+                                        </div>
+                                    <% } %>
                                 </div>
                             </div>
                         <% }) %>
                     </div>
-                    
                     <style>
                         .order-category-tabs {
                             display: flex;

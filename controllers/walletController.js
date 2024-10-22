@@ -14,9 +14,15 @@ const Wallet = require("../models/walletModel");
 
 const loadWallet = async (req, res) => {
     try {
-        // Attempt to find the user's wallet
+        // Fetch current page from query params, default is 1
+        const currentPage = parseInt(req.query.page) || 1;
+
+        // Number of transactions to show per page
+        const transactionsPerPage = 40;
+
+        // Find the user's wallet
         let wallet = await Wallet.findOne({ UserId: req.session.user_id }).populate('UserId');
-        
+
         // If no wallet exists, create a new one
         if (!wallet) {
             wallet = await Wallet.create({
@@ -26,13 +32,20 @@ const loadWallet = async (req, res) => {
             });
         }
 
-        // Get the last 20 transactions (will be empty if new wallet)
-        const recentTransactions = wallet.Transactions.slice(-20).reverse(); // Get last 20 transactions and reverse to show latest on top
+        // Total transactions and total pages calculation
+        const totalTransactions = wallet.Transactions.length;
+        const totalPages = Math.ceil(totalTransactions / transactionsPerPage);
 
-        // Render the wallet page with the wallet and transactions
+        // Calculate start and end index for paginated transactions
+        const startIndex = (currentPage - 1) * transactionsPerPage;
+        const paginatedTransactions = wallet.Transactions.slice(startIndex, startIndex + transactionsPerPage).reverse();
+
+        // Render the wallet page with pagination data
         res.render('walletPage', {
             wallet,
-            recentTransactions,
+            paginatedTransactions, // Pass only paginated transactions for current page
+            currentPage,
+            totalPages,
             cartItemCount: req.session.cartItemCount,
             wishlistItemCount: req.session.wishlistItemCount,
             user: req.session.user_id
