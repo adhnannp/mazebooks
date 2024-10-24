@@ -253,7 +253,7 @@ const loadAccountOverview = async(req,res)=>{
             });
         }
         if (req.session.user_id && req.session.is_verified && !req.session.is_block) {
-            const user = await User.findOne({_id:req.session.user_id})
+            const user = await User.findOne({ _id: req.session.user_id }).populate('referredUsers', 'FirstName LastName Email');
             return res.render('myAccount',{
                 user:user,
                 cartItemCount: req.session.cartItemCount,
@@ -275,12 +275,15 @@ const loadAccountOverview = async(req,res)=>{
 
 //render registration view
 const loadRegister = async(req,res)=>{
+    const referralCode = req.query.ref || ''
+    console.log(referralCode)
     try {
         res.render('userRegister',{
             message:'',
             cartItemCount: req.session.cartItemCount,
             wishlistItemCount: req.session.wishlistItemCount,
-            user:req.session.user_id
+            user:req.session.user_id,
+            referralCode,
         });
     } catch (error) {
         console.log(error.message);
@@ -297,10 +300,16 @@ const securePassword = async (password)=>{
     }
 }
 
+const generateReferralCode = () => {
+    return crypto.randomBytes(4).toString('hex'); // Generates a random referral code
+};
+
 // insert user to db
 const insertUser = async (req, res) => {
     try {
         // Check if user already exists based on email, name, or phone number
+        const referralCode = req.body.referralCode
+        console.log(referralCode)
         const existingUser = await User.findOne({
             $or: [
                 { Email: req.body.email },
@@ -317,6 +326,12 @@ const insertUser = async (req, res) => {
                 user:req.session.user_id
             });
         }
+
+        let referredByUser = null;
+        if (referralCode) {
+            referredByUser = await User.findOne({ referralCode });
+        }
+
         const otp = crypto.randomInt(100000, 999999).toString(); // Generate 6-digit OTP
 
         // If user does not exist, proceed with registration
@@ -330,7 +345,9 @@ const insertUser = async (req, res) => {
             CreatedAt: Date.now(),
             Password: spassword,
             DOB: req.body.dob,
-            OTP: otp
+            OTP: otp,
+            referralCode: generateReferralCode(),
+            referredBy: referredByUser ? referredByUser._id : null, 
         });
 
         const userData = await user.save();
@@ -531,6 +548,48 @@ const verifyOtp = async (req, res) => {
 
             // Update session variables
             req.session.is_verified = true;
+
+            // If the user has been referred by someone
+            if (user.referredBy) {
+                let wallet = await Wallet.findOne({ UserId: user_id });
+                if (!wallet) {
+                    wallet = await Wallet.create({
+                        UserId: user_id,
+                        Balance: 50,  // Initialize with ₹50 for the referral
+                        Transactions: [{ Type: 'Refferel Reward', Amount: 50, Date: new Date() }],
+                    });
+                } else {
+                    wallet.Balance += 50;
+                    wallet.Transactions.push({ Type: 'Refferal Reward', Amount: 50, Date: new Date() });
+                    await wallet.save();
+                }
+
+                user.referralAmount += 50;  // Add ₹50 to the current user's referralAmount
+                await user.save();
+
+                // Find the referrer and give them ₹100
+                const referrer = await User.findById(user.referredBy);
+
+                if (referrer) {
+                    // Add ₹100 to the referrer's wallet and referralAmount
+                    let referrerWallet = await Wallet.findOne({ UserId: referrer._id });
+                    if (!referrerWallet) {
+                        referrerWallet = await Wallet.create({
+                            UserId: referrer._id,
+                            Balance: 100,  // Initialize with ₹100 for the referral
+                            Transactions: [{ Type: 'Refferal Reward', Amount: 100, Date: new Date() }],
+                        });
+                    } else {
+                        referrerWallet.Balance += 100;
+                        referrerWallet.Transactions.push({ Type: 'Refferal Reward', Amount: 100, Date: new Date() });
+                        await referrerWallet.save();
+                    }
+
+                    referrer.referralAmount += 100;  // Add ₹100 to the referrer's referralAmount
+                    referrer.referredUsers.push(user._id);  // Add the current user to referrer's referredUsers array
+                    await referrer.save();
+                }
+            }
 
             // Attempt to find the user's wallet
             let wallet = await Wallet.findOne({ UserId: req.session.user_id }).populate('UserId');

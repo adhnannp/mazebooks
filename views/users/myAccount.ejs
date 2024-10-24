@@ -174,6 +174,37 @@
 .btn-save-image {
     display: none;
 }
+/* Referral Section */
+.referral-section {
+        padding: 15px;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+    }
+
+    .referral-link {
+        color: #3498db;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    .referral-link:hover {
+        text-decoration: underline;
+    }
+
+    .referred-users-list {
+        list-style-type: none;
+        padding-left: 0;
+    }
+
+    .referred-users-list li {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 10px;
+    }
+
+    .referred-users-list li:last-child {
+        border-bottom: none;
+    }
 </style>
 <div class="account-container">
     <!-- Breadcrumbs -->
@@ -258,6 +289,39 @@
                         </form>
                         <a href="#" class="btn-edit" data-toggle="modal" data-target="#editUserModal">Edit</a>
                     </div>
+
+                    <!-- Referral Section -->
+                    <div class="referral-section" style="margin-top: 20px;">
+                        <h2>Referral Information</h2>
+
+                        <!-- Referral Code -->
+                        <p>
+                            <strong>My Referral link:</strong> 
+                            <a href="<%= 'http://localhost:3000/register?ref=' + user.referralCode %>" 
+                            target="_blank" class="referral-link">
+                                https://mazebooks/register?ref=<%=user.referralCode %>
+                            </a>
+                        </p>
+
+                        <!-- Total Earned -->
+                        <p><strong>Total Referral Earnings:</strong> ₹<%= user.referralAmount %></p>
+
+                        <!-- Referred Users -->
+                        <h3>Referred Users:</h3>
+                        <% if (user.referredUsers.length > 0) { %>
+                            <ul class="referred-users-list">
+                                <% user.referredUsers.forEach(function(refUser) { %>
+                                    <li>
+                                        <p><strong>Name:</strong> <%= refUser.FirstName + ' ' + refUser.LastName %></p>
+                                        <p><strong>Email:</strong> <%= refUser.Email %></p>
+                                    </li>
+                                <% }) %>
+                            </ul>
+                        <% } else { %>
+                            <p>You haven't referred any users yet.</p>
+                        <% } %>
+                    </div>
+
                 </div>
             <% } else { %>
                 <div class="registration-section">

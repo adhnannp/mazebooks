@@ -16,7 +16,11 @@ const userSchema = new mongoose.Schema({
     otpExpires: { type: Date }, // Expiration time for the OTP
     resetPasswordToken: { type: String },// Token for resetting the password
     resetPasswordExpires: { type: Date },// Expiration time for the token
-    ProfileImage: { type: String, default: null }
+    ProfileImage: { type: String, default: null },
+    referralCode: { type: String },  
+    referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },  
+    referredUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], 
+    referralAmount: { type: Number, default: 0 },
 })
 
 module.exports = mongoose.model("User", userSchema)
