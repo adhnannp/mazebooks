@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>500 - Server Error</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .container {
+            max-width: 800px;
+            padding: 2rem;
+        }
+        .error-code {
+            font-size: 120px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 0;
+            line-height: 1;
+        }
+        .message {
+            font-size: 24px;
+            color: #34495e;
+            margin: 20px 0;
+        }
+        .bookshelf {
+            position: relative;
+            margin: 40px auto;
+            width: 300px;
+            height: 150px;
+        }
+        .shelf {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 20px;
+            background: #8b4513;
+            border-radius: 5px;
+        }
+        .book-falling {
+            position: absolute;
+            width: 40px;
+            height: 60px;
+            background: #e74c3c;
+            border-radius: 3px;
+            animation: fall 2s ease-in infinite;
+        }
+        .book-stack {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .book-static {
+            width: 40px;
+            height: 60px;
+            background: #3498db;
+            margin: 0 5px;
+            display: inline-block;
+            border-radius: 3px;
+        }
+        .sub-message {
+            font-size: 18px;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+        }
+        .refresh-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #e74c3c;
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+        .refresh-button:hover {
+            background-color: #c0392b;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+            50% { transform: translateY(0) rotate(90deg); opacity: 1; }
+            100% { transform: translateY(0) rotate(90deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="error-code">500</h1>
+        <div class="bookshelf">
+            <div class="book-falling"></div>
+            <div class="book-stack">
+                <div class="book-static"></div>
+                <div class="book-static"></div>
+                <div class="book-static"></div>
+            </div>
+            <div class="shelf"></div>
+        </div>
+        <h2 class="message">Our Library System Needs Maintenance</h2>
+        <p class="sub-message">We're experiencing technical difficulties. Our librarians are working to fix it!</p>
+        <a href="javascript:location.reload()" class="refresh-button">Try Again</a>
+    </div>
+</body>
+</html>

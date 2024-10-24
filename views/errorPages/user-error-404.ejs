@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .container {
+            max-width: 800px;
+            padding: 2rem;
+        }
+        .error-code {
+            font-size: 120px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 0;
+            line-height: 1;
+        }
+        .message {
+            font-size: 24px;
+            color: #34495e;
+            margin: 20px 0;
+        }
+        .book-stack {
+            position: relative;
+            margin: 40px auto;
+            width: 200px;
+            height: 120px;
+        }
+        .book {
+            position: absolute;
+            height: 40px;
+            background: #3498db;
+            border-radius: 3px;
+            transform-origin: left;
+            transform: skewY(-15deg);
+            animation: float 3s ease-in-out infinite;
+        }
+        .book:nth-child(1) {
+            width: 180px;
+            bottom: 0;
+            left: 10px;
+            background: #e74c3c;
+        }
+        .book:nth-child(2) {
+            width: 160px;
+            bottom: 20px;
+            left: 20px;
+            background: #2ecc71;
+            animation-delay: 0.2s;
+        }
+        .book:nth-child(3) {
+            width: 140px;
+            bottom: 40px;
+            left: 30px;
+            background: #f1c40f;
+            animation-delay: 0.4s;
+        }
+        .sub-message {
+            font-size: 18px;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+        }
+        .home-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+        .home-button:hover {
+            background-color: #2980b9;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) skewY(-15deg); }
+            50% { transform: translateY(-10px) skewY(-15deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="error-code">404</h1>
+        <div class="book-stack">
+            <div class="book"></div>
+            <div class="book"></div>
+            <div class="book"></div>
+        </div>
+        <h2 class="message">Oops! This Page is Missing from Our Library</h2>
+        <p class="sub-message">It seems this page has been checked out or doesn't exist in our collection.</p>
+        <a href="/" class="home-button">Return to Homepage</a>
+    </div>
+</body>
+</html>

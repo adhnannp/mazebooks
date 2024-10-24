@@ -243,7 +243,7 @@
                                             <% } %>
                                         </div>
                                         <div class="action-cell">
-                                            <button type="button" class="btn btn-danger btn-sm" onclick="openCancelProductModal('<%= order._id %>', <%= JSON.stringify(order.Products) %>)">Cancel Products</button>
+                                            <button type="button" class="btn btn-danger btn-sm" onclick="openCancelProductModal('<%= order._id %>', <%= JSON.stringify(order.Products) %> , '<%= order.DiscountPercentage %>')">Cancel Products</button>
                                         </div>
                                     </div>
                                 </div>
@@ -615,7 +615,7 @@ function showAlert() {
 // Call the function to show the alert
 showAlert();
 // Function to open SweetAlert for Canceling Products or Full Order
-function openCancelProductModal(orderId, products) {
+function openCancelProductModal(orderId, products, discountPercentage) {
     // Filter products with ProductStatus as "Placed"
     const placedProducts = products.filter(product => product.ProductStatus === 'Placed');
 
@@ -660,11 +660,18 @@ function openCancelProductModal(orderId, products) {
     } else if (placedProducts.length > 1) {
         // Dynamically generate checkboxes for the placed products
         let productSelectionHtml = placedProducts.map(product => {
+            let originalPrice = product.Price;
+            let discountedPrice = originalPrice;
+
+            // Apply discount if a coupon is present
+            if (discountPercentage) {
+                discountedPrice = originalPrice - (originalPrice * (discountPercentage / 100));
+            }
             return `
                 <div class="form-check" style="text-align: left; margin-bottom: 10px;">
                     <input class="form-check-input product-checkbox" type="checkbox" value="${product.ProductId._id}" id="product-${product.ProductId._id}">
                     <label class="form-check-label" for="product-${product.ProductId._id}" style="margin-left: 5px;">
-                        ${product.ProductId.Name} - ₹${product.Price}
+                        ${product.ProductId.Name} - ₹${discountedPrice.toFixed(2)}
                     </label>
                 </div>
             `;

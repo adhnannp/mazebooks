@@ -160,8 +160,12 @@ const applyCoupon = async (req, res) => {
             return res.status(400).json({ message: 'Coupon has already been used by this user' });
         }
 
+        if (coupon.MaxAmount < cartTotal) {
+            return res.status(400).json({ message: 'Total amount is greater than applicable amount' });
+        }
+
         // Calculate discount
-        const discountAmount = (cartTotal * coupon.DiscountPercentage) / 100;
+        const discountAmount = ((cartTotal-50) * coupon.DiscountPercentage) / 100;
         const totalDiscountedPrice = cartTotal - discountAmount;
 
         // Send back the updated total price

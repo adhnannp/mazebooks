@@ -11,6 +11,9 @@ const config = require("./config/config");
 const PORT = 3000;
 const app = express();
 
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views/errorPages'));
+
 //cache controle
 app.use((req, res, next) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -42,10 +45,35 @@ app.use('/',userRoute);
 const adminRoute = require('./routes/adminRoute')
 app.use('/admin',adminRoute);
 
-//error handling function
+//500 error handling function
+app.use((err, req, res, next) => {
+  if (req.originalUrl.startsWith('/admin')) {
+    // Admin error handling
+    console.error('Admin Error:', err.stack);
+    return res.status(500).render('admin-error-500', { error: err.message }); 
+  } else {
+    // User error handling
+    console.error('User Error:', err.stack);
+    return res.status(500).render('user-error-500', { error: err.message }); 
+  }
+});
+
+// 404 Error handling for Admin and User
+app.use((req, res, next) => {
+  if (req.originalUrl.startsWith('/admin')) {
+    // Render admin 404 page
+    return res.status(404).render('admin-error-404'); 
+  } else {
+    // Render user 404 page
+    return res.status(404).render('user-error-404');
+  }
+});
+
+
+//interal error handling function
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).send('Something broke!');
+  res.status(500).render('internalServerError');
 });
 
 

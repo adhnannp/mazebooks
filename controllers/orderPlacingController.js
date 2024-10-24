@@ -35,13 +35,14 @@ const getValidCoupons = async (userId) => {
     }).select('_id CouponCode DiscountPercentage MaxAmount'); // Select relevant fields
 }
 
-const validateCoupon = async (couponCode, userId) => {
+const validateCoupon = async (couponCode, userId, TotalPrice) => {
     const currentDate = new Date(); // Get the current date
 
     // Find the coupon that matches the code, is active, and within the date range
     const coupon = await Coupon.findOne({
         CouponCode: couponCode,
         IsActive: true,
+        MaxAmount: {$gt:TotalPrice},
         StartDate: { $lte: currentDate }, // Coupon has started
         EndDate: { $gt: currentDate },
         UsedBy: { $ne: userId } 
@@ -174,7 +175,7 @@ const placeOrder = async (req, res) => {
         // Validate the applied coupon code if provided
         let coupon = null;
         if (appliedCouponCode) {
-            coupon = await validateCoupon(appliedCouponCode, userId);
+            coupon = await validateCoupon(appliedCouponCode, userId, TotalPrice);
             if (!coupon) {
                 return res.status(400).json({ success: false, message: 'Invalid or expired coupon code, Please try other or Remove' });
             }
@@ -987,7 +988,7 @@ const generateInvoice = async (order, res) => {
            .text('Payment Method:', 50, customerInformationTop + 30)
            .text(order.PaymentMethod || 'N/A', 150, customerInformationTop + 30)
            .text('Total Amount:', 50, customerInformationTop + 45)
-           .text("Rs:" + (order.TotalPrice || 0), 150, customerInformationTop + 45)
+           .text("Rs:" + (order.TotalPrice.toFixed(2) || 0), 150, customerInformationTop + 45)
            .font('Helvetica-Bold')
            .text(order.Address.FullName || 'N/A', 300, customerInformationTop)
            .font('Helvetica')
@@ -1066,7 +1067,7 @@ const generateInvoice = async (order, res) => {
         // Display shipping charge
         generateTableRow(
             doc,
-            subtotalPosition + 30,
+            subtotalPosition + 60,
             '',
             '',
             'Shipping Charge:',
@@ -1076,7 +1077,7 @@ const generateInvoice = async (order, res) => {
         // Display discount
         generateTableRow(
             doc,
-            subtotalPosition + 60,
+            subtotalPosition + 30,
             '',
             '',
             'All Discount:',
@@ -1090,7 +1091,7 @@ const generateInvoice = async (order, res) => {
             '',
             '',
             'Total:',
-            "Rs: " + ((order.TotalPrice || 0))
+            "Rs: " + ((order.TotalPrice.toFixed(2) || 0))
         );
 
         // Add QR code if needed

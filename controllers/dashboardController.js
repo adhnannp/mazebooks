@@ -44,8 +44,8 @@ const loadAdminHome = async(req,res)=>{
             };
         } else if (sortOption === 'custom' && startDate && endDate) {
             matchCondition.PlacedAt = {
-                $gte: new Date(startDate),
-                $lt: new Date(endDate)
+                $gte: moment(startDate, 'YYYY-MM-DD').startOf('day').toDate(),
+                $lte: moment(endDate, 'YYYY-MM-DD').add(1, 'day').startOf('day').toDate()
             };
         }
     
@@ -120,7 +120,15 @@ const loadAdminHome = async(req,res)=>{
                 $group: {
                     _id: null,
                     totalOrders: { $sum: 1 },
-                    totalSales: { $sum: "$FinalPrice" },
+                    totalSales: {  
+                        $sum: {
+                            $add: [
+                                "$CouponDeduction",
+                                "$OfferDeduction",
+                                "$FinalPrice"
+                            ]
+                        }
+                    },
                     totalDiscounts: { 
                         $sum: {
                             $add: [
@@ -133,7 +141,6 @@ const loadAdminHome = async(req,res)=>{
                 }
             }
         ]);
-        
     
         res.render('index', {
             salesData: salesData[0] || {},
@@ -182,8 +189,8 @@ const generateExcel = async (req, res) => {
         };
     } else if (sortOption === 'custom' && startDate && endDate) {
         matchCondition.PlacedAt = {
-            $gte: new Date(startDate),
-            $lt: new Date(endDate)
+            $gte: moment(startDate, 'YYYY-MM-DD').startOf('day').toDate(),
+            $lte: moment(endDate, 'YYYY-MM-DD').add(1, 'day').startOf('day').toDate()
         };
     }
 
@@ -380,8 +387,8 @@ const generatePdf = async (req, res) => {
         };
     } else if (sortOption === 'custom' && startDate && endDate) {
         matchCondition.PlacedAt = {
-            $gte: new Date(startDate),
-            $lt: new Date(endDate)
+            $gte: moment(startDate, 'YYYY-MM-DD').startOf('day').toDate(),
+            $lte: moment(endDate, 'YYYY-MM-DD').add(1, 'day').startOf('day').toDate()
         };
     }
 
