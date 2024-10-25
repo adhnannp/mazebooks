@@ -177,14 +177,8 @@
 /* Referral Section */
 .referral-section {
         padding: 15px;
-        background-color: #f9f9f9;
+        padding-left: 0;
         border-radius: 8px;
-    }
-
-    .referral-link {
-        color: #3498db;
-        text-decoration: none;
-        font-weight: bold;
     }
 
     .referral-link:hover {
@@ -293,30 +287,39 @@
                     <!-- Referral Section -->
                     <div class="referral-section" style="margin-top: 20px;">
                         <h2>Referral Information</h2>
-
-                        <!-- Referral Code -->
+                    
+                        <!-- Referral Code with additional information -->
                         <p>
                             <strong>My Referral link:</strong> 
                             <a href="<%= 'http://localhost:3000/register?ref=' + user.referralCode %>" 
-                            target="_blank" class="referral-link">
+                               target="_blank" class="referral-link">
                                 https://mazebooks/register?ref=<%=user.referralCode %>
                             </a>
                         </p>
-
+                        <p>Refer someone and earn ₹100, and they get ₹50 when they sign up!</p>
+                    
                         <!-- Total Earned -->
                         <p><strong>Total Referral Earnings:</strong> ₹<%= user.referralAmount %></p>
-
-                        <!-- Referred Users -->
+                    
+                        <!-- Referred Users in Table Format -->
                         <h3>Referred Users:</h3>
                         <% if (user.referredUsers.length > 0) { %>
-                            <ul class="referred-users-list">
-                                <% user.referredUsers.forEach(function(refUser) { %>
-                                    <li>
-                                        <p><strong>Name:</strong> <%= refUser.FirstName + ' ' + refUser.LastName %></p>
-                                        <p><strong>Email:</strong> <%= refUser.Email %></p>
-                                    </li>
-                                <% }) %>
-                            </ul>
+                            <table class="referred-users-table" style="width:100%; border-collapse: collapse; margin-top: 10px;">
+                                <thead>
+                                    <tr>
+                                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Name</th>
+                                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Amount Earned</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% user.referredUsers.forEach(function(refUser) { %>
+                                        <tr>
+                                            <td style="border: 1px solid #ddd; padding: 8px;"><%= refUser.FirstName + ' ' + refUser.LastName %></td>
+                                            <td style="border: 1px solid #ddd; padding: 8px;">+100</td>
+                                        </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
                         <% } else { %>
                             <p>You haven't referred any users yet.</p>
                         <% } %>
