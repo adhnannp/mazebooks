@@ -1095,7 +1095,7 @@ const generateInvoice = async (order, res) => {
         );
 
         // Add QR code if needed
-        const qrCodeDataUrl = await QRCode.toDataURL('http://localhost:3000');
+        const qrCodeDataUrl = await QRCode.toDataURL('https://mazebooks.zapto.org');
         doc.image(qrCodeDataUrl, 50, doc.page.height - 100, { width: 50 });
 
         // Footer
