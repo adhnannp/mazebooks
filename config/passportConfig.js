@@ -44,7 +44,7 @@ async (accessToken, refreshToken, profile, done) => {
             LastName: profile.name.familyName,
             CreatedAt: new Date(),
             UpdatedAt: new Date(),
-            Password: '', // Google OAuth users typically don't need a password
+            Password: null, // Google OAuth users typically don't need a password
             Is_verified: true, // Assuming users signing in with Google are verified
             referralCode: generateReferralCode(),
             referredBy: null,
