@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema({
     MobileNo: { type: String, required: false},
     UpdatedAt: { type: Date, required: true },
     CreatedAt: { type: Date, required: true },
-    Password: { type: String, required: true },
+    Password: { type: String},
     Is_admin: { type: Boolean, required: true, default: false},
     Is_block: { type: Boolean, required: true, default: false },
     Is_verified: { type: Boolean, required: true ,default: false},

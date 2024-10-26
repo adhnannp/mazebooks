@@ -2,6 +2,8 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const mongoose = require('mongoose');
 const User = require('../models/userModel'); // Adjust the path according to your project structure
+const crypto = require('crypto');
+
 
 passport.serializeUser((user, done) => {
     done(null, user.id);  // Serialize the user by their ID
@@ -15,6 +17,10 @@ passport.deserializeUser(async (id, done) => {
         done(err, null);
     }
 });
+
+const generateReferralCode = () => {
+    return crypto.randomBytes(4).toString('hex'); // Generates a random referral code
+};
 
 passport.use(new GoogleStrategy({
     clientID: process.env.YOUR_GOOGLE_CLIENT_ID,
@@ -39,7 +45,9 @@ async (accessToken, refreshToken, profile, done) => {
             CreatedAt: new Date(),
             UpdatedAt: new Date(),
             Password: '', // Google OAuth users typically don't need a password
-            Is_verified: true // Assuming users signing in with Google are verified
+            Is_verified: true, // Assuming users signing in with Google are verified
+            referralCode: generateReferralCode(),
+            referredBy: null,
         });
 
         await newUser.save();
