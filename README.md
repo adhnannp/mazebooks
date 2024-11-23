@@ -82,11 +82,13 @@ npm install
 3. Set up Environment Variables
 Create a `.env` file in the root directory:
 ```env
-PORT=3000
-MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
-RAZORPAY_KEY_ID=your_razorpay_key_id
-RAZORPAY_SECRET_KEY=your_razorpay_secret_key
+DB_URI= you mongodb uri
+SESSION_SECRET= your session secret
+GOODLE_MAIL_PASS_KEY= your google mail pass key
+YOUR_GOOGLE_CLIENT_ID = your google client id
+YOUR_GOOGLE_CLIENT_SECRET = your google client secret
+YOUR_RAZORPAY_KEY_ID = your razorpay key id
+YOUR_RAZORPAY_KEY_SECRET = your razorpay key secret
 ```
 
 4. Start the Application
